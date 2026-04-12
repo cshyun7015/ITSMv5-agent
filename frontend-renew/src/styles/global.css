@@ -1,0 +1,41 @@
+@import './design-tokens.css';
+
+.app-container {
+  min-height: 100vh;
+  padding: 40px;
+  background: radial-gradient(circle at top right, hsla(var(--accent-h), 80%, 60%, 0.15), transparent),
+              radial-gradient(circle at bottom left, hsla(var(--primary-h), 90%, 56%, 0.15), transparent);
+}
+
+.glass-panel {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  transition: var(--transition-smooth);
+}
+
+.glass-panel:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 14px 0 var(--primary-glow);
+  transition: var(--transition-smooth);
+}
+
+.btn-primary:hover {
+  filter: brightness(1.1);
+  box-shadow: 0 6px 20px 0 var(--primary-glow);
+}
