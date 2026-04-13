@@ -1,0 +1,11 @@
+.gradle
+build
+!build/libs/*.jar
+out
+.DS_Store
+.git
+.gitignore
+.vscode
+*.log
+docker-compose*.yml
+Dockerfile
