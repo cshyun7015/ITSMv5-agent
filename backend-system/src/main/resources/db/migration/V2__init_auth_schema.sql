@@ -4,8 +4,11 @@ CREATE TABLE tenants (
     name VARCHAR(100) NOT NULL,
     type VARCHAR(20) NOT NULL, -- 'MSP', 'CUSTOMER'
     is_active BOOLEAN DEFAULT TRUE,
+    is_deleted BOOLEAN DEFAULT FALSE,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_by VARCHAR(50),
+    updated_by VARCHAR(50)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- roles 테이블: 계정별 권한 정의
@@ -25,6 +28,8 @@ CREATE TABLE members (
     is_deleted BOOLEAN DEFAULT FALSE,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_by VARCHAR(50),
+    updated_by VARCHAR(50),
     UNIQUE KEY uk_tenant_username (tenant_id, username),
     FOREIGN KEY (tenant_id) REFERENCES tenants(tenant_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -46,9 +51,8 @@ INSERT INTO roles (role_id, description) VALUES ('ROLE_ADMIN', 'MSP System Admin
 INSERT INTO roles (role_id, description) VALUES ('ROLE_OPERATOR', 'MSP Support Operator');
 INSERT INTO roles (role_id, description) VALUES ('ROLE_USER', 'Customer Service User');
 
--- 초기 비밀번호는 'password'를 브루트 포스 방지 등을 위해 해싱하여 저장해야 하지만, 
--- 지금은 로직 구현을 위해 임시 값을 넣습니다. (실제 가동 시에는 BCrypt 사용)
+-- 초기 비밀번호는 'password'를 BCrypt로 해싱하여 저장합니다.
 INSERT INTO members (tenant_id, username, password, email) 
-VALUES ('MSP_CORE', 'admin', '$2a$10$vX3oJp7MByJ/68X3Qy2UHeU6U6/0G.sF7G/h3GgG6G6G6G6G6G6G6', 'admin@msp.com');
+VALUES ('MSP_CORE', 'admin', '$2a$10$XJ4QjD65vO5XyleKJbf5T.hGD7Co8AxaWskP4oDjaHDG7Cw8iUysm', 'admin@msp.com');
 
 INSERT INTO member_roles (member_id, role_id) VALUES (1, 'ROLE_ADMIN');

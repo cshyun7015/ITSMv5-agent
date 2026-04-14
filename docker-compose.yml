@@ -14,7 +14,6 @@ services:
       - "3306:3306"
     volumes:
       - db_data:/var/lib/mysql
-      - ./backend-system/src/main/resources/db/migration:/docker-entrypoint-initdb.d
     networks:
       - it-internal
     healthcheck:
@@ -64,7 +63,7 @@ services:
     depends_on:
       - it-backend
     ports:
-      - "4000:80"
+      - "4001:80"
     networks:
       - it-internal
 
