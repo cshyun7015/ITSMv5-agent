@@ -55,6 +55,19 @@ services:
     networks:
       - it-internal
 
+  it-frontend-user:
+    build:
+      context: ./frontend-user
+      dockerfile: Dockerfile
+    container_name: it-frontend-user
+    restart: always
+    depends_on:
+      - it-backend
+    ports:
+      - "4000:80"
+    networks:
+      - it-internal
+
   # --- Observability Stack (LGTM) ---
   prometheus:
     image: prom/prometheus:latest
@@ -105,6 +118,7 @@ services:
       - prometheus
       - loki
       - it-frontend-oper
+      - it-frontend-user
 
 networks:
   it-internal:
