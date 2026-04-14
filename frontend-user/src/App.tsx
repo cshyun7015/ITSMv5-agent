@@ -1,10 +1,14 @@
 import React from 'react';
+import { AuthProvider, useAuth } from './features/auth/context/AuthContext';
+import LoginPage from './features/auth/components/LoginPage';
 
 /**
  * ITSM Service Portal - User Experience
  * Concept: Lite / Clean / Intuitive
  */
-const App: React.FC = () => {
+const ServicePortal: React.FC = () => {
+  const { user, logout } = useAuth();
+
   return (
     <div className="portal">
       <header className="portal-header">
@@ -17,8 +21,11 @@ const App: React.FC = () => {
               <button className="nav-item">Knowledge</button>
             </nav>
             <div className="user-profile">
-              <div className="avatar">JD</div>
-              <span className="username">John Doe</span>
+              <div className="user-info">
+                <span className="tenant-tag">{user?.tenantId}</span>
+                <span className="username">{user?.username}</span>
+              </div>
+              <button className="logout-btn-clean" onClick={logout}>Sign Out</button>
             </div>
           </div>
         </div>
@@ -89,24 +96,39 @@ const App: React.FC = () => {
         .user-profile {
           display: flex;
           align-items: center;
-          gap: 12px;
+          gap: 20px;
         }
-        .avatar {
-          width: 36px;
-          height: 36px;
-          background: #e0f2fe;
-          color: var(--color-primary);
-          border-radius: 50%;
+        .user-info {
           display: flex;
-          align-items: center;
-          justify-content: center;
-          font-weight: 600;
-          font-size: 14px;
+          flex-direction: column;
+          align-items: flex-end;
+          gap: 2px;
+        }
+        .tenant-tag {
+          font-size: 10px;
+          font-weight: 700;
+          color: var(--color-primary);
+          background: #eff6ff;
+          padding: 2px 6px;
+          border-radius: 4px;
+          text-transform: uppercase;
         }
         .username {
           font-size: 14px;
           font-weight: 500;
           color: var(--color-text-main);
+        }
+        .logout-btn-clean {
+          background: #f1f5f9;
+          color: var(--color-text-dim);
+          padding: 8px 14px;
+          border-radius: 8px;
+          font-size: 13px;
+          font-weight: 500;
+        }
+        .logout-btn-clean:hover {
+          background: #fee2e2;
+          color: #ef4444;
         }
 
         .portal-main {
@@ -159,6 +181,19 @@ const App: React.FC = () => {
         }
       `}</style>
     </div>
+  );
+};
+
+const AuthWrapper: React.FC = () => {
+  const { isAuthenticated } = useAuth();
+  return isAuthenticated ? <ServicePortal /> : <LoginPage />;
+};
+
+const App: React.FC = () => {
+  return (
+    <AuthProvider>
+      <AuthWrapper />
+    </AuthProvider>
   );
 };
 
