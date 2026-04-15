@@ -8,6 +8,7 @@ import FulfillmentList from './features/fulfillment/components/FulfillmentList';
 import FulfillmentDetail from './features/fulfillment/components/FulfillmentDetail';
 import IncidentBoard from './features/incident/components/IncidentBoard';
 import IncidentDetail from './features/incident/components/IncidentDetail';
+import DashboardPage from './features/dashboard/components/DashboardPage';
 
 const MOCK_CODES = [
   { id: 1, groupId: 'TICKET_PRIORITY', codeId: 'P1', codeName: 'Critical', isActive: true },
@@ -18,7 +19,7 @@ const MOCK_CODES = [
 
 const AdminCommandCenter: React.FC = () => {
   const { user, logout } = useAuth();
-  const [activeTab, setActiveTab] = useState<'codes' | 'fulfillment' | 'incidents'>('incidents');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'codes' | 'fulfillment' | 'incidents'>('dashboard');
   const [selectedRequestId, setSelectedRequestId] = useState<number | null>(null);
   const [selectedIncidentId, setSelectedIncidentId] = useState<number | null>(null);
 
@@ -41,6 +42,12 @@ const AdminCommandCenter: React.FC = () => {
         <div style={{ display: 'flex', alignItems: 'center', gap: '40px' }}>
           <h1 className="header__title">MSP Operator Portal</h1>
           <nav className="header__nav">
+            <button 
+              className={`nav-link ${activeTab === 'dashboard' ? 'active' : ''}`}
+              onClick={() => setActiveTab('dashboard')}
+            >
+              Dashboard
+            </button>
             <button 
               className={`nav-link ${activeTab === 'incidents' ? 'active' : ''}`}
               onClick={() => { setActiveTab('incidents'); setSelectedIncidentId(null); }}
@@ -73,7 +80,9 @@ const AdminCommandCenter: React.FC = () => {
       </header>
 
       <main className="main-content">
-        {activeTab === 'codes' ? (
+        {activeTab === 'dashboard' ? (
+          <DashboardPage />
+        ) : activeTab === 'codes' ? (
           <section className="glass-panel code-manager">
             <div className="code-manager__header">
               <h2 className="code-manager__title">System Codes</h2>
