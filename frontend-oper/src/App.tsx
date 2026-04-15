@@ -6,6 +6,8 @@ import CodeList from './features/code/components/CodeList';
 import CodeDrawer from './features/code/components/CodeDrawer';
 import FulfillmentList from './features/fulfillment/components/FulfillmentList';
 import FulfillmentDetail from './features/fulfillment/components/FulfillmentDetail';
+import IncidentBoard from './features/incident/components/IncidentBoard';
+import IncidentDetail from './features/incident/components/IncidentDetail';
 
 const MOCK_CODES = [
   { id: 1, groupId: 'TICKET_PRIORITY', codeId: 'P1', codeName: 'Critical', isActive: true },
@@ -16,9 +18,10 @@ const MOCK_CODES = [
 
 const AdminCommandCenter: React.FC = () => {
   const { user, logout } = useAuth();
-  const [activeTab, setActiveTab] = useState<'codes' | 'fulfillment'>('fulfillment');
+  const [activeTab, setActiveTab] = useState<'codes' | 'fulfillment' | 'incidents'>('incidents');
   const [selectedRequestId, setSelectedRequestId] = useState<number | null>(null);
-  
+  const [selectedIncidentId, setSelectedIncidentId] = useState<number | null>(null);
+
   const [isDrawerOpen, setDrawerOpen] = useState(false);
   const [selectedCode, setSelectedCode] = useState<any>(null);
 
@@ -39,6 +42,12 @@ const AdminCommandCenter: React.FC = () => {
           <h1 className="header__title">MSP Operator Portal</h1>
           <nav className="header__nav">
             <button 
+              className={`nav-link ${activeTab === 'incidents' ? 'active' : ''}`}
+              onClick={() => { setActiveTab('incidents'); setSelectedIncidentId(null); }}
+            >
+              Incidents
+            </button>
+            <button 
               className={`nav-link ${activeTab === 'fulfillment' ? 'active' : ''}`}
               onClick={() => { setActiveTab('fulfillment'); setSelectedRequestId(null); }}
             >
@@ -46,7 +55,7 @@ const AdminCommandCenter: React.FC = () => {
             </button>
             <button 
               className={`nav-link ${activeTab === 'codes' ? 'active' : ''}`}
-              onClick={() => { setActiveTab('codes'); setSelectedRequestId(null); }}
+              onClick={() => { setActiveTab('codes'); setSelectedCode(null); }}
             >
               System Codes
             </button>
@@ -71,7 +80,7 @@ const AdminCommandCenter: React.FC = () => {
             </div>
             <CodeList codes={MOCK_CODES} onEdit={handleEdit} />
           </section>
-        ) : (
+        ) : activeTab === 'fulfillment' ? (
           <section className="glass-panel fulfillment-section">
             {selectedRequestId ? (
               <FulfillmentDetail 
@@ -81,6 +90,18 @@ const AdminCommandCenter: React.FC = () => {
               />
             ) : (
               <FulfillmentList onSelectRequest={(id) => setSelectedRequestId(id)} />
+            )}
+          </section>
+        ) : (
+          <section className="glass-panel incident-section">
+            {selectedIncidentId ? (
+              <IncidentDetail 
+                incidentId={selectedIncidentId} 
+                onBack={() => setSelectedIncidentId(null)}
+                onUpdated={() => {}}
+              />
+            ) : (
+              <IncidentBoard onSelectIncident={(id) => setSelectedIncidentId(id)} />
             )}
           </section>
         )}
