@@ -53,4 +53,16 @@ public class ServiceRequestDTO {
         private String assigneeName;
         private LocalDateTime createdAt;
     }
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ApprovalResponse {
+        private Long approvalId;
+        private String approverName;
+        private String status;
+        private Integer stepOrder;
+        private String comment;
+        private LocalDateTime updatedAt;
+    }
 }

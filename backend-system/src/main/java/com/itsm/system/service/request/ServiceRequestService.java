@@ -49,6 +49,12 @@ public class ServiceRequestService {
                 .mapToObj(i -> {
                     Member approver = memberRepository.findById(approverIds.get(i))
                             .orElseThrow(() -> new IllegalArgumentException("Approver not found: " + approverIds.get(i)));
+                    
+                    // 보안 검증: 결재자는 신청자와 동일한 테넌트여야 함
+                    if (!approver.getTenant().getTenantId().equals(request.getTenant().getTenantId())) {
+                        throw new SecurityException("Approver must belong to the same tenant");
+                    }
+
                     return ServiceRequestApproval.builder()
                             .serviceRequest(request)
                             .approver(approver)
@@ -102,5 +108,9 @@ public class ServiceRequestService {
     public ServiceRequest getRequest(Long requestId) {
         return requestRepository.findById(requestId)
                 .orElseThrow(() -> new IllegalArgumentException("Request not found"));
+    }
+    @Transactional(readOnly = true)
+    public List<ServiceRequestApproval> getApprovalSteps(Long requestId) {
+        return approvalRepository.findByServiceRequest_RequestIdOrderByStepOrderAsc(requestId);
     }
 }

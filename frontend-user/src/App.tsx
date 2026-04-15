@@ -6,18 +6,83 @@ import LoginPage from './features/auth/components/LoginPage';
  * ITSM Service Portal - User Experience
  * Concept: Lite / Clean / Intuitive
  */
+import RequestList from './features/service-request/components/RequestList';
+import RequestForm from './features/service-request/components/RequestForm';
+import RequestDetail from './features/service-request/components/RequestDetail';
+import ApprovalList from './features/service-request/components/ApprovalList';
+import { requestApi } from './api/request';
+import { ServiceRequest, ServiceRequestDTO } from './types/request';
+
+/**
+ * ITSM Service Portal - User Experience
+ * View Controller for Service Requests
+ */
 const ServicePortal: React.FC = () => {
   const { user, logout } = useAuth();
+  const [view, setView] = React.useState<'list' | 'create' | 'detail' | 'approvals'>('list');
+  const [selectedRequestId, setSelectedRequestId] = React.useState<number | null>(null);
+  const [requests, setRequests] = React.useState<ServiceRequest[]>([]);
+  const [isLoading, setIsLoading] = React.useState(false);
+
+  const isManager = user?.roles.includes('ROLE_MANAGER');
+
+  React.useEffect(() => {
+    loadRequests();
+  }, []);
+
+  const loadRequests = async () => {
+    setIsLoading(true);
+    try {
+      const data = await requestApi.getRequests();
+      setRequests(data);
+    } catch (error) {
+      console.error('Failed to load requests');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCreateDraft = async (data: ServiceRequestDTO) => {
+    setIsLoading(true);
+    try {
+      await requestApi.createDraft(data);
+      await loadRequests();
+      setView('list');
+    } catch (error) {
+      alert('Failed to create draft');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSelectRequest = (id: number) => {
+    setSelectedRequestId(id);
+    setView('detail');
+  };
 
   return (
     <div className="portal">
       <header className="portal-header">
         <div className="portal-container">
           <div className="header-content">
-            <h1 className="logo">ITSM<span>Portal</span></h1>
+            <h1 className="logo" onClick={() => setView('list')} style={{ cursor: 'pointer' }}>
+              ITSM<span>Portal</span>
+            </h1>
             <nav className="nav">
-              <button className="nav-item active">My Requests</button>
-              <button className="nav-item">Service Catalog</button>
+              <button 
+                className={`nav-item ${view === 'list' || view === 'detail' || view === 'create' ? 'active' : ''}`}
+                onClick={() => setView('list')}
+              >
+                My Requests
+              </button>
+              {isManager && (
+                <button 
+                  className={`nav-item ${view === 'approvals' ? 'active' : ''}`}
+                  onClick={() => setView('approvals')}
+                >
+                  Pending Approvals
+                </button>
+              )}
               <button className="nav-item">Knowledge</button>
             </nav>
             <div className="user-profile">
@@ -32,22 +97,53 @@ const ServicePortal: React.FC = () => {
       </header>
 
       <main className="portal-main portal-container">
-        <div className="dashboard-header">
-          <h2>My Requests</h2>
-          <p className="subtitle">Track the status of your active service tickets</p>
-        </div>
+        {view === 'list' && (
+          <RequestList 
+            requests={requests} 
+            onSelect={handleSelectRequest} 
+            onCreate={() => setView('create')} 
+          />
+        )}
 
-        <section className="request-overview">
-          <div className="empty-state">
-            <div className="icon">📝</div>
-            <h3>No Active Requests</h3>
-            <p>You haven't submitted any service requests yet.</p>
-            <button className="btn-primary">Create New Request</button>
-          </div>
-        </section>
+        {view === 'create' && (
+          <RequestForm 
+            onSubmit={handleCreateDraft} 
+            onCancel={() => setView('list')} 
+            isLoading={isLoading}
+          />
+        )}
+
+        {view === 'detail' && selectedRequestId && (
+          <RequestDetail 
+            requestId={selectedRequestId} 
+            onBack={() => setView('list')}
+            onRefresh={loadRequests}
+          />
+        )}
+
+        {view === 'approvals' && (
+          <ApprovalList 
+            onSelect={handleSelectRequest}
+          />
+        )}
       </main>
 
       <style>{`
+        :root {
+          --color-primary: #3b82f6;
+          --color-primary-hover: #2563eb;
+          --color-surface: #ffffff;
+          --color-border: #e2e8f0;
+          --color-text-main: #1e293b;
+          --color-text-dim: #64748b;
+          --radius-md: 8px;
+          --radius-lg: 12px;
+        }
+        .portal-container {
+          max-width: 1200px;
+          margin: 0 auto;
+          padding: 0 20px;
+        }
         .portal-header {
           background: var(--color-surface);
           border-bottom: 1px solid var(--color-border);
@@ -79,6 +175,8 @@ const ServicePortal: React.FC = () => {
           font-weight: 500;
           padding: 8px 0;
           position: relative;
+          cursor: pointer;
+          border: none;
         }
         .nav-item.active {
           color: var(--color-primary);
@@ -125,6 +223,8 @@ const ServicePortal: React.FC = () => {
           border-radius: 8px;
           font-size: 13px;
           font-weight: 500;
+          border: none;
+          cursor: pointer;
         }
         .logout-btn-clean:hover {
           background: #fee2e2;
@@ -133,51 +233,26 @@ const ServicePortal: React.FC = () => {
 
         .portal-main {
           margin-top: 48px;
-        }
-        .dashboard-header {
-          margin-bottom: 32px;
-        }
-        .dashboard-header h2 {
-          font-size: 28px;
-          font-weight: 600;
-          margin-bottom: 8px;
-        }
-        .dashboard-header .subtitle {
-          color: var(--color-text-dim);
+          padding-bottom: 80px;
         }
 
-        .empty-state {
-          background: var(--color-surface);
-          border: 2px dashed var(--color-border);
-          border-radius: var(--radius-lg);
-          padding: 80px 40px;
-          text-align: center;
-          max-width: 600px;
-          margin: 0 auto;
-        }
-        .empty-state .icon {
-          font-size: 48px;
-          margin-bottom: 24px;
-        }
-        .empty-state h3 {
-          font-size: 20px;
-          margin-bottom: 12px;
-        }
-        .empty-state p {
-          color: var(--color-text-dim);
-          margin-bottom: 32px;
-        }
         .btn-primary {
           background: var(--color-primary);
           color: #fff;
-          padding: 12px 24px;
+          padding: 10px 20px;
           border-radius: var(--radius-md);
           font-weight: 600;
-          box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.2);
+          border: none;
+          cursor: pointer;
+          transition: all 0.2s;
         }
         .btn-primary:hover {
           background: var(--color-primary-hover);
           transform: translateY(-1px);
+        }
+        .btn-primary:disabled {
+          background: #94a3b8;
+          cursor: not-allowed;
         }
       `}</style>
     </div>

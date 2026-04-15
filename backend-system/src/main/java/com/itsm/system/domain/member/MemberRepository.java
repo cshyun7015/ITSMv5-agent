@@ -6,4 +6,5 @@ import java.util.Optional;
 public interface MemberRepository extends JpaRepository<Member, Long> {
     Optional<Member> findByUsername(String username);
     Optional<Member> findByTenant_TenantIdAndUsername(String tenantId, String username);
+    java.util.List<Member> findByTenant_TenantIdAndRoles_RoleId(String tenantId, String roleId);
 }

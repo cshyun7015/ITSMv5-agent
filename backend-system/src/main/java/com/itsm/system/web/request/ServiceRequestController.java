@@ -63,6 +63,21 @@ public class ServiceRequestController {
         return ResponseEntity.ok(convertToResponse(request));
     }
 
+    @GetMapping("/{id}/approvals")
+    public ResponseEntity<List<ServiceRequestDTO.ApprovalResponse>> getApprovals(
+            @PathVariable Long id) {
+        return ResponseEntity.ok(requestService.getApprovalSteps(id).stream()
+                .map(a -> ServiceRequestDTO.ApprovalResponse.builder()
+                        .approvalId(a.getApprovalId())
+                        .approverName(a.getApprover().getUsername())
+                        .status(a.getStatus().name())
+                        .stepOrder(a.getStepOrder())
+                        .comment(a.getComment())
+                        .updatedAt(a.getUpdatedAt())
+                        .build())
+                .toList());
+    }
+
     private ServiceRequestDTO.Response convertToResponse(ServiceRequest request) {
         return ServiceRequestDTO.Response.builder()
                 .requestId(request.getRequestId())
