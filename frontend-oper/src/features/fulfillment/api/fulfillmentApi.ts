@@ -33,5 +33,11 @@ export const fulfillmentApi = {
   // 최종 종료
   close: async (id: number): Promise<void> => {
     await apiClient.post(`/requests/${id}/close`);
+  },
+
+  // 테넌트 목록 조회 (필터용)
+  getTenants: async (): Promise<any[]> => {
+    const response = await apiClient.get('/operator/tenants');
+    return response.data;
   }
 };

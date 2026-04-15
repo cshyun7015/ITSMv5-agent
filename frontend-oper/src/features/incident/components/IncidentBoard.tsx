@@ -88,7 +88,7 @@ const IncidentBoard: React.FC<IncidentBoardProps> = ({ onSelectIncident }) => {
       </div>
 
       <style>{`
-        .incident-board { padding: 10px; }
+        .incident-board { width: 100%; }
         .board-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
         .title-area { display: flex; align-items: center; gap: 12px; }
         .count-badge { background: rgba(255,255,255,0.1); padding: 4px 10px; border-radius: 20px; font-size: 14px; color: #94a3b8; }

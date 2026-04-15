@@ -39,81 +39,79 @@ const AdminCommandCenter: React.FC = () => {
   return (
     <div className="app-container">
       <header className="header">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '40px' }}>
-          <h1 className="header__title">MSP Operator Portal</h1>
-          <nav className="header__nav">
-            <button 
-              className={`nav-link ${activeTab === 'dashboard' ? 'active' : ''}`}
-              onClick={() => setActiveTab('dashboard')}
-            >
-              Dashboard
-            </button>
-            <button 
-              className={`nav-link ${activeTab === 'incidents' ? 'active' : ''}`}
-              onClick={() => { setActiveTab('incidents'); setSelectedIncidentId(null); }}
-            >
-              Incidents
-            </button>
-            <button 
-              className={`nav-link ${activeTab === 'fulfillment' ? 'active' : ''}`}
-              onClick={() => { setActiveTab('fulfillment'); setSelectedRequestId(null); }}
-            >
-              Fulfillment
-            </button>
-            <button 
-              className={`nav-link ${activeTab === 'codes' ? 'active' : ''}`}
-              onClick={() => { setActiveTab('codes'); setSelectedCode(null); }}
-            >
-              System Codes
-            </button>
-          </nav>
+        <div className="header__logo">
+          <div className="logo-icon">📊</div>
+          <span>MSP COMMAND CENTER</span>
         </div>
-        <div className="header__actions">
-          <span className="user-info">{user?.username} (MSP)</span>
-          <button className="logout-btn" onClick={logout}>Sign Out</button>
-          {activeTab === 'codes' && (
-            <button className="header__button" onClick={handleAdd}>
-              + Add New Code
+
+        <nav className="header__nav">
+          {[
+            { id: 'dashboard', label: 'Dashboard', icon: '📈' },
+            { id: 'incidents', label: 'Incidents', icon: '⚠️' },
+            { id: 'fulfillment', label: 'Fulfillment', icon: '🛠️' },
+            { id: 'codes', label: 'System Codes', icon: '⚙️' }
+          ].map(item => (
+            <button 
+              key={item.id}
+              className={`nav-link ${activeTab === item.id ? 'active' : ''}`}
+              onClick={() => { setActiveTab(item.id as any); setSelectedIncidentId(null); setSelectedRequestId(null); }}
+            >
+              <span className="nav-icon">{item.icon}</span>
+              {item.label}
             </button>
-          )}
+          ))}
+        </nav>
+
+        <div className="user-identity">
+          <div className="user-badge">
+            <span className="user-name">{user?.username}</span>
+            <span className="user-role">Operations Specialist</span>
+          </div>
+          <div className="user-avatar">👤</div>
+          <button className="logout-btn" onClick={logout}>Sign Out</button>
         </div>
       </header>
 
       <main className="main-content">
-        {activeTab === 'dashboard' ? (
-          <DashboardPage />
-        ) : activeTab === 'codes' ? (
-          <section className="glass-panel code-manager">
-            <div className="code-manager__header">
-              <h2 className="code-manager__title">System Codes</h2>
+        <div className="workspace-panel">
+          {activeTab === 'dashboard' ? (
+            <DashboardPage />
+          ) : activeTab === 'codes' ? (
+            <div className="code-manager">
+              <div className="code-manager__header">
+                <h2 className="code-manager__title">System Code Configuration</h2>
+                <button className="header__button" onClick={handleAdd}>
+                  + Add New Code
+                </button>
+              </div>
+              <CodeList codes={MOCK_CODES} onEdit={handleEdit} />
             </div>
-            <CodeList codes={MOCK_CODES} onEdit={handleEdit} />
-          </section>
-        ) : activeTab === 'fulfillment' ? (
-          <section className="glass-panel fulfillment-section">
-            {selectedRequestId ? (
-              <FulfillmentDetail 
-                requestId={selectedRequestId} 
-                onBack={() => setSelectedRequestId(null)}
-                onUpdated={() => {}} 
-              />
-            ) : (
-              <FulfillmentList onSelectRequest={(id) => setSelectedRequestId(id)} />
-            )}
-          </section>
-        ) : (
-          <section className="glass-panel incident-section">
-            {selectedIncidentId ? (
-              <IncidentDetail 
-                incidentId={selectedIncidentId} 
-                onBack={() => setSelectedIncidentId(null)}
-                onUpdated={() => {}}
-              />
-            ) : (
-              <IncidentBoard onSelectIncident={(id) => setSelectedIncidentId(id)} />
-            )}
-          </section>
-        )}
+          ) : activeTab === 'fulfillment' ? (
+            <div className="fulfillment-section">
+              {selectedRequestId ? (
+                <FulfillmentDetail 
+                  requestId={selectedRequestId} 
+                  onBack={() => setSelectedRequestId(null)}
+                  onUpdated={() => {}} 
+                />
+              ) : (
+                <FulfillmentList onSelectRequest={(id) => setSelectedRequestId(id)} />
+              )}
+            </div>
+          ) : (
+            <div className="incident-section">
+              {selectedIncidentId ? (
+                <IncidentDetail 
+                  incidentId={selectedIncidentId} 
+                  onBack={() => setSelectedIncidentId(null)}
+                  onUpdated={() => {}}
+                />
+              ) : (
+                <IncidentBoard onSelectIncident={(id) => setSelectedIncidentId(id)} />
+              )}
+            </div>
+          )}
+        </div>
       </main>
 
       <CodeDrawer 
@@ -123,58 +121,38 @@ const AdminCommandCenter: React.FC = () => {
       />
 
       <style>{`
-        .header__nav {
+        .app-container {
           display: flex;
-          gap: 20px;
+          flex-direction: column;
         }
-        .nav-link {
-          background: none;
+        
+        .code-manager__header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 24px;
+        }
+        
+        .code-manager__title {
+          font-size: 20px;
+          font-weight: 700;
+          color: #fff;
+          margin: 0;
+        }
+
+        .header__button {
+          background: var(--primary);
+          color: white;
           border: none;
-          color: rgba(255, 255, 255, 0.6);
+          padding: 8px 16px;
+          border-radius: 8px;
           font-weight: 600;
           cursor: pointer;
-          padding: 8px 12px;
-          border-radius: 6px;
-          transition: all 0.2s;
         }
-        .nav-link:hover {
-          color: white;
-          background: rgba(255, 255, 255, 0.1);
-        }
-        .nav-link.active {
-          color: white;
-          background: rgba(255, 255, 255, 0.15);
-        }
-        
+
+        /* Legacy fulfillment & incident styles integration */
         .fulfillment-container { padding: 8px; }
-        .fulfillment-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
-        .ticket-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
-        .ticket-card { 
-          background: rgba(255, 255, 255, 0.05); 
-          border: 1px solid rgba(255, 255, 255, 0.1); 
-          border-radius: 12px; p
-          padding: 20px; 
-          cursor: pointer; 
-          transition: transform 0.2s;
-        }
-        .ticket-card:hover { transform: translateY(-4px); background: rgba(255, 255, 255, 0.08); }
-        .ticket-id { font-size: 12px; color: rgba(255, 255, 255, 0.4); margin-bottom: 8px; }
-        .ticket-status { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 700; margin-bottom: 12px; }
-        .badge-open { background: #3b82f6; color: white; }
-        .badge-progress { background: #f59e0b; color: white; }
-        .badge-resolved { background: #10b981; color: white; }
-        
-        .fulfillment-detail .back-btn { background: none; border: none; color: #3b82f6; cursor: pointer; margin-bottom: 20px; }
-        .detail-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 32px; }
-        .content-box { background: rgba(255, 255, 255, 0.03); padding: 16px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.05); margin-top: 8px; line-height: 1.6; }
-        .info-section { margin-bottom: 32px; }
-        .resolution-input { width: 100%; min-height: 120px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 12px; border-radius: 8px; margin-top: 8px; }
-        
-        .action-sidebar .card-box { background: rgba(255,255,255,0.05); padding: 20px; border-radius: 12px; margin-bottom: 20px; }
-        .actions button { width: 100%; padding: 12px; border-radius: 8px; font-weight: 700; margin-bottom: 12px; border: none; cursor: pointer; }
-        .primary-btn { background: #3b82f6; color: white; }
-        .success-btn { background: #10b981; color: white; }
-        .dark-btn { background: #374151; color: white; }
+        /* ... existing styles preserved in global.css or below ... */
       `}</style>
     </div>
   );

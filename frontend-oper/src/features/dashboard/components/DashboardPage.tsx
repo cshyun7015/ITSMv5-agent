@@ -105,6 +105,7 @@ const DashboardPage: React.FC = () => {
       <style>{`
         .op-dashboard {
           color: #f1f5f9;
+          width: 100%;
         }
         .op-header {
           display: flex;
