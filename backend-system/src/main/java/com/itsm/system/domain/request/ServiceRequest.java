@@ -52,6 +52,9 @@ public class ServiceRequest extends BaseEntity {
     @JoinColumn(name = "assignee_id")
     private Member assignee;
 
+    @Column(name = "resolution", columnDefinition = "TEXT")
+    private String resolution;
+
     @OneToMany(mappedBy = "serviceRequest", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<ServiceRequestApproval> approvals = new ArrayList<>();
@@ -81,7 +84,8 @@ public class ServiceRequest extends BaseEntity {
         this.status = ServiceRequestStatus.IN_PROGRESS;
     }
 
-    public void resolve() {
+    public void resolve(String resolution) {
+        this.resolution = resolution;
         this.status = ServiceRequestStatus.RESOLVED;
     }
 

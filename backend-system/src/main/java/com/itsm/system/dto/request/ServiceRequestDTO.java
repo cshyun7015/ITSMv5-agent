@@ -41,6 +41,14 @@ public class ServiceRequestDTO {
 
     @Getter
     @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class Resolve {
+        private String resolution;
+    }
+
+    @Getter
+    @Builder
     public static class Response {
         private Long requestId;
         private String tenantId;
@@ -51,6 +59,7 @@ public class ServiceRequestDTO {
         private LocalDateTime slaDeadline;
         private String requesterName;
         private String assigneeName;
+        private String resolution;
         private LocalDateTime createdAt;
     }
     @Getter

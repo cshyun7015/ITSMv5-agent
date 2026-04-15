@@ -49,6 +49,36 @@ public class ServiceRequestController {
         return ResponseEntity.ok().build();
     }
 
+    @PostMapping("/{id}/assign")
+    public ResponseEntity<Void> assign(
+            @AuthenticationPrincipal Member currentMember,
+            @PathVariable Long id) {
+        // 현재 로그인한 운영자 본인에게 배정
+        requestService.assignRequest(id, currentMember.getMemberId());
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/{id}/resolve")
+    public ResponseEntity<Void> resolve(
+            @PathVariable Long id,
+            @RequestBody ServiceRequestDTO.Resolve dto) {
+        requestService.resolveRequest(id, dto.getResolution());
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/{id}/close")
+    public ResponseEntity<Void> close(
+            @PathVariable Long id) {
+        requestService.closeRequest(id);
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/all")
+    public ResponseEntity<List<ServiceRequestDTO.Response>> listAllRequests() {
+        List<ServiceRequest> requests = requestService.listAllRequests();
+        return ResponseEntity.ok(requests.stream().map(this::convertToResponse).toList());
+    }
+
     @GetMapping
     public ResponseEntity<List<ServiceRequestDTO.Response>> listRequests(
             @AuthenticationPrincipal Member currentMember) {
@@ -89,6 +119,7 @@ public class ServiceRequestController {
                 .slaDeadline(request.getSlaDeadline())
                 .requesterName(request.getRequester().getUsername())
                 .assigneeName(request.getAssignee() != null ? request.getAssignee().getUsername() : null)
+                .resolution(request.getResolution())
                 .createdAt(request.getCreatedAt())
                 .build();
     }

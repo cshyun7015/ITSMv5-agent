@@ -113,4 +113,30 @@ public class ServiceRequestService {
     public List<ServiceRequestApproval> getApprovalSteps(Long requestId) {
         return approvalRepository.findByServiceRequest_RequestIdOrderByStepOrderAsc(requestId);
     }
+
+    @Transactional
+    public void assignRequest(Long requestId, Long operatorId) {
+        ServiceRequest request = getRequest(requestId);
+        Member operator = memberRepository.findById(operatorId)
+                .orElseThrow(() -> new IllegalArgumentException("Operator not found"));
+        request.assign(operator);
+    }
+
+    @Transactional
+    public void resolveRequest(Long requestId, String resolution) {
+        ServiceRequest request = getRequest(requestId);
+        request.resolve(resolution);
+    }
+
+    @Transactional
+    public void closeRequest(Long requestId) {
+        ServiceRequest request = getRequest(requestId);
+        request.close();
+    }
+
+    @Transactional(readOnly = true)
+    public List<ServiceRequest> listAllRequests() {
+        // 운영자용: 모든 테넌트의 요청을 조회
+        return requestRepository.findAll();
+    }
 }
