@@ -25,4 +25,11 @@ public class Tenant extends BaseEntity {
     @Builder.Default
     @Column(name = "is_active")
     private Boolean isActive = true;
+
+    @Column(name = "logo_url")
+    private String logoUrl;
+
+    @Builder.Default
+    @Column(name = "brand_color", length = 10)
+    private String brandColor = "#3b82f6";
 }

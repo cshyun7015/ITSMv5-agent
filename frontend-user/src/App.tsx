@@ -10,6 +10,7 @@ import RequestList from './features/service-request/components/RequestList';
 import RequestForm from './features/service-request/components/RequestForm';
 import RequestDetail from './features/service-request/components/RequestDetail';
 import ApprovalList from './features/service-request/components/ApprovalList';
+import DashboardPage from './features/dashboard/components/DashboardPage';
 import { requestApi } from './api/request';
 import { ServiceRequest, ServiceRequestDTO } from './types/request';
 
@@ -19,7 +20,7 @@ import { ServiceRequest, ServiceRequestDTO } from './types/request';
  */
 const ServicePortal: React.FC = () => {
   const { user, logout } = useAuth();
-  const [view, setView] = React.useState<'list' | 'create' | 'detail' | 'approvals'>('list');
+  const [view, setView] = React.useState<'dashboard' | 'list' | 'create' | 'detail' | 'approvals'>('dashboard');
   const [selectedRequestId, setSelectedRequestId] = React.useState<number | null>(null);
   const [requests, setRequests] = React.useState<ServiceRequest[]>([]);
   const [isLoading, setIsLoading] = React.useState(false);
@@ -70,6 +71,12 @@ const ServicePortal: React.FC = () => {
             </h1>
             <nav className="nav">
               <button 
+                className={`nav-item ${view === 'dashboard' ? 'active' : ''}`}
+                onClick={() => setView('dashboard')}
+              >
+                Dashboard
+              </button>
+              <button 
                 className={`nav-item ${view === 'list' || view === 'detail' || view === 'create' ? 'active' : ''}`}
                 onClick={() => setView('list')}
               >
@@ -83,7 +90,6 @@ const ServicePortal: React.FC = () => {
                   Pending Approvals
                 </button>
               )}
-              <button className="nav-item">Knowledge</button>
             </nav>
             <div className="user-profile">
               <div className="user-info">
@@ -97,6 +103,10 @@ const ServicePortal: React.FC = () => {
       </header>
 
       <main className="portal-main portal-container">
+        {view === 'dashboard' && (
+          <DashboardPage />
+        )}
+
         {view === 'list' && (
           <RequestList 
             requests={requests} 
