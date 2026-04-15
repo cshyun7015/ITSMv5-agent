@@ -17,7 +17,7 @@ export interface OperatorDashboardSummary {
 
 export const dashboardApi = {
   getSummary: async (): Promise<OperatorDashboardSummary> => {
-    const response = await apiClient.get<OperatorDashboardSummary>('/api/v1/operator/dashboard/summary');
+    const response = await apiClient.get<OperatorDashboardSummary>('/operator/dashboard/summary');
     return response.data;
   }
 };
