@@ -9,6 +9,7 @@ import FulfillmentDetail from './features/fulfillment/components/FulfillmentDeta
 import IncidentBoard from './features/incident/components/IncidentBoard';
 import IncidentDetail from './features/incident/components/IncidentDetail';
 import DashboardPage from './features/dashboard/components/DashboardPage';
+import CatalogManagement from './features/catalog/components/CatalogManagement';
 
 const MOCK_CODES = [
   { id: 1, groupId: 'TICKET_PRIORITY', codeId: 'P1', codeName: 'Critical', isActive: true },
@@ -19,7 +20,7 @@ const MOCK_CODES = [
 
 const AdminCommandCenter: React.FC = () => {
   const { user, logout } = useAuth();
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'codes' | 'fulfillment' | 'incidents'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'catalog' | 'codes' | 'fulfillment' | 'incidents'>('dashboard');
   const [selectedRequestId, setSelectedRequestId] = useState<number | null>(null);
   const [selectedIncidentId, setSelectedIncidentId] = useState<number | null>(null);
 
@@ -47,6 +48,7 @@ const AdminCommandCenter: React.FC = () => {
         <nav className="header__nav">
           {[
             { id: 'dashboard', label: 'Dashboard', icon: '📈' },
+            { id: 'catalog', label: 'Global Catalog', icon: '🌐' },
             { id: 'incidents', label: 'Incidents', icon: '⚠️' },
             { id: 'fulfillment', label: 'Fulfillment', icon: '🛠️' },
             { id: 'codes', label: 'System Codes', icon: '⚙️' }
@@ -76,6 +78,8 @@ const AdminCommandCenter: React.FC = () => {
         <div className="workspace-panel">
           {activeTab === 'dashboard' ? (
             <DashboardPage />
+          ) : activeTab === 'catalog' ? (
+            <CatalogManagement />
           ) : activeTab === 'codes' ? (
             <div className="code-manager">
               <div className="code-manager__header">

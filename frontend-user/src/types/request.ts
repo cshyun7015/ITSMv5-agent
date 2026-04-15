@@ -18,6 +18,8 @@ export interface ServiceRequestDTO {
   title: string;
   description: string;
   priority: ServiceRequestPriority;
+  catalogId?: number;
+  dynamicFields?: string; // JSON string of dynamic values
 }
 
 export interface Approver {

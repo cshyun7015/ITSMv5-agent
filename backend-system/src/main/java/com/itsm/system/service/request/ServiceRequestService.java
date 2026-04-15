@@ -2,6 +2,8 @@ package com.itsm.system.service.request;
 
 import com.itsm.system.domain.member.Member;
 import com.itsm.system.domain.member.MemberRepository;
+import com.itsm.system.domain.catalog.ServiceCatalog;
+import com.itsm.system.domain.catalog.ServiceCatalogRepository;
 import com.itsm.system.domain.request.*;
 import com.itsm.system.domain.tenant.Tenant;
 import lombok.RequiredArgsConstructor;
@@ -19,16 +21,25 @@ public class ServiceRequestService {
     private final ServiceRequestRepository requestRepository;
     private final ServiceRequestApprovalRepository approvalRepository;
     private final MemberRepository memberRepository;
+    private final ServiceCatalogRepository serviceCatalogRepository;
     private final SlaService slaService;
 
     @Transactional
-    public ServiceRequest createDraft(Tenant tenant, Member requester, String title, String description, ServiceRequestPriority priority) {
+    public ServiceRequest createDraft(Tenant tenant, Member requester, String title, String description, ServiceRequestPriority priority, Long catalogId, String dynamicFields) {
+        ServiceCatalog catalog = null;
+        if (catalogId != null) {
+            catalog = serviceCatalogRepository.findById(catalogId)
+                    .orElseThrow(() -> new IllegalArgumentException("Catalog not found: " + catalogId));
+        }
+
         ServiceRequest request = ServiceRequest.builder()
                 .tenant(tenant)
                 .requester(requester)
                 .title(title)
                 .description(description)
                 .priority(priority)
+                .catalog(catalog)
+                .dynamicFields(dynamicFields)
                 .status(ServiceRequestStatus.DRAFT)
                 .build();
         return requestRepository.save(request);

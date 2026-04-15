@@ -1,5 +1,6 @@
 package com.itsm.system.domain.request;
 
+import com.itsm.system.domain.catalog.ServiceCatalog;
 import com.itsm.system.domain.common.BaseEntity;
 import com.itsm.system.domain.member.Member;
 import com.itsm.system.domain.tenant.Tenant;
@@ -58,6 +59,14 @@ public class ServiceRequest extends BaseEntity {
     @OneToMany(mappedBy = "serviceRequest", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<ServiceRequestApproval> approvals = new ArrayList<>();
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "catalog_id")
+    private ServiceCatalog catalog;
+
+    @Lob
+    @Column(name = "dynamic_fields", columnDefinition = "LONGTEXT")
+    private String dynamicFields;
 
     // Status transition methods
     public void submit(LocalDateTime deadline, List<ServiceRequestApproval> approvalSteps) {

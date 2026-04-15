@@ -27,7 +27,9 @@ public class ServiceRequestController {
                 currentMember,
                 dto.getTitle(),
                 dto.getDescription(),
-                dto.getPriority()
+                dto.getPriority(),
+                dto.getCatalogId(),
+                dto.getDynamicFields()
         );
         return ResponseEntity.ok(convertToResponse(request));
     }
@@ -121,6 +123,9 @@ public class ServiceRequestController {
                 .assigneeName(request.getAssignee() != null ? request.getAssignee().getUsername() : null)
                 .resolution(request.getResolution())
                 .createdAt(request.getCreatedAt())
+                .catalogId(request.getCatalog() != null ? request.getCatalog().getId() : null)
+                .catalogName(request.getCatalog() != null ? request.getCatalog().getName() : null)
+                .dynamicFields(request.getDynamicFields())
                 .build();
     }
 }

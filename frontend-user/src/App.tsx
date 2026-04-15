@@ -13,6 +13,8 @@ import ApprovalList from './features/service-request/components/ApprovalList';
 import DashboardPage from './features/dashboard/components/DashboardPage';
 import { requestApi } from './api/request';
 import { ServiceRequest, ServiceRequestDTO } from './types/request';
+import CatalogBrowser from './features/service-catalog/components/CatalogBrowser';
+import { CatalogItem } from './features/service-catalog/api/catalogApi';
 
 /**
  * ITSM Service Portal - User Experience
@@ -20,8 +22,9 @@ import { ServiceRequest, ServiceRequestDTO } from './types/request';
  */
 const ServicePortal: React.FC = () => {
   const { user, logout } = useAuth();
-  const [view, setView] = React.useState<'dashboard' | 'list' | 'create' | 'detail' | 'approvals'>('dashboard');
+  const [view, setView] = React.useState<'dashboard' | 'catalog' | 'list' | 'create' | 'detail' | 'approvals'>('dashboard');
   const [selectedRequestId, setSelectedRequestId] = React.useState<number | null>(null);
+  const [selectedCatalogItem, setSelectedCatalogItem] = React.useState<CatalogItem | null>(null);
   const [requests, setRequests] = React.useState<ServiceRequest[]>([]);
   const [isLoading, setIsLoading] = React.useState(false);
 
@@ -61,6 +64,11 @@ const ServicePortal: React.FC = () => {
     setView('detail');
   };
 
+  const handleSelectCatalogItem = (item: CatalogItem) => {
+    setSelectedCatalogItem(item);
+    setView('create');
+  };
+
   return (
     <div className="portal">
       <header className="portal-header">
@@ -77,7 +85,13 @@ const ServicePortal: React.FC = () => {
                 Dashboard
               </button>
               <button 
-                className={`nav-item ${view === 'list' || view === 'detail' || view === 'create' ? 'active' : ''}`}
+                className={`nav-item ${view === 'catalog' || view === 'create' ? 'active' : ''}`}
+                onClick={() => setView('catalog')}
+              >
+                Service Catalog
+              </button>
+              <button 
+                className={`nav-item ${view === 'list' || view === 'detail' ? 'active' : ''}`}
                 onClick={() => setView('list')}
               >
                 My Requests
@@ -111,14 +125,19 @@ const ServicePortal: React.FC = () => {
           <RequestList 
             requests={requests} 
             onSelect={handleSelectRequest} 
-            onCreate={() => setView('create')} 
+            onCreate={() => setView('catalog')} 
           />
         )}
 
-        {view === 'create' && (
+        {view === 'catalog' && (
+          <CatalogBrowser onSelectItem={handleSelectCatalogItem} />
+        )}
+
+        {view === 'create' && selectedCatalogItem && (
           <RequestForm 
+            catalogItem={selectedCatalogItem}
             onSubmit={handleCreateDraft} 
-            onCancel={() => setView('list')} 
+            onCancel={() => setView('catalog')} 
             isLoading={isLoading}
           />
         )}

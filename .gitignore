@@ -140,3 +140,4 @@ vite.config.ts.timestamp-*
 
 backend-system/.gradle/
 backend-system/build/
+backend-system/bin/

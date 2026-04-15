@@ -20,6 +20,8 @@ public class ServiceRequestDTO {
         private String title;
         private String description;
         private ServiceRequestPriority priority;
+        private Long catalogId;
+        private String dynamicFields;
     }
 
     @Getter
@@ -61,6 +63,9 @@ public class ServiceRequestDTO {
         private String assigneeName;
         private String resolution;
         private LocalDateTime createdAt;
+        private Long catalogId;
+        private String catalogName;
+        private String dynamicFields;
     }
     @Getter
     @Builder
