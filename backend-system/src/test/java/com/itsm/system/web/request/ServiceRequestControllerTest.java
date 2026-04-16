@@ -19,7 +19,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Collections;
+
 import java.util.List;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -49,7 +49,6 @@ class ServiceRequestControllerTest {
     private MemberRepository memberRepository;
 
     private String token;
-    private Long memberId;
 
     @BeforeEach
     void setUp() {
@@ -57,7 +56,7 @@ class ServiceRequestControllerTest {
         Tenant tenant = tenantRepository.findById("MSP_CORE")
                 .orElseGet(() -> tenantRepository.save(Tenant.builder().tenantId("MSP_CORE").name("MSP Core").build()));
 
-        Member admin = memberRepository.findAll().stream()
+        memberRepository.findAll().stream()
                 .filter(m -> m.getUsername().equals("admin"))
                 .findFirst()
                 .orElseGet(() -> memberRepository.save(Member.builder()
@@ -67,7 +66,6 @@ class ServiceRequestControllerTest {
                         .isActive(true)
                         .build()));
 
-        memberId = admin.getMemberId();
         token = "Bearer " + jwtTokenProvider.createToken("admin", "MSP_CORE", List.of("ROLE_ADMIN"));
     }
 

@@ -39,13 +39,11 @@ class ServiceRequestServiceTest {
     private ServiceRequestService serviceRequestService;
 
     private Tenant tenant;
-    private Member requester;
     private Member approver;
 
     @BeforeEach
     void setUp() {
         tenant = Tenant.builder().tenantId("TEST_TENANT").build();
-        requester = Member.builder().memberId(1L).username("user").tenant(tenant).build();
         approver = Member.builder().memberId(2L).username("approver").tenant(tenant).build();
     }
 

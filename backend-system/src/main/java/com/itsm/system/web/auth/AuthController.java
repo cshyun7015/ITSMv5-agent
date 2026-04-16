@@ -1,6 +1,6 @@
 package com.itsm.system.web.auth;
 
-import com.itsm.system.domain.member.Member;
+
 import com.itsm.system.domain.member.MemberRepository;
 import com.itsm.system.domain.member.Role;
 import com.itsm.system.dto.auth.AuthResponseDTO;
