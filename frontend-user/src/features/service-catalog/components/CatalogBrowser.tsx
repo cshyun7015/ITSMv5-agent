@@ -77,7 +77,7 @@ const CatalogBrowser: React.FC<CatalogBrowserProps> = ({ onSelectItem }) => {
             <h3>{item.name}</h3>
             <p>{item.description}</p>
             <div className="card-footer">
-              <span className="req-time">⚡ Instant Request</span>
+              <span className="req-time">Standard Service</span>
               <button className="request-btn">Request Now</button>
             </div>
           </div>

@@ -91,12 +91,9 @@ const DashboardPage: React.FC = () => {
 
         <div className="grid-right">
             <section className="log-monitor">
-                <h3>Centralized Logs (Mock)</h3>
+                <h3>Centralized Service Logs</h3>
                 <div className="log-viewport">
-                    <div className="log-line"><span>21:05:01</span> [INFO] it-backend started aggregation...</div>
-                    <div className="log-line"><span>21:05:04</span> [WARN] CN_TENANT_01: P1 Incident Received</div>
-                    <div className="log-line"><span>21:05:08</span> [DEBUG] Prometheus scraping node_exporter...</div>
-                    <div className="log-line"><span>21:05:12</span> [INFO] SLA Risk check completed.</div>
+                    <div className="empty-logs">Waiting for log stream connection...</div>
                 </div>
             </section>
         </div>
@@ -200,8 +197,12 @@ const DashboardPage: React.FC = () => {
           font-family: 'JetBrains Mono', monospace;
           font-size: 12px;
           overflow-y: auto;
+          display: flex;
+          align-items: center;
+          justify-content: center;
         }
-        .log-line { margin-bottom: 6px; color: #cbd5e1; }
+        .empty-logs { color: #475569; font-style: italic; }
+        .log-line { margin-bottom: 6px; color: #cbd5e1; width: 100%; }
         .log-line span { color: #64748b; margin-right: 8px; }
 
         .loading { padding: 40px; text-align: center; color: #94a3b8; }
