@@ -1,5 +1,7 @@
 package com.itsm.system.domain.catalog;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.itsm.system.domain.tenant.Tenant;
 import jakarta.persistence.*;
 import lombok.*;
@@ -10,6 +12,7 @@ import lombok.*;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class CatalogCategory {
 
     @Id
@@ -23,6 +26,7 @@ public class CatalogCategory {
 
     private String icon;
 
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "tenant_id")
     private Tenant tenant;

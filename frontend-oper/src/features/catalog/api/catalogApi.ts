@@ -31,8 +31,17 @@ export const catalogApi = {
     return response.data;
   },
 
-  deployToTenant: async (templateId: number, targetTenantId: string): Promise<void> => {
-    await apiClient.post('/operator/catalog/deploy', { templateId, targetTenantId });
+  updateTemplate: async (id: number, data: any): Promise<ServiceCatalog> => {
+    const response = await apiClient.put<ServiceCatalog>(`/operator/catalog/templates/${id}`, data);
+    return response.data;
+  },
+
+  deleteTemplate: async (id: number): Promise<void> => {
+    await apiClient.delete(`/operator/catalog/templates/${id}`);
+  },
+
+  deployToTenants: async (templateId: number, targetTenantIds: string[]): Promise<void> => {
+    await apiClient.post('/operator/catalog/deploy', { templateId, targetTenantIds });
   },
 
   getCategories: async (): Promise<CatalogCategory[]> => {
@@ -43,5 +52,14 @@ export const catalogApi = {
   createCategory: async (data: any): Promise<CatalogCategory> => {
     const response = await apiClient.post<CatalogCategory>('/operator/catalog/categories', data);
     return response.data;
+  },
+
+  updateCategory: async (id: number, data: any): Promise<CatalogCategory> => {
+    const response = await apiClient.put<CatalogCategory>(`/operator/catalog/categories/${id}`, data);
+    return response.data;
+  },
+
+  deleteCategory: async (id: number): Promise<void> => {
+    await apiClient.delete(`/operator/catalog/categories/${id}`);
   }
 };

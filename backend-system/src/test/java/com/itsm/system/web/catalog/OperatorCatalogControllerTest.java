@@ -125,7 +125,7 @@ class OperatorCatalogControllerTest {
         // given
         OperatorCatalogController.DeployRequest request = new OperatorCatalogController.DeployRequest();
         request.setTemplateId(100L);
-        request.setTargetTenantId("CUST01");
+        request.setTargetTenantIds(List.of("CUST01"));
 
         Tenant targetTenant = Tenant.builder().tenantId("CUST01").build();
         given(tenantRepository.findById("CUST01")).willReturn(Optional.of(targetTenant));

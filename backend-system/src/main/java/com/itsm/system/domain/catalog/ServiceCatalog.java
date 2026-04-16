@@ -1,5 +1,7 @@
 package com.itsm.system.domain.catalog;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.itsm.system.domain.tenant.Tenant;
 import jakarta.persistence.*;
 import lombok.*;
@@ -24,6 +26,7 @@ public class ServiceCatalog {
 
     private String icon;
 
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id")
     private CatalogCategory category;
@@ -35,6 +38,7 @@ public class ServiceCatalog {
     @Column(name = "approval_required")
     private boolean approvalRequired;
 
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "tenant_id")
     private Tenant tenant;
@@ -45,11 +49,12 @@ public class ServiceCatalog {
     @Column(name = "template_source_id")
     private Long templateSourceId;
 
-    public void update(String name, String description, String icon, String jsonSchema, boolean approvalRequired) {
+    public void update(String name, String description, String icon, String jsonSchema, boolean approvalRequired, CatalogCategory category) {
         this.name = name;
         this.description = description;
         this.icon = icon;
         this.jsonSchema = jsonSchema;
         this.approvalRequired = approvalRequired;
+        this.category = category;
     }
 }

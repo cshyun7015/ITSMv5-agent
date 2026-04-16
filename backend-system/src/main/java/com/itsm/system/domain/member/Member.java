@@ -1,6 +1,7 @@
 package com.itsm.system.domain.member;
 
 import com.itsm.system.domain.common.BaseEntity;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.itsm.system.domain.tenant.Tenant;
 import jakarta.persistence.*;
 import lombok.*;
@@ -27,6 +28,7 @@ public class Member extends BaseEntity implements UserDetails {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long memberId;
 
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "tenant_id", nullable = false)
     private Tenant tenant;
@@ -34,6 +36,7 @@ public class Member extends BaseEntity implements UserDetails {
     @Column(nullable = false, length = 100)
     private String username;
 
+    @JsonIgnore
     @Column(nullable = false, length = 255)
     private String password;
 

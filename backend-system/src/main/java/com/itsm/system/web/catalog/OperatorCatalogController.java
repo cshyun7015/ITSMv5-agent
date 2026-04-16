@@ -60,6 +60,51 @@ public class OperatorCatalogController {
         return ResponseEntity.ok(serviceCatalogRepository.save(template));
     }
 
+    @PutMapping("/templates/{id}")
+    public ResponseEntity<ServiceCatalog> updateTemplate(
+            @AuthenticationPrincipal Member currentMember,
+            @PathVariable Long id,
+            @RequestBody CatalogCreateRequest request) {
+
+        if (!"MSP_CORE".equals(currentMember.getTenant().getTenantId())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        ServiceCatalog template = serviceCatalogRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Template not found"));
+
+        if (!template.isTemplate()) {
+            throw new IllegalArgumentException("Target is not a template");
+        }
+
+        CatalogCategory category = catalogCategoryRepository.findById(request.getCategoryId())
+                .orElseThrow(() -> new IllegalArgumentException("Category not found"));
+
+        template.update(request.getName(), request.getDescription(), request.getIcon(), request.getJsonSchema(), request.isApprovalRequired(), category);
+        
+        return ResponseEntity.ok(serviceCatalogRepository.save(template));
+    }
+
+    @DeleteMapping("/templates/{id}")
+    public ResponseEntity<Void> deleteTemplate(
+            @AuthenticationPrincipal Member currentMember,
+            @PathVariable Long id) {
+
+        if (!"MSP_CORE".equals(currentMember.getTenant().getTenantId())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        ServiceCatalog template = serviceCatalogRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Template not found"));
+
+        if (!template.isTemplate()) {
+            throw new IllegalArgumentException("Only templates can be deleted via this endpoint");
+        }
+
+        serviceCatalogRepository.delete(template);
+        return ResponseEntity.ok().build();
+    }
+
     @PostMapping("/deploy")
     public ResponseEntity<Void> deployToTenant(
             @AuthenticationPrincipal Member currentMember,
@@ -69,10 +114,11 @@ public class OperatorCatalogController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
-        Tenant targetTenant = tenantRepository.findById(request.getTargetTenantId())
-                .orElseThrow(() -> new IllegalArgumentException("Target tenant not found"));
-
-        catalogDeploymentService.deployTemplate(request.getTemplateId(), targetTenant);
+        for (String tenantId : request.getTargetTenantIds()) {
+            Tenant targetTenant = tenantRepository.findById(tenantId)
+                    .orElseThrow(() -> new IllegalArgumentException("Target tenant not found: " + tenantId));
+            catalogDeploymentService.deployTemplate(request.getTemplateId(), targetTenant);
+        }
         return ResponseEntity.ok().build();
     }
 
@@ -97,6 +143,45 @@ public class OperatorCatalogController {
         return ResponseEntity.ok(catalogCategoryRepository.save(category));
     }
 
+    @PutMapping("/categories/{id}")
+    public ResponseEntity<CatalogCategory> updateCategory(
+            @AuthenticationPrincipal Member currentMember,
+            @PathVariable Long id,
+            @RequestBody CategoryRequest request) {
+
+        CatalogCategory category = catalogCategoryRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Category not found"));
+
+        // Only MSP can edit global templates categories
+        if (category.isTemplate() && !"MSP_CORE".equals(currentMember.getTenant().getTenantId())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        category.update(request.getName(), request.getDescription(), request.getIcon());
+        return ResponseEntity.ok(catalogCategoryRepository.save(category));
+    }
+
+    @DeleteMapping("/categories/{id}")
+    public ResponseEntity<Void> deleteCategory(
+            @AuthenticationPrincipal Member currentMember,
+            @PathVariable Long id) {
+
+        CatalogCategory category = catalogCategoryRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Category not found"));
+
+        if (category.isTemplate() && !"MSP_CORE".equals(currentMember.getTenant().getTenantId())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        // Dependency check
+        if (serviceCatalogRepository.countByCategory(category) > 0) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        }
+
+        catalogCategoryRepository.delete(category);
+        return ResponseEntity.ok().build();
+    }
+
     @lombok.Data
     public static class CatalogCreateRequest {
         private String name;
@@ -110,7 +195,7 @@ public class OperatorCatalogController {
     @lombok.Data
     public static class DeployRequest {
         private Long templateId;
-        private String targetTenantId;
+        private List<String> targetTenantIds;
     }
 
     @lombok.Data

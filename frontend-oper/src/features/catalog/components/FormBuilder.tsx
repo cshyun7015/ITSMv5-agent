@@ -12,13 +12,23 @@ export interface FormField {
 interface FormBuilderProps {
   onSave: (schema: string) => void;
   onCancel: () => void;
+  initialSchema?: string;
 }
 
 import apiClient from '../../../api/client';
 
-const FormBuilder: React.FC<FormBuilderProps> = ({ onSave, onCancel }) => {
-  const [fields, setFields] = useState<FormField[]>([]);
-  const [codeGroups, setCodeGroups] = useState<String[]>([]);
+const FormBuilder: React.FC<FormBuilderProps> = ({ onSave, onCancel, initialSchema }) => {
+  const [fields, setFields] = useState<FormField[]>(() => {
+    if (initialSchema) {
+      try {
+        return JSON.parse(initialSchema);
+      } catch (e) {
+        console.error('Failed to parse initial schema', e);
+      }
+    }
+    return [];
+  });
+  const [codeGroups, setCodeGroups] = useState<string[]>([]);
 
   React.useEffect(() => {
     // Fetch common code groups on mount
@@ -165,17 +175,17 @@ const FormBuilder: React.FC<FormBuilderProps> = ({ onSave, onCancel }) => {
 
       <div className="builder-footer">
         <button className="cancel-btn" onClick={onCancel}>Cancel Designer</button>
-        <button className="save-btn" onClick={handleSave}>Generate & Save Schema</button>
+        <button className="save-btn" onClick={handleSave} data-testid="save-schema-btn">Generate & Save Schema</button>
       </div>
 
       <style>{`
-        .form-builder { display: flex; flex-direction: column; height: 100%; border-color: #3b82f6; }
-        .builder-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+        .form-builder { display: flex; flex-direction: column; flex: 1; border-color: #3b82f6; overflow: hidden; }
+        .builder-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-shrink: 0; }
         .add-field-btn { background: #3b82f6; color: #fff; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 700; cursor: pointer; }
 
-        .builder-body { display: grid; grid-template-columns: 1fr 300px; gap: 32px; flex: 1; min-height: 400px; }
+        .builder-body { display: grid; grid-template-columns: 1fr 320px; gap: 32px; flex: 1; min-height: 0; overflow: hidden; }
         
-        .fields-panel { display: flex; flex-direction: column; gap: 16px; overflow-y: auto; max-height: 500px; padding-right: 8px; }
+        .fields-panel { display: flex; flex-direction: column; gap: 16px; overflow-y: auto; padding-right: 12px; }
         .field-editor-card { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 20px; }
         
         .field-row { display: flex; align-items: flex-end; gap: 16px; }
@@ -197,14 +207,14 @@ const FormBuilder: React.FC<FormBuilderProps> = ({ onSave, onCancel }) => {
         .manual-input label, .code-group-select label { font-size: 11px; color: #475569; margin-bottom: 4px; display: block; }
         .code-group-select select { width: 100%; background: #0f172a; border: 1px solid #334155; color: #3b82f6; padding: 8px; border-radius: 6px; font-weight: 600; }
 
-        .preview-panel { background: rgba(0,0,0,0.2); border-radius: 12px; padding: 24px; }
-        .preview-panel h4 { margin-top: 0; font-size: 14px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 12px; }
-        .preview-canvas { display: flex; flex-direction: column; gap: 16px; }
+        .preview-panel { background: rgba(0,0,0,0.2); border-radius: 12px; padding: 24px; display: flex; flex-direction: column; overflow: hidden; }
+        .preview-panel h4 { margin-top: 0; font-size: 14px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 12px; flex-shrink: 0; }
+        .preview-canvas { display: flex; flex-direction: column; gap: 16px; overflow-y: auto; flex: 1; }
         .preview-field label { display: block; font-size: 13px; margin-bottom: 6px; color: #94a3b8; }
         .preview-field .req { color: #ef4444; margin-left: 2px; }
         .preview-input { width: 100%; padding: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: #64748b; font-size: 13px; }
         
-        .builder-footer { margin-top: 32px; display: flex; justify-content: flex-end; gap: 12px; pt: 24px; border-top: 1px solid rgba(255,255,255,0.05); }
+        .builder-footer { margin-top: auto; display: flex; justify-content: flex-end; gap: 12px; pt: 24px; border-top: 1px solid rgba(255,255,255,0.05); flex-shrink: 0; background: inherit; }
         .cancel-btn { background: transparent; border: 1px solid #334155; color: #94a3b8; padding: 12px 24px; border-radius: 8px; font-weight: 600; cursor: pointer; }
         .save-btn { background: #10b981; color: #fff; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 700; cursor: pointer; }
 
