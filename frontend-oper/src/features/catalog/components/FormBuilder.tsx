@@ -3,9 +3,10 @@ import React, { useState } from 'react';
 export interface FormField {
   id: string;
   label: string;
-  type: 'text' | 'number' | 'date' | 'select';
+  type: 'text' | 'number' | 'date' | 'select' | 'code-select';
   required: boolean;
   options?: string[];
+  codeGroupId?: string;
 }
 
 interface FormBuilderProps {
@@ -13,8 +14,18 @@ interface FormBuilderProps {
   onCancel: () => void;
 }
 
+import apiClient from '../../../api/client';
+
 const FormBuilder: React.FC<FormBuilderProps> = ({ onSave, onCancel }) => {
   const [fields, setFields] = useState<FormField[]>([]);
+  const [codeGroups, setCodeGroups] = useState<String[]>([]);
+
+  React.useEffect(() => {
+    // Fetch common code groups on mount
+    apiClient.get('/codes/groups')
+      .then(res => setCodeGroups(res.data))
+      .catch(err => console.error('Failed to fetch code groups', err));
+  }, []);
 
   const addField = () => {
     const newField: FormField = {
@@ -84,13 +95,41 @@ const FormBuilder: React.FC<FormBuilderProps> = ({ onSave, onCancel }) => {
               
               {field.type === 'select' && (
                 <div className="options-editor">
-                  <label>Options (comma separated)</label>
-                  <input 
-                    type="text" 
-                    placeholder="e.g. AWS, Azure, GCP"
-                    value={field.options?.join(',') || ''}
-                    onChange={e => updateField(field.id, { options: e.target.value.split(',').map(s => s.trim()) })}
-                  />
+                  <div className="options-header">
+                    <label>Options Source</label>
+                    <div className="toggle-group">
+                      <button 
+                        className={!field.codeGroupId ? 'active' : ''} 
+                        onClick={() => updateField(field.id, { codeGroupId: undefined })}
+                      >Manual</button>
+                      <button 
+                        className={field.codeGroupId ? 'active' : ''} 
+                        onClick={() => updateField(field.id, { codeGroupId: codeGroups[0] as string || 'CATALOG_CSP' })}
+                      >Common Code</button>
+                    </div>
+                  </div>
+                  
+                  {!field.codeGroupId ? (
+                    <div className="manual-input">
+                      <label>Options (comma separated)</label>
+                      <input 
+                        type="text" 
+                        placeholder="e.g. AWS, Azure, GCP"
+                        value={field.options?.join(',') || ''}
+                        onChange={e => updateField(field.id, { options: e.target.value.split(',').map(s => s.trim()) })}
+                      />
+                    </div>
+                  ) : (
+                    <div className="code-group-select">
+                      <label>Select Code Group</label>
+                      <select 
+                        value={field.codeGroupId} 
+                        onChange={e => updateField(field.id, { codeGroupId: e.target.value })}
+                      >
+                        {codeGroups.map(gid => <option key={gid as string} value={gid as string}>{gid}</option>)}
+                      </select>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -106,16 +145,16 @@ const FormBuilder: React.FC<FormBuilderProps> = ({ onSave, onCancel }) => {
         <aside className="preview-panel">
           <h4>Live Preview</h4>
           <div className="preview-canvas">
-            {fields.map(f => (
-              <div key={f.id} className="preview-field">
-                <label>{f.label}{f.required && <span className="req">*</span>}</label>
-                {f.type === 'select' ? (
+            {fields.map(field => (
+              <div key={field.id} className="preview-field">
+                <label>{field.label}{field.required && <span className="req">*</span>}</label>
+                {field.type === 'select' ? (
                   <select disabled className="preview-input">
-                    <option>Select an option...</option>
-                    {f.options?.map(o => <option key={o}>{o}</option>)}
+                    <option>{field.codeGroupId ? `[Linked to ${field.codeGroupId}]` : 'Select an option...'}</option>
+                    {!field.codeGroupId && field.options?.map(o => <option key={o}>{o}</option>)}
                   </select>
                 ) : (
-                  <input type={f.type} disabled className="preview-input" placeholder={`Enter ${f.label.toLowerCase()}...`} />
+                  <input type={field.type} disabled className="preview-input" placeholder={`Enter ${field.label.toLowerCase()}...`} />
                 )}
               </div>
             ))}
@@ -147,8 +186,16 @@ const FormBuilder: React.FC<FormBuilderProps> = ({ onSave, onCancel }) => {
         .checkbox-group { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
         .delete-btn { background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); padding: 8px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; }
 
-        .options-editor { margin-top: 16px; display: flex; flex-direction: column; gap: 6px; }
-        .options-editor label { font-size: 11px; color: #64748b; }
+        .options-editor { margin-top: 16px; display: flex; flex-direction: column; gap: 8px; border-top: 1px solid rgba(255,255,255,0.05); pt: 12px; }
+        .options-header { display: flex; justify-content: space-between; align-items: center; }
+        .options-header label { font-size: 11px; color: #64748b; }
+        
+        .toggle-group { display: flex; background: #0f172a; border-radius: 6px; padding: 2px; }
+        .toggle-group button { background: transparent; border: none; color: #64748b; font-size: 10px; padding: 4px 10px; border-radius: 4px; cursor: pointer; transition: all 0.2s; }
+        .toggle-group button.active { background: #334155; color: #fff; }
+
+        .manual-input label, .code-group-select label { font-size: 11px; color: #475569; margin-bottom: 4px; display: block; }
+        .code-group-select select { width: 100%; background: #0f172a; border: 1px solid #334155; color: #3b82f6; padding: 8px; border-radius: 6px; font-weight: 600; }
 
         .preview-panel { background: rgba(0,0,0,0.2); border-radius: 12px; padding: 24px; }
         .preview-panel h4 { margin-top: 0; font-size: 14px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 12px; }

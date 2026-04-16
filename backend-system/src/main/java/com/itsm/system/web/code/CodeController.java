@@ -25,6 +25,11 @@ public class CodeController {
         return ResponseEntity.ok(codeService.getCodesByGroup(groupId));
     }
 
+    @GetMapping("/groups")
+    public ResponseEntity<List<String>> getAllGroupIds() {
+        return ResponseEntity.ok(codeService.getAllGroupIds());
+    }
+
     @PostMapping
     public ResponseEntity<CodeDTO> createCode(@RequestBody CodeDTO codeDTO) {
         return ResponseEntity.ok(codeService.createCode(codeDTO));

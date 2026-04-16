@@ -9,4 +9,5 @@ public interface CodeService {
     CodeDTO createCode(CodeDTO codeDTO);
     CodeDTO updateCode(Long id, CodeDTO codeDTO);
     void deleteCode(Long id);
+    List<String> getAllGroupIds();
 }

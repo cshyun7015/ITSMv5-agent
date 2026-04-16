@@ -1,11 +1,12 @@
-import React from 'react';
+import apiClient from '../../../api/client';
 
 interface FormField {
   id: string;
   label: string;
-  type: 'text' | 'number' | 'date' | 'select';
+  type: 'text' | 'number' | 'date' | 'select' | 'code-select';
   required: boolean;
   options?: string[];
+  codeGroupId?: string;
 }
 
 interface DynamicFormRendererProps {
@@ -14,6 +15,38 @@ interface DynamicFormRendererProps {
   onChange: (id: string, value: any) => void;
   disabled?: boolean;
 }
+
+const CodeSelect: React.FC<{ 
+  codeGroupId: string, 
+  value: any, 
+  onChange: (val: any) => void, 
+  required?: boolean, 
+  disabled?: boolean 
+}> = ({ codeGroupId, value, onChange, required, disabled }) => {
+  const [options, setOptions] = React.useState<{codeId: string, codeName: string}[]>([]);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    apiClient.get(`/codes/group/${codeGroupId}`)
+      .then(res => setOptions(res.data))
+      .catch(err => console.error(`Failed to fetch codes for ${codeGroupId}`, err))
+      .finally(() => setLoading(false));
+  }, [codeGroupId]);
+
+  return (
+    <select 
+      value={value} 
+      onChange={e => onChange(e.target.value)}
+      required={required}
+      disabled={disabled || loading}
+    >
+      <option value="">{loading ? 'Loading options...' : 'Select an option...'}</option>
+      {options.map(opt => (
+        <option key={opt.codeId} value={opt.codeId}>{opt.codeName}</option>
+      ))}
+    </select>
+  );
+};
 
 const DynamicFormRenderer: React.FC<DynamicFormRendererProps> = ({ schema, values, onChange, disabled }) => {
   let fields: FormField[] = [];
@@ -34,17 +67,27 @@ const DynamicFormRenderer: React.FC<DynamicFormRendererProps> = ({ schema, value
           </label>
           
           {field.type === 'select' ? (
-            <select 
-              value={values[field.id] || ''} 
-              onChange={e => onChange(field.id, e.target.value)}
-              required={field.required}
-              disabled={disabled}
-            >
-              <option value="">Select an option...</option>
-              {field.options?.map(opt => (
-                <option key={opt} value={opt}>{opt}</option>
-              ))}
-            </select>
+            field.codeGroupId ? (
+              <CodeSelect 
+                codeGroupId={field.codeGroupId}
+                value={values[field.id] || ''}
+                onChange={val => onChange(field.id, val)}
+                required={field.required}
+                disabled={disabled}
+              />
+            ) : (
+              <select 
+                value={values[field.id] || ''} 
+                onChange={e => onChange(field.id, e.target.value)}
+                required={field.required}
+                disabled={disabled}
+              >
+                <option value="">Select an option...</option>
+                {field.options?.map(opt => (
+                  <option key={opt} value={opt}>{opt}</option>
+                ))}
+              </select>
+            )
           ) : (
             <input 
               type={field.type}

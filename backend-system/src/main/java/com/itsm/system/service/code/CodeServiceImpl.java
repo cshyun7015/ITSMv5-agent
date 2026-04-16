@@ -59,6 +59,12 @@ public class CodeServiceImpl implements CodeService {
         codeRepository.deleteById(id);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<String> getAllGroupIds() {
+        return codeRepository.findDistinctGroupIds();
+    }
+
     private CodeDTO convertToDTO(Code code) {
         return CodeDTO.builder()
                 .id(code.getId())
