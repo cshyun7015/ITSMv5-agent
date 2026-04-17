@@ -4,7 +4,7 @@ import LoginPage from './features/auth/components/LoginPage';
 
 /**
  * ITSM Service Portal - User Experience
- * Concept: Lite / Clean / Intuitive
+ * Concept: Lite / Clean / Intuitive / Premium
  */
 import RequestList from './features/service-request/components/RequestList';
 import RequestForm from './features/service-request/components/RequestForm';
@@ -15,10 +15,20 @@ import { requestApi } from './api/request';
 import { ServiceRequest, ServiceRequestDTO } from './types/request';
 import CatalogBrowser from './features/service-catalog/components/CatalogBrowser';
 import { CatalogItem } from './features/service-catalog/api/catalogApi';
+import { 
+  LayoutDashboard, 
+  BookOpen, 
+  ClipboardList, 
+  ShieldCheck, 
+  LogOut, 
+  Building2,
+  Terminal
+} from 'lucide-react';
+
+import './styles/global.css';
 
 /**
- * ITSM Service Portal - User Experience
- * View Controller for Service Requests
+ * ITSM Service Portal - View Controller
  */
 const ServicePortal: React.FC = () => {
   const { user, logout } = useAuth();
@@ -74,26 +84,35 @@ const ServicePortal: React.FC = () => {
       <header className="portal-header">
         <div className="portal-container">
           <div className="header-content">
-            <h1 className="logo" onClick={() => setView('list')} style={{ cursor: 'pointer' }}>
-              ITSM<span>Portal</span>
-            </h1>
+            <div className="logo-section" onClick={() => setView('dashboard')} style={{ cursor: 'pointer' }}>
+               <div className="logo-icon-wrapper">
+                 <Terminal size={18} />
+               </div>
+               <h1 className="logo">
+                ITSM<span>Portal</span>
+               </h1>
+            </div>
+            
             <nav className="nav">
               <button 
                 className={`nav-item ${view === 'dashboard' ? 'active' : ''}`}
                 onClick={() => setView('dashboard')}
               >
+                <LayoutDashboard size={18} />
                 Dashboard
               </button>
               <button 
                 className={`nav-item ${view === 'catalog' || view === 'create' ? 'active' : ''}`}
                 onClick={() => setView('catalog')}
               >
+                <BookOpen size={18} />
                 Service Catalog
               </button>
               <button 
                 className={`nav-item ${view === 'list' || view === 'detail' ? 'active' : ''}`}
                 onClick={() => setView('list')}
               >
+                <ClipboardList size={18} />
                 My Requests
               </button>
               {isManager && (
@@ -101,16 +120,24 @@ const ServicePortal: React.FC = () => {
                   className={`nav-item ${view === 'approvals' ? 'active' : ''}`}
                   onClick={() => setView('approvals')}
                 >
-                  Pending Approvals
+                  <ShieldCheck size={18} />
+                  Approvals
                 </button>
               )}
             </nav>
+
             <div className="user-profile">
               <div className="user-info">
-                <span className="tenant-tag">{user?.tenantId}</span>
+                <div className="tenant-badge">
+                   <Building2 size={12} />
+                   <span>{user?.tenantId}</span>
+                </div>
                 <span className="username">{user?.username}</span>
               </div>
-              <button className="logout-btn-clean" onClick={logout}>Sign Out</button>
+              <button className="logout-btn-premium" onClick={logout}>
+                <LogOut size={16} />
+                Sign Out
+              </button>
             </div>
           </div>
         </div>
@@ -158,131 +185,85 @@ const ServicePortal: React.FC = () => {
       </main>
 
       <style>{`
-        :root {
-          --color-primary: #3b82f6;
-          --color-primary-hover: #2563eb;
-          --color-surface: #ffffff;
-          --color-border: #e2e8f0;
-          --color-text-main: #1e293b;
-          --color-text-dim: #64748b;
-          --radius-md: 8px;
-          --radius-lg: 12px;
-        }
-        .portal-container {
-          max-width: 1200px;
-          margin: 0 auto;
-          padding: 0 20px;
-        }
         .portal-header {
           background: var(--color-surface);
           border-bottom: 1px solid var(--color-border);
-          padding: 16px 0;
+          padding: 12px 0;
           position: sticky;
           top: 0;
           z-index: 100;
+          box-shadow: var(--shadow-sm);
         }
         .header-content {
           display: flex;
           align-items: center;
           justify-content: space-between;
         }
-        .logo {
-          font-size: 20px;
-          font-weight: 600;
-          color: var(--color-primary);
+        
+        .logo-section { display: flex; align-items: center; gap: 12px; }
+        .logo-icon-wrapper { 
+          background: var(--color-primary); color: #fff; 
+          width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+          border-radius: 8px; box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
         }
-        .logo span {
-          color: var(--color-text-main);
-        }
-        .nav {
-          display: flex;
-          gap: 32px;
-        }
+        .logo { font-size: 19px; font-weight: 800; color: var(--color-primary); margin: 0; letter-spacing: -0.5px; }
+        .logo span { color: var(--color-text-main); }
+        
+        .nav { display: flex; gap: 32px; flex: 1; justify-content: center; }
         .nav-item {
-          background: none;
+          background: none; border: none;
           color: var(--color-text-dim);
-          font-weight: 500;
-          padding: 8px 0;
+          font-weight: 600;
+          padding: 12px 0;
           position: relative;
           cursor: pointer;
-          border: none;
+          font-size: 14px;
+          display: flex; align-items: center; gap: 8px;
+          transition: var(--transition);
         }
-        .nav-item.active {
-          color: var(--color-primary);
-        }
+        .nav-item:hover { color: var(--color-primary); }
+        .nav-item.active { color: var(--color-primary); }
         .nav-item.active::after {
           content: '';
           position: absolute;
-          bottom: 0;
+          bottom: -2px;
           left: 0;
           width: 100%;
-          height: 2px;
+          height: 3px;
           background: var(--color-primary);
-          border-radius: 2px;
-        }
-        .user-profile {
-          display: flex;
-          align-items: center;
-          gap: 20px;
-        }
-        .user-info {
-          display: flex;
-          flex-direction: column;
-          align-items: flex-end;
-          gap: 2px;
-        }
-        .tenant-tag {
-          font-size: 10px;
-          font-weight: 700;
-          color: var(--color-primary);
-          background: #eff6ff;
-          padding: 2px 6px;
           border-radius: 4px;
-          text-transform: uppercase;
+          animation: scaleX 0.3s ease;
         }
-        .username {
-          font-size: 14px;
-          font-weight: 500;
-          color: var(--color-text-main);
+        @keyframes scaleX { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+        .user-profile { display: flex; align-items: center; gap: 24px; }
+        .user-info { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+        .tenant-badge {
+          font-size: 10px; font-weight: 800; color: var(--color-primary);
+          background: var(--color-primary-soft);
+          padding: 3px 8px; border-radius: 20px;
+          text-transform: uppercase; display: flex; align-items: center; gap: 4px;
         }
-        .logout-btn-clean {
-          background: #f1f5f9;
+        .username { font-size: 14px; font-weight: 700; color: var(--color-text-main); }
+        
+        .logout-btn-premium {
+          background: var(--color-surface-soft);
           color: var(--color-text-dim);
           padding: 8px 14px;
-          border-radius: 8px;
+          border-radius: 10px;
           font-size: 13px;
-          font-weight: 500;
-          border: none;
+          font-weight: 700;
+          border: 1px solid var(--color-border);
           cursor: pointer;
+          display: flex; align-items: center; gap: 8px;
         }
-        .logout-btn-clean:hover {
+        .logout-btn-premium:hover {
           background: #fee2e2;
+          border-color: #fecaca;
           color: #ef4444;
         }
 
-        .portal-main {
-          margin-top: 48px;
-          padding-bottom: 80px;
-        }
-
-        .btn-primary {
-          background: var(--color-primary);
-          color: #fff;
-          padding: 10px 20px;
-          border-radius: var(--radius-md);
-          font-weight: 600;
-          border: none;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-        .btn-primary:hover {
-          background: var(--color-primary-hover);
-          transform: translateY(-1px);
-        }
-        .btn-primary:disabled {
-          background: #94a3b8;
-          cursor: not-allowed;
-        }
+        .portal-main { margin-top: 56px; padding-bottom: 80px; }
       `}</style>
     </div>
   );

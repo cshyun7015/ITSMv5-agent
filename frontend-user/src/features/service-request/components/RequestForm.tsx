@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ServiceRequestDTO, ServiceRequestPriority } from '../../../types/request';
 import { CatalogItem } from '../../service-catalog/api/catalogApi';
 import DynamicFormRenderer from '../../service-catalog/components/DynamicFormRenderer';
+import { Send, ArrowLeft, AlertCircle, Clock, CheckCircle, Info } from 'lucide-react';
 
 interface RequestFormProps {
   catalogItem: CatalogItem;
@@ -54,8 +55,12 @@ const RequestForm: React.FC<RequestFormProps> = ({ catalogItem, onSubmit, onCanc
   };
 
   return (
-    <div className="request-form-container glass-panel">
+    <div className="request-form-container premium-card">
       <div className="form-header">
+        <button className="back-btn" onClick={onCancel} disabled={isLoading}>
+          <ArrowLeft size={18} />
+          Back to Catalog
+        </button>
         <div className="item-info">
             <span className="cat-label">{catalogItem.categoryName}</span>
             <h2>{catalogItem.name} Request</h2>
@@ -65,50 +70,61 @@ const RequestForm: React.FC<RequestFormProps> = ({ catalogItem, onSubmit, onCanc
 
       <form onSubmit={handleSubmit}>
         <div className="form-section">
-            <h3>Basic Information</h3>
+            <div className="section-title">
+              <Info size={16} />
+              <h3>Basic Information</h3>
+            </div>
+            
             <div className="form-group">
-            <label>Request Title</label>
-            <input 
-                type="text" 
-                value={formData.title}
-                onChange={e => setFormData({ ...formData, title: e.target.value })}
-                required
-                disabled={isLoading}
-            />
+              <label>Request Title <span className="req">*</span></label>
+              <input 
+                  type="text" 
+                  placeholder="e.g. Access Request for Portal Server"
+                  value={formData.title}
+                  onChange={e => setFormData({ ...formData, title: e.target.value })}
+                  required
+                  disabled={isLoading}
+              />
             </div>
 
             <div className="form-group">
-            <label>Priority</label>
-            <div className="priority-chips">
-                {(['EMERGENCY', 'NORMAL', 'LOW'] as ServiceRequestPriority[]).map(p => (
-                <button
-                    key={p}
-                    type="button"
-                    className={`chip ${formData.priority === p ? 'active' : ''} ${p.toLowerCase()}`}
-                    onClick={() => setFormData({ ...formData, priority: p })}
-                    disabled={isLoading}
-                >
-                    {p}
-                </button>
-                ))}
-            </div>
+              <label>Priority <span className="req">*</span></label>
+              <div className="priority-selector">
+                  {(['EMERGENCY', 'NORMAL', 'LOW'] as ServiceRequestPriority[]).map(p => (
+                  <button
+                      key={p}
+                      type="button"
+                      className={`priority-chip ${formData.priority === p ? 'active' : ''} ${p.toLowerCase()}`}
+                      onClick={() => setFormData({ ...formData, priority: p })}
+                      disabled={isLoading}
+                  >
+                      {p === 'EMERGENCY' && <AlertCircle size={14} />}
+                      {p === 'NORMAL' && <Clock size={14} />}
+                      {p === 'LOW' && <CheckCircle size={14} />}
+                      {p}
+                  </button>
+                  ))}
+              </div>
             </div>
 
             <div className="form-group">
-            <label>General Description</label>
-            <textarea 
-                rows={4}
-                placeholder="Additional notes or context..."
-                value={formData.description}
-                onChange={e => setFormData({ ...formData, description: e.target.value })}
-                required
-                disabled={isLoading}
-            />
+              <label>General Description <span className="req">*</span></label>
+              <textarea 
+                  rows={4}
+                  placeholder="Please provide additional details or context for your request..."
+                  value={formData.description}
+                  onChange={e => setFormData({ ...formData, description: e.target.value })}
+                  required
+                  disabled={isLoading}
+              />
             </div>
         </div>
 
         <div className="form-section">
-            <h3>Service Specific Details</h3>
+            <div className="section-title">
+              <LayoutGrid size={16} />
+              <h3>Service Specific Details</h3>
+            </div>
             <DynamicFormRenderer 
                 schema={catalogItem.jsonSchema} 
                 values={dynamicValues} 
@@ -120,47 +136,96 @@ const RequestForm: React.FC<RequestFormProps> = ({ catalogItem, onSubmit, onCanc
         <div className="form-actions">
           <button type="button" className="btn-secondary" onClick={onCancel} disabled={isLoading}>Cancel</button>
           <button type="submit" className="btn-primary" disabled={isLoading}>
-            {isLoading ? 'Submitting mission...' : 'Submit Request'}
+            {isLoading ? (
+              <>
+                <div className="spinner-small" />
+                Submitting...
+              </>
+            ) : (
+              <>
+                <Send size={18} />
+                Submit Request
+              </>
+            )}
           </button>
         </div>
       </form>
 
       <style>{`
-        .request-form-container { width: 100%; max-width: 800px; margin: 0 auto; animation: slideIn 0.3s ease; }
-        .form-header { margin-bottom: 32px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 24px; }
-        .cat-label { font-size: 11px; font-weight: 800; color: #3b82f6; text-transform: uppercase; letter-spacing: 1px; }
-        .form-header h2 { margin: 8px 0 4px 0; font-size: 26px; }
-        .form-header p { margin: 0; color: #64748b; }
+        .request-form-container { width: 100%; max-width: 840px; margin: 0 auto; animation: slideIn 0.4s ease; padding: 40px; }
+        
+        .form-header { margin-bottom: 40px; border-bottom: 1px solid var(--color-border-soft); padding-bottom: 32px; }
+        .back-btn { 
+          display: flex; align-items: center; gap: 8px; background: none; border: none; 
+          color: var(--color-text-dim); font-size: 14px; font-weight: 600; cursor: pointer; margin-bottom: 24px;
+          transition: var(--transition); padding: 0;
+        }
+        .back-btn:hover { color: var(--color-primary); transform: translateX(-4px); }
+        
+        .cat-label { font-size: 12px; font-weight: 800; color: var(--color-primary); text-transform: uppercase; letter-spacing: 1px; }
+        .form-header h2 { margin: 12px 0 8px 0; font-size: 32px; font-weight: 800; color: var(--color-text-main); }
+        .form-header p { margin: 0; color: var(--color-text-sub); font-size: 16px; line-height: 1.6; }
 
-        .form-section { margin-bottom: 40px; }
-        .form-section h3 { font-size: 14px; text-transform: uppercase; color: #94a3b8; letter-spacing: 0.5px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 8px; margin-bottom: 24px; }
+        .form-section { margin-bottom: 48px; }
+        .section-title { 
+          display: flex; align-items: center; gap: 10px; color: var(--color-text-dim);
+          border-bottom: 1px solid var(--color-border-soft); padding-bottom: 12px; margin-bottom: 28px; 
+        }
+        .section-title h3 { font-size: 15px; text-transform: uppercase; letter-spacing: 0.5px; margin: 0; font-weight: 700; }
 
-        .form-group { margin-bottom: 24px; display: flex; flex-direction: column; gap: 8px; }
-        .form-group label { font-size: 14px; font-weight: 600; color: #f1f5f9; }
+        .form-group { margin-bottom: 28px; display: flex; flex-direction: column; gap: 10px; }
+        .form-group label { font-size: 14px; font-weight: 700; color: var(--color-text-main); }
+        .form-group label .req { color: #ef4444; }
         
         input, textarea { 
-          background: rgba(15, 23, 42, 0.4); border: 1px solid #334155; 
-          color: #fff; padding: 12px 16px; border-radius: 8px; font-size: 15px; outline: none;
+          background: var(--color-surface); border: 1px solid var(--color-border); 
+          color: var(--color-text-main); padding: 14px 18px; border-radius: 10px; font-size: 15px; outline: none;
+          transition: var(--transition); box-shadow: var(--shadow-sm);
         }
-        input:focus, textarea:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
-
-        .priority-chips { display: flex; gap: 8px; }
-        .chip { 
-          flex: 1; padding: 10px; border: 1px solid #334155; background: transparent; 
-          border-radius: 8px; color: #94a3b8; font-weight: 700; cursor: pointer; transition: all 0.2s;
+        input:focus, textarea:focus { 
+          border-color: var(--color-primary); 
+          box-shadow: 0 0 0 4px var(--color-primary-soft);
         }
-        .chip.active.emergency { border-color: #ef4444; color: #ef4444; background: rgba(239, 68, 68, 0.05); }
-        .chip.active.normal { border-color: #f59e0b; color: #f59e0b; background: rgba(245, 158, 11, 0.05); }
-        .chip.active.low { border-color: #10b981; color: #10b981; background: rgba(16, 185, 129, 0.05); }
+        input::placeholder, textarea::placeholder { color: var(--color-text-dim); opacity: 0.6; }
 
-        .form-actions { display: flex; justify-content: flex-end; gap: 16px; margin-top: 40px; }
-        .btn-secondary { background: transparent; border: 1px solid #334155; color: #94a3b8; padding: 12px 24px; border-radius: 8px; font-weight: 600; cursor: pointer; }
-        .btn-primary { background: #3b82f6; color: #fff; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 700; cursor: pointer; }
+        .priority-selector { display: flex; gap: 12px; }
+        .priority-chip { 
+          flex: 1; padding: 12px; border: 1px solid var(--color-border); background: var(--color-surface); 
+          border-radius: 10px; color: var(--color-text-dim); font-weight: 700; cursor: pointer; 
+          transition: var(--transition); display: flex; align-items: center; justify-content: center; gap: 8px;
+          font-size: 14px;
+        }
+        .priority-chip:hover { border-color: var(--color-text-dim); }
+        .priority-chip.active.emergency { border-color: #ef4444; color: #ef4444; background: rgba(239, 68, 68, 0.08); box-shadow: 0 4px 12px rgba(239, 68, 68, 0.1); }
+        .priority-chip.active.normal { border-color: #f59e0b; color: #f59e0b; background: rgba(245, 158, 11, 0.08); box-shadow: 0 4px 12px rgba(245, 158, 11, 0.1); }
+        .priority-chip.active.low { border-color: #10b981; color: #10b981; background: rgba(16, 185, 129, 0.08); box-shadow: 0 4px 12px rgba(16, 185, 129, 0.1); }
 
-        @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .form-actions { display: flex; justify-content: flex-end; gap: 16px; margin-top: 56px; padding-top: 32px; border-top: 1px solid var(--color-border-soft); }
+        .btn-secondary { background: var(--color-surface-soft); border: 1px solid var(--color-border); color: var(--color-text-sub); padding: 14px 28px; border-radius: 10px; font-weight: 700; cursor: pointer; transition: var(--transition); }
+        .btn-secondary:hover { background: #e2e8f0; }
+        .btn-primary { 
+          display: flex; align-items: center; gap: 10px;
+          background: var(--color-primary); color: #fff; border: none; padding: 14px 32px; 
+          border-radius: 10px; font-weight: 700; cursor: pointer; transition: var(--transition);
+          box-shadow: 0 4px 14px rgba(59, 130, 246, 0.4);
+        }
+        .btn-primary:hover { background: var(--color-primary-hover); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4); }
+        .btn-primary:active { transform: translateY(0); }
+        .btn-primary:disabled { background: var(--color-text-dim); opacity: 0.7; cursor: not-allowed; transform: none; box-shadow: none; }
+
+        .spinner-small {
+          width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%;
+          animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
       `}</style>
     </div>
   );
 };
+
+// LayoutGrid is missing from imports in previous thought, adding it here or to the top
+import { LayoutGrid } from 'lucide-react';
 
 export default RequestForm;
