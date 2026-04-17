@@ -90,8 +90,9 @@ public class ServiceRequestController {
     }
 
     @GetMapping("/all")
-    public ResponseEntity<List<ServiceRequestDTO.Response>> listAllRequests() {
-        List<ServiceRequest> requests = requestService.listAllRequests();
+    public ResponseEntity<List<ServiceRequestDTO.Response>> listAllRequests(
+            @AuthenticationPrincipal Member currentMember) {
+        List<ServiceRequest> requests = requestService.listRequestsByMember(currentMember);
         return ResponseEntity.ok(requests.stream().map(this::convertToResponse).toList());
     }
 

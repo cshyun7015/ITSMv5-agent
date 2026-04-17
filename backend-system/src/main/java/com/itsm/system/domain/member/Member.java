@@ -3,6 +3,7 @@ package com.itsm.system.domain.member;
 import com.itsm.system.domain.common.BaseEntity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.itsm.system.domain.tenant.Tenant;
+import com.itsm.system.domain.tenant.Team;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
@@ -50,6 +51,11 @@ public class Member extends BaseEntity implements UserDetails {
     @Builder.Default
     @Column(name = "is_deleted")
     private Boolean isDeleted = false;
+
+    @JsonIgnore
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "team_id")
+    private Team team;
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(

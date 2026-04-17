@@ -31,6 +31,7 @@ public class SecurityConfig {
 
     private final JwtTokenProvider jwtTokenProvider;
     private final UserDetailsService userDetailsService;
+    private final com.itsm.system.domain.auth.TokenBlacklistRepository tokenBlacklistRepository;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -51,7 +52,7 @@ public class SecurityConfig {
                 .requestMatchers("/error").permitAll()
                 .anyRequest().authenticated()
             )
-            .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider, userDetailsService), UsernamePasswordAuthenticationFilter.class);
+            .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider, userDetailsService, tokenBlacklistRepository), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

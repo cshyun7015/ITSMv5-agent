@@ -16,9 +16,14 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.stream.Collectors;
-
 import org.springframework.transaction.annotation.Transactional;
+import com.itsm.system.domain.auth.TokenBlacklist;
+import com.itsm.system.domain.auth.TokenBlacklistRepository;
+import jakarta.servlet.http.HttpServletRequest;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.Date;
+import java.util.stream.Collectors;
 
 @Slf4j
 @RestController
@@ -29,6 +34,7 @@ public class AuthController {
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
+    private final TokenBlacklistRepository tokenBlacklistRepository;
 
     @Transactional(readOnly = true)
     @PostMapping("/login")
@@ -65,5 +71,32 @@ public class AuthController {
             log.error("Error during login process", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
         }
+    }
+    
+    @Transactional
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(HttpServletRequest request) {
+        String bearerToken = request.getHeader("Authorization");
+        if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
+            String token = bearerToken.substring(7);
+            
+            try {
+                Date expiration = jwtTokenProvider.getExpirationDate(token);
+                LocalDateTime expiresAt = expiration.toInstant()
+                        .atZone(ZoneId.systemDefault())
+                        .toLocalDateTime();
+                
+                tokenBlacklistRepository.save(TokenBlacklist.builder()
+                        .token(token)
+                        .expiresAt(expiresAt)
+                        .build());
+                
+                log.info("Token successfully blacklisted");
+            } catch (Exception e) {
+                log.warn("Failed to blacklist token or token already expired", e);
+            }
+        }
+        
+        return ResponseEntity.ok().build();
     }
 }

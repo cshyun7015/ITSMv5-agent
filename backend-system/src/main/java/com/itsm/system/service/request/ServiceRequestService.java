@@ -6,13 +6,16 @@ import com.itsm.system.domain.catalog.ServiceCatalog;
 import com.itsm.system.domain.catalog.ServiceCatalogRepository;
 import com.itsm.system.domain.request.*;
 import com.itsm.system.domain.tenant.Tenant;
+import com.itsm.system.domain.tenant.TenantRelationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -25,6 +28,7 @@ public class ServiceRequestService {
     private final ServiceRequestAttachmentRepository attachmentRepository;
     private final MemberRepository memberRepository;
     private final ServiceCatalogRepository serviceCatalogRepository;
+    private final TenantRelationRepository tenantRelationRepository;
     private final SlaService slaService;
 
     @Transactional
@@ -173,9 +177,27 @@ public class ServiceRequestService {
     }
 
     @Transactional(readOnly = true)
-    public List<ServiceRequest> listAllRequests() {
-        // 운영자용: 모든 테넌트의 요청을 조회
-        return requestRepository.findAll();
+    public List<ServiceRequest> listRequestsByMember(Member member) {
+        // 1. System Admin (MSP) -> 전체 조회
+        if (member.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"))) {
+            return requestRepository.findAll();
+        }
+        
+        // 2. Operator -> 본인이 담당하는 고객사 테넌트 목록 조회 후 필터링
+        if (member.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_OPERATOR"))) {
+            List<String> managedTenantIds = tenantRelationRepository.findByOperator_TenantId(member.getTenant().getTenantId())
+                    .stream()
+                    .map(rel -> rel.getCustomer().getTenantId())
+                    .collect(java.util.stream.Collectors.toList());
+            
+            // 본인 운영사 테넌트도 포함 (운영사 내부 요청)
+            managedTenantIds.add(member.getTenant().getTenantId());
+            
+            return requestRepository.findByTenantIdIn(managedTenantIds);
+        }
+        
+        // 3. Customer User/Manager -> 본인 테넌트만 조회
+        return requestRepository.findByTenantId(member.getTenant().getTenantId());
     }
 
     @Transactional(readOnly = true)

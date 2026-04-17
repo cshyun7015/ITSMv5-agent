@@ -6,6 +6,7 @@ const LoginPage: React.FC = () => {
   const { login } = useAuth();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [tenantId, setTenantId] = useState('ocomp1'); // 기본값으로 ocomp1 설정
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -16,7 +17,7 @@ const LoginPage: React.FC = () => {
 
     try {
       const response = await apiClient.post('/auth/login', {
-        tenantId: 'MSP_CORE', // 운영자 포털은 기본적으로 MSP 테넌트 사용
+        tenantId,
         username,
         password,
       });
@@ -39,6 +40,17 @@ const LoginPage: React.FC = () => {
         </div>
         
         <form onSubmit={handleLogin}>
+          <div className="form-group">
+            <label>Tenant ID</label>
+            <input 
+              type="text" 
+              value={tenantId} 
+              onChange={(e) => setTenantId(e.target.value)}
+              placeholder="Enter tenant ID (e.g. ocomp1)"
+              required
+            />
+          </div>
+
           <div className="form-group">
             <label>Username</label>
             <input 
