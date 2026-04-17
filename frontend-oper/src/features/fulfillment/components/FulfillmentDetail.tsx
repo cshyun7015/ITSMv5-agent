@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { fulfillmentApi } from '../api/fulfillmentApi';
 import apiClient from '../../../api/client';
 import { ServiceRequest, ApprovalStep, AttachmentInfo } from '../types';
+import RequestFormModal from './RequestFormModal';
 
 interface FulfillmentDetailProps {
   requestId: number;
@@ -15,6 +16,7 @@ const FulfillmentDetail: React.FC<FulfillmentDetailProps> = ({ requestId, onBack
   const [isLoading, setIsLoading] = useState(true);
   const [resolution, setResolution] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -80,6 +82,20 @@ const FulfillmentDetail: React.FC<FulfillmentDetailProps> = ({ requestId, onBack
     }
   };
 
+  const handleDelete = async () => {
+    if (!window.confirm('Are you sure you want to delete this operational entry? This action is tracked.')) return;
+    setIsSubmitting(true);
+    try {
+      await fulfillmentApi.deleteRequest(requestId);
+      onUpdated();
+      onBack();
+    } catch (error) {
+      alert('Deletion failed');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   if (isLoading) return <div className="loading">Accessing Mission Log...</div>;
   if (!request) return <div className="error">Request Trace Hidden or Lost.</div>;
 
@@ -91,6 +107,15 @@ const FulfillmentDetail: React.FC<FulfillmentDetailProps> = ({ requestId, onBack
             <span className="id-tag">SR-{request.requestId}</span>
             <h1>{request.title}</h1>
             <div className={`status-pill ${request.status}`}>{request.status}</div>
+            
+            <div className="header-actions">
+              <button className="icon-btn edit" onClick={() => setShowEditModal(true)} title="Edit Request">
+                ✎ Edit
+              </button>
+              <button className="icon-btn delete" onClick={handleDelete} title="Delete Request" disabled={isSubmitting}>
+                🗑 Delete
+              </button>
+            </div>
         </div>
       </header>
 
@@ -156,7 +181,7 @@ const FulfillmentDetail: React.FC<FulfillmentDetailProps> = ({ requestId, onBack
               <h3>Attachments ({request.attachments.length})</h3>
               <div className="attachment-list">
                 {request.attachments.map((att: AttachmentInfo) => (
-                  <div key={att.id} className="att-item" onClick={() => window.open(`${apiClient.defaults.baseURL}/requests/attachments/${att.id}`, '_blank')}>
+                  <div key={att.id} className="att-item" onClick={() => fulfillmentApi.downloadAttachment(att.id, att.fileName)}>
                     <span className="att-icon">📎</span>
                     <div className="att-info">
                       <span className="att-name">{att.fileName}</span>
@@ -187,6 +212,17 @@ const FulfillmentDetail: React.FC<FulfillmentDetailProps> = ({ requestId, onBack
           </div>
         </aside>
       </div>
+
+      {showEditModal && request && (
+        <RequestFormModal 
+          request={request}
+          onClose={() => setShowEditModal(false)}
+          onSuccess={() => {
+            loadData();
+            onUpdated();
+          }}
+        />
+      )}
 
       <style>{`
         .fulfillment-detail-view { color: #f1f5f9; }
@@ -252,6 +288,17 @@ const FulfillmentDetail: React.FC<FulfillmentDetailProps> = ({ requestId, onBack
         .btn-success { background: #10b981; color: #fff; }
         .btn-dark { background: #334155; color: #fff; }
         button:active { transform: scale(0.98); }
+
+        .header-actions { display: flex; gap: 8px; margin-left: auto; }
+        .icon-btn {
+          background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+          color: #94a3b8; padding: 6px 12px; border-radius: 6px; font-size: 12px;
+          cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 4px;
+        }
+        .icon-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+        .icon-btn.edit:hover { border-color: #3b82f6; color: #60a5fa; }
+        .icon-btn.delete:hover { border-color: #ef4444; color: #f87171; }
+        .icon-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
         .loading, .error { padding: 80px; text-align: center; color: #64748b; }
       `}</style>

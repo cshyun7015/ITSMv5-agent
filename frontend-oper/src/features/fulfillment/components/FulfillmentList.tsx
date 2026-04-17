@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { fulfillmentApi } from '../api/fulfillmentApi';
 import { ServiceRequest } from '../types';
+import RequestFormModal from './RequestFormModal';
 
 interface FulfillmentListProps {
   onSelectRequest: (id: number) => void;
@@ -12,12 +13,14 @@ const FulfillmentList: React.FC<FulfillmentListProps> = ({ onSelectRequest }) =>
   const [isLoading, setIsLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState<string>('ALL');
   const [filterTenant, setFilterTenant] = useState<string>('ALL');
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   useEffect(() => {
     loadInitialData();
   }, []);
 
   const loadInitialData = async () => {
+    setIsLoading(true);
     try {
       const [reqData, tenantData] = await Promise.all([
         fulfillmentApi.getAllRequests(),
@@ -36,8 +39,7 @@ const FulfillmentList: React.FC<FulfillmentListProps> = ({ onSelectRequest }) =>
     e.stopPropagation();
     try {
       await fulfillmentApi.assignToMe(id);
-      const updated = await fulfillmentApi.getAllRequests();
-      setRequests(updated);
+      loadInitialData();
     } catch (error) {
       alert('Assignment failed');
     }
@@ -80,6 +82,9 @@ const FulfillmentList: React.FC<FulfillmentListProps> = ({ onSelectRequest }) =>
         <div className="title-section">
           <h2>Tactical Fulfillment Board</h2>
           <div className="subtitle">Managing {requests.length} total across {tenants.length} tenants</div>
+          <button className="btn-manual-reg" onClick={() => setShowCreateModal(true)}>
+            + Register Manual Request
+          </button>
         </div>
         
         <div className="filter-controls">
@@ -147,8 +152,16 @@ const FulfillmentList: React.FC<FulfillmentListProps> = ({ onSelectRequest }) =>
         })}
       </div>
 
+
       {filteredRequests.length === 0 && (
         <div className="empty-state">No matching requests found in the current tactical scope.</div>
+      )}
+
+      {showCreateModal && (
+        <RequestFormModal 
+          onClose={() => setShowCreateModal(false)}
+          onSuccess={loadInitialData}
+        />
       )}
 
       <style>{`
@@ -179,7 +192,21 @@ const FulfillmentList: React.FC<FulfillmentListProps> = ({ onSelectRequest }) =>
           border-bottom: 1px solid rgba(255, 255, 255, 0.05);
         }
         .title-section h2 { margin: 0; font-size: 20px; }
-        .title-section .subtitle { font-size: 12px; color: #64748b; margin-top: 4px; }
+        .title-section .subtitle { font-size: 12px; color: #64748b; margin-top: 4px; margin-bottom: 12px; }
+        
+        .btn-manual-reg {
+          background: linear-gradient(135deg, #3b82f6, #2563eb);
+          color: #fff;
+          border: none;
+          padding: 8px 16px;
+          border-radius: 8px;
+          font-size: 13px;
+          font-weight: 700;
+          cursor: pointer;
+          transition: all 0.2s;
+          box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+        .btn-manual-reg:hover { transform: translateY(-1px); box-shadow: 0 6px 15px rgba(37, 99, 235, 0.4); }
         
         .filter-controls { display: flex; gap: 24px; align-items: flex-end; }
         .filter-group { display: flex; flex-direction: column; gap: 8px; }

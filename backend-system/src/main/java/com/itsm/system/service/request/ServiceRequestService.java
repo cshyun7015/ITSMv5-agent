@@ -6,7 +6,9 @@ import com.itsm.system.domain.catalog.ServiceCatalog;
 import com.itsm.system.domain.catalog.ServiceCatalogRepository;
 import com.itsm.system.domain.request.*;
 import com.itsm.system.domain.tenant.Tenant;
+import com.itsm.system.domain.tenant.TenantRepository;
 import com.itsm.system.domain.tenant.TenantRelationRepository;
+import com.itsm.system.dto.request.ServiceRequestDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,28 +28,49 @@ public class ServiceRequestService {
     private final ServiceRequestApprovalRepository approvalRepository;
     private final ServiceRequestAttachmentRepository attachmentRepository;
     private final MemberRepository memberRepository;
+    private final TenantRepository tenantRepository;
     private final ServiceCatalogRepository serviceCatalogRepository;
     private final TenantRelationRepository tenantRelationRepository;
     private final SlaService slaService;
 
     @Transactional
-    public ServiceRequest createDraft(Tenant tenant, Member requester, String title, String description, 
-                                     ServiceRequestPriority priority, Long catalogId, String dynamicFields, 
-                                     List<MultipartFile> files) {
+    public ServiceRequest createDraft(Member currentMember, ServiceRequestDTO.Create dto, List<MultipartFile> files) {
+        Tenant tenant = currentMember.getTenant();
+        Member requester = currentMember;
+
+        // 1. 운영자/관리자가 타 테넌트용 요청을 생성하는 경우
+        if (dto.getTargetTenantId() != null && !dto.getTargetTenantId().equals(tenant.getTenantId())) {
+            // 권한 체크: 현재 사용자가 대상 테넌트에 대한 관리 권한이 있는지 확인
+            // (컨트롤러에서 해도 되지만 서비스에서 보수적으로 한 번 더 체크 가능)
+            tenant = tenantRepository.findById(dto.getTargetTenantId())
+                    .orElseThrow(() -> new IllegalArgumentException("Target tenant not found: " + dto.getTargetTenantId()));
+        }
+
+        // 2. 신청자를 별도로 지정하는 경우 (고객사 사용자 대행 등록)
+        if (dto.getRequesterId() != null) {
+            requester = memberRepository.findById(dto.getRequesterId())
+                    .orElseThrow(() -> new IllegalArgumentException("Requester not found: " + dto.getRequesterId()));
+            
+            // 신청자가 대상 테넌트 소속인지 검증
+            if (!requester.getTenant().getTenantId().equals(tenant.getTenantId())) {
+                throw new SecurityException("Selected requester does not belong to the target tenant");
+            }
+        }
+
         ServiceCatalog catalog = null;
-        if (catalogId != null) {
-            catalog = serviceCatalogRepository.findById(catalogId)
-                    .orElseThrow(() -> new IllegalArgumentException("Catalog not found: " + catalogId));
+        if (dto.getCatalogId() != null) {
+            catalog = serviceCatalogRepository.findById(dto.getCatalogId())
+                    .orElseThrow(() -> new IllegalArgumentException("Catalog not found: " + dto.getCatalogId()));
         }
 
         ServiceRequest request = ServiceRequest.builder()
                 .tenant(tenant)
                 .requester(requester)
-                .title(title)
-                .description(description)
-                .priority(priority)
+                .title(dto.getTitle())
+                .description(dto.getDescription())
+                .priority(dto.getPriority())
                 .catalog(catalog)
-                .dynamicFields(dynamicFields)
+                .dynamicFields(dto.getDynamicFields())
                 .status(ServiceRequestStatus.DRAFT)
                 .build();
         
@@ -177,6 +200,8 @@ public class ServiceRequestService {
 
     @Transactional(readOnly = true)
     public List<ServiceRequest> listRequestsByMember(Member member) {
+        String tenantId = member.getTenant().getTenantId();
+        
         // 1. System Admin (MSP) -> 전체 조회
         if (member.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"))) {
             return requestRepository.findAll();
@@ -184,24 +209,64 @@ public class ServiceRequestService {
         
         // 2. Operator -> 본인이 담당하는 고객사 테넌트 목록 조회 후 필터링
         if (member.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_OPERATOR"))) {
-            List<String> managedTenantIds = tenantRelationRepository.findByOperator_TenantId(member.getTenant().getTenantId())
+            List<String> managedTenantIds = tenantRelationRepository.findByOperator_TenantId(tenantId)
                     .stream()
                     .map(rel -> rel.getCustomer().getTenantId())
                     .collect(java.util.stream.Collectors.toList());
             
             // 본인 운영사 테넌트도 포함 (운영사 내부 요청)
-            managedTenantIds.add(member.getTenant().getTenantId());
+            managedTenantIds.add(tenantId);
             
             return requestRepository.findByTenantIdIn(managedTenantIds);
         }
         
         // 3. Customer User/Manager -> 본인 테넌트만 조회
-        return requestRepository.findByTenantId(member.getTenant().getTenantId());
+        return requestRepository.findByTenantId(tenantId);
     }
 
     @Transactional(readOnly = true)
     public ServiceRequestAttachment getAttachment(Long attachmentId) {
         return attachmentRepository.findById(attachmentId)
                 .orElseThrow(() -> new IllegalArgumentException("Attachment not found"));
+    }
+
+    @Transactional
+    public void updateRequest(Long requestId, ServiceRequestDTO.Update dto, List<MultipartFile> files) {
+        ServiceRequest request = getRequest(requestId);
+        if (request.getStatus() != ServiceRequestStatus.DRAFT && request.getStatus() != ServiceRequestStatus.OPEN) {
+            throw new IllegalStateException("Only DRAFT or OPEN requests can be updated");
+        }
+        
+        request.setTitle(dto.getTitle());
+        request.setDescription(dto.getDescription());
+        request.setPriority(dto.getPriority());
+        
+        requestRepository.save(request);
+        
+        if (files != null && !files.isEmpty()) {
+            List<ServiceRequestAttachment> attachments = files.stream()
+                    .map(file -> {
+                        try {
+                            return ServiceRequestAttachment.builder()
+                                    .serviceRequest(request)
+                                    .fileName(file.getOriginalFilename())
+                                    .contentType(file.getContentType())
+                                    .fileSize(file.getSize())
+                                    .fileData(file.getBytes())
+                                    .build();
+                        } catch (IOException e) {
+                            throw new RuntimeException("Failed to read attachment data", e);
+                        }
+                    })
+                    .toList();
+            attachmentRepository.saveAll(attachments);
+        }
+    }
+
+    @Transactional
+    public void deleteRequest(Long requestId) {
+        ServiceRequest request = getRequest(requestId);
+        request.setIsDeleted(true);
+        requestRepository.save(request);
     }
 }

@@ -1,0 +1,75 @@
+version: '3.8'
+
+services:
+  it-mariadb-test:
+    image: mariadb:10.11
+    container_name: it-mariadb-test
+    restart: always
+    environment:
+      MARIADB_ROOT_PASSWORD: root
+      MARIADB_DATABASE: system_mgmt_test
+      MARIADB_USER: itsm
+      MARIADB_PASSWORD: itsm1234
+    ports:
+      - "3307:3306"
+    networks:
+      - it-test-internal
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  it-backend-test:
+    build:
+      context: ./backend-system
+      dockerfile: Dockerfile
+    container_name: it-backend-test
+    restart: on-failure
+    depends_on:
+      it-mariadb-test:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: test
+      # 내부 포트는 application-test.yml에서 8081로 설정됨
+    ports:
+      - "8081:8081"
+    networks:
+      - it-test-internal
+
+  it-frontend-oper-test:
+    build:
+      context: ./frontend-oper
+      dockerfile: Dockerfile
+    container_name: it-frontend-oper-test
+    restart: always
+    depends_on:
+      - it-backend-test
+    volumes:
+      - ./infra/test/nginx-oper-test.conf:/etc/nginx/conf.d/default.conf
+    ports:
+      - "3002:80"
+    networks:
+      - it-test-internal
+
+  it-frontend-user-test:
+    build:
+      context: ./frontend-user
+      dockerfile: Dockerfile
+    container_name: it-frontend-user-test
+    restart: always
+    depends_on:
+      - it-backend-test
+    volumes:
+      - ./infra/test/nginx-user-test.conf:/etc/nginx/conf.d/default.conf
+    ports:
+      - "4002:80"
+    networks:
+      - it-test-internal
+
+networks:
+  it-test-internal:
+    driver: bridge
+
+volumes:
+  db_data_test:

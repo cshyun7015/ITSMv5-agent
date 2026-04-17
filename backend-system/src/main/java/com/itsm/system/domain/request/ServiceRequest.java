@@ -14,6 +14,7 @@ import java.util.List;
 @Entity
 @Table(name = "service_requests")
 @Getter
+@Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder

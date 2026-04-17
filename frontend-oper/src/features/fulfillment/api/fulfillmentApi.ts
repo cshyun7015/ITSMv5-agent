@@ -35,9 +35,59 @@ export const fulfillmentApi = {
     await apiClient.post(`/requests/${id}/close`);
   },
 
-  // 테넌트 목록 조회 (필터용)
+  // 테넌트 목록 조회 (필터 및 등록용)
   getTenants: async (): Promise<any[]> => {
     const response = await apiClient.get('/operator/tenants');
     return response.data;
+  },
+
+  // 특정 테넌트의 사용자 목록 조회 (신청자 대행 선택용)
+  getTenantUsers: async (tenantId: string): Promise<any[]> => {
+    const response = await apiClient.get(`/operator/tenants/${tenantId}/users`);
+    return response.data;
+  },
+
+  // 요청 생성 (수동 등록)
+  createRequest: async (dto: any, files?: File[]): Promise<ServiceRequest> => {
+    const formData = new FormData();
+    formData.append('request', new Blob([JSON.stringify(dto)], { type: 'application/json' }));
+    if (files) {
+      files.forEach(file => formData.append('files', file));
+    }
+    const response = await apiClient.post<ServiceRequest>('/requests', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    return response.data;
+  },
+
+  // 요청 수정
+  updateRequest: async (id: number, dto: any, files?: File[]): Promise<void> => {
+    const formData = new FormData();
+    formData.append('request', new Blob([JSON.stringify(dto)], { type: 'application/json' }));
+    if (files) {
+      files.forEach(file => formData.append('files', file));
+    }
+    await apiClient.put(`/requests/${id}`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  },
+
+  // 요청 삭제
+  deleteRequest: async (id: number): Promise<void> => {
+    await apiClient.delete(`/requests/${id}`);
+  },
+
+  // 첨부 파일 다운로드
+  downloadAttachment: async (id: number, fileName: string): Promise<void> => {
+    const response = await apiClient.get(`/requests/attachments/${id}`, {
+      responseType: 'blob'
+    });
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', fileName);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
   }
 };

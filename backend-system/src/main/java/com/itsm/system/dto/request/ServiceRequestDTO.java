@@ -22,6 +22,18 @@ public class ServiceRequestDTO {
         private ServiceRequestPriority priority;
         private Long catalogId;
         private String dynamicFields;
+        private String targetTenantId; // 운영자용: 대상 고객사
+        private Long requesterId;      // 운영자용: 대행 신청자 (선택)
+    }
+
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class Update {
+        private String title;
+        private String description;
+        private ServiceRequestPriority priority;
     }
 
     @Getter

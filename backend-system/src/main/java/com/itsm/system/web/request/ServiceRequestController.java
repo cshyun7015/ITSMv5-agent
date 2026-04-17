@@ -26,17 +26,23 @@ public class ServiceRequestController {
             @RequestPart("request") ServiceRequestDTO.Create dto,
             @RequestPart(value = "files", required = false) List<MultipartFile> files) {
         
-        ServiceRequest request = requestService.createDraft(
-                currentMember.getTenant(),
-                currentMember,
-                dto.getTitle(),
-                dto.getDescription(),
-                dto.getPriority(),
-                dto.getCatalogId(),
-                dto.getDynamicFields(),
-                files
-        );
+        ServiceRequest request = requestService.createDraft(currentMember, dto, files);
         return ResponseEntity.ok(convertToResponse(request));
+    }
+
+    @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<Void> updateRequest(
+            @PathVariable Long id,
+            @RequestPart("request") ServiceRequestDTO.Update dto,
+            @RequestPart(value = "files", required = false) List<MultipartFile> files) {
+        requestService.updateRequest(id, dto, files);
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteRequest(@PathVariable Long id) {
+        requestService.deleteRequest(id);
+        return ResponseEntity.ok().build();
     }
 
     @GetMapping("/attachments/{attachmentId}")
