@@ -10,9 +10,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.IntStream;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @RequiredArgsConstructor
@@ -20,12 +22,15 @@ public class ServiceRequestService {
 
     private final ServiceRequestRepository requestRepository;
     private final ServiceRequestApprovalRepository approvalRepository;
+    private final ServiceRequestAttachmentRepository attachmentRepository;
     private final MemberRepository memberRepository;
     private final ServiceCatalogRepository serviceCatalogRepository;
     private final SlaService slaService;
 
     @Transactional
-    public ServiceRequest createDraft(Tenant tenant, Member requester, String title, String description, ServiceRequestPriority priority, Long catalogId, String dynamicFields) {
+    public ServiceRequest createDraft(Tenant tenant, Member requester, String title, String description, 
+                                     ServiceRequestPriority priority, Long catalogId, String dynamicFields, 
+                                     List<MultipartFile> files) {
         ServiceCatalog catalog = null;
         if (catalogId != null) {
             catalog = serviceCatalogRepository.findById(catalogId)
@@ -42,7 +47,29 @@ public class ServiceRequestService {
                 .dynamicFields(dynamicFields)
                 .status(ServiceRequestStatus.DRAFT)
                 .build();
-        return requestRepository.save(request);
+        
+        ServiceRequest savedRequest = requestRepository.save(request);
+
+        if (files != null && !files.isEmpty()) {
+            List<ServiceRequestAttachment> attachments = files.stream()
+                    .map(file -> {
+                        try {
+                            return ServiceRequestAttachment.builder()
+                                    .serviceRequest(savedRequest)
+                                    .fileName(file.getOriginalFilename())
+                                    .contentType(file.getContentType())
+                                    .fileSize(file.getSize())
+                                    .fileData(file.getBytes())
+                                    .build();
+                        } catch (IOException e) {
+                            throw new RuntimeException("Failed to read attachment data", e);
+                        }
+                    })
+                    .toList();
+            attachmentRepository.saveAll(attachments);
+        }
+
+        return savedRequest;
     }
 
     @Transactional
@@ -149,5 +176,11 @@ public class ServiceRequestService {
     public List<ServiceRequest> listAllRequests() {
         // 운영자용: 모든 테넌트의 요청을 조회
         return requestRepository.findAll();
+    }
+
+    @Transactional(readOnly = true)
+    public ServiceRequestAttachment getAttachment(Long attachmentId) {
+        return attachmentRepository.findById(attachmentId)
+                .orElseThrow(() -> new IllegalArgumentException("Attachment not found"));
     }
 }

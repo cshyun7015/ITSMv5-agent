@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { fulfillmentApi } from '../api/fulfillmentApi';
-import { ServiceRequest, ApprovalStep } from '../types';
+import apiClient from '../../../api/client';
+import { ServiceRequest, ApprovalStep, AttachmentInfo } from '../types';
 
 interface FulfillmentDetailProps {
   requestId: number;
@@ -103,7 +104,7 @@ const FulfillmentDetail: React.FC<FulfillmentDetailProps> = ({ requestId, onBack
           <section className="detail-sec">
             <h3>Approval Governance</h3>
             <div className="approval-track">
-              {approvals.map((step, idx) => (
+              {approvals.map((step: ApprovalStep, idx: number) => (
                 <div key={step.approvalId} className={`track-item ${step.status}`}>
                   <div className="track-line">
                     <div className="track-node"></div>
@@ -149,6 +150,23 @@ const FulfillmentDetail: React.FC<FulfillmentDetailProps> = ({ requestId, onBack
             <div className="meta-row"><span className="label">Timestamp</span><span className="value">{new Date(request.createdAt).toLocaleString()}</span></div>
             <div className="meta-row"><span className="label">Assignee</span><span className="value">{request.assigneeName || 'Requires Assignee'}</span></div>
           </div>
+
+          {request.attachments && request.attachments.length > 0 && (
+            <div className="meta-card">
+              <h3>Attachments ({request.attachments.length})</h3>
+              <div className="attachment-list">
+                {request.attachments.map((att: AttachmentInfo) => (
+                  <div key={att.id} className="att-item" onClick={() => window.open(`${apiClient.defaults.baseURL}/requests/attachments/${att.id}`, '_blank')}>
+                    <span className="att-icon">📎</span>
+                    <div className="att-info">
+                      <span className="att-name">{att.fileName}</span>
+                      <span className="att-size">{(att.fileSize / 1024).toFixed(1)} KB</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="action-hub">
             {request.status === 'OPEN' && (
@@ -217,6 +235,17 @@ const FulfillmentDetail: React.FC<FulfillmentDetailProps> = ({ requestId, onBack
         .meta-row .label { color: #94a3b8; }
         .meta-row .value { font-weight: 600; }
         .value.p-P1 { color: #ef4444; }
+
+        .attachment-list { display: flex; flex-direction: column; gap: 12px; }
+        .att-item { 
+          display: flex; gap: 12px; align-items: center; padding: 8px; 
+          background: rgba(0,0,0,0.2); border-radius: 8px; cursor: pointer; transition: all 0.2s;
+        }
+        .att-item:hover { background: rgba(59, 130, 246, 0.1); border-color: #3b82f6; }
+        .att-icon { font-size: 16px; }
+        .att-info { display: flex; flex-direction: column; gap: 2px; }
+        .att-name { font-size: 13px; font-weight: 600; color: #fff; line-break: anywhere; }
+        .att-size { font-size: 11px; color: #64748b; }
 
         .btn-primary, .btn-success, .btn-dark { width: 100%; padding: 14px; border-radius: 10px; font-weight: 700; border: none; cursor: pointer; transition: transform 0.1s; }
         .btn-primary { background: #3b82f6; color: #fff; }

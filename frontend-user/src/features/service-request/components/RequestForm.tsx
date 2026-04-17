@@ -28,13 +28,29 @@ const RequestForm: React.FC<RequestFormProps> = ({ catalogItem, onSubmit, onCanc
     e.preventDefault();
     if (!formData.title || !formData.description) return;
     
-    // Merge dynamic fields into DTO
-    const finalData = {
+    const formDataObj = new FormData();
+    
+    // Extract files from dynamic values
+    const dynamicData: Record<string, any> = {};
+    const files: File[] = [];
+    
+    Object.entries(dynamicValues).forEach(([key, value]) => {
+      if (value instanceof File) {
+        files.push(value);
+      } else {
+        dynamicData[key] = value;
+      }
+    });
+
+    const requestBody = {
       ...formData,
-      dynamicFields: JSON.stringify(dynamicValues)
+      dynamicFields: JSON.stringify(dynamicData)
     };
     
-    onSubmit(finalData);
+    formDataObj.append('request', new Blob([JSON.stringify(requestBody)], { type: 'application/json' }));
+    files.forEach(file => formDataObj.append('files', file));
+    
+    onSubmit(formDataObj as any); // Cast for type compatibility with existing onSubmit
   };
 
   return (

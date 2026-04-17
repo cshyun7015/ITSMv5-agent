@@ -4,7 +4,7 @@ import apiClient from '../../../api/client';
 interface FormField {
   id: string;
   label: string;
-  type: 'text' | 'number' | 'date' | 'select' | 'code-select';
+  type: 'text' | 'number' | 'date' | 'select' | 'code-select' | 'file';
   required: boolean;
   options?: string[];
   codeGroupId?: string;
@@ -89,6 +89,14 @@ const DynamicFormRenderer: React.FC<DynamicFormRendererProps> = ({ schema, value
                 ))}
               </select>
             )
+          ) : field.type === 'file' ? (
+            <input 
+              type="file"
+              onChange={e => onChange(field.id, e.target.files?.[0])}
+              required={field.required}
+              disabled={disabled}
+              className="file-input"
+            />
           ) : (
             <input 
               type={field.type}
@@ -112,6 +120,7 @@ const DynamicFormRenderer: React.FC<DynamicFormRendererProps> = ({ schema, value
           width: 100%; padding: 12px 16px; border: 1px solid #e2e8f0; border-radius: 8px; 
           font-size: 15px; outline: none; transition: border 0.2s;
         }
+        input.file-input { padding: 8px; border: 1px dashed #cbd5e1; background: #f8fafc; cursor: pointer; }
         input:focus, select:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
       `}</style>
     </div>

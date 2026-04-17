@@ -1,13 +1,16 @@
 package com.itsm.system.web.request;
 
 import com.itsm.system.domain.member.Member;
-import com.itsm.system.domain.request.ServiceRequest;
+import com.itsm.system.domain.request.*;
 import com.itsm.system.dto.request.ServiceRequestDTO;
 import com.itsm.system.service.request.ServiceRequestService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import java.util.List;
 
 @RestController
@@ -17,10 +20,11 @@ public class ServiceRequestController {
 
     private final ServiceRequestService requestService;
 
-    @PostMapping
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ServiceRequestDTO.Response> createDraft(
             @AuthenticationPrincipal Member currentMember,
-            @RequestBody ServiceRequestDTO.Create dto) {
+            @RequestPart("request") ServiceRequestDTO.Create dto,
+            @RequestPart(value = "files", required = false) List<MultipartFile> files) {
         
         ServiceRequest request = requestService.createDraft(
                 currentMember.getTenant(),
@@ -29,9 +33,19 @@ public class ServiceRequestController {
                 dto.getDescription(),
                 dto.getPriority(),
                 dto.getCatalogId(),
-                dto.getDynamicFields()
+                dto.getDynamicFields(),
+                files
         );
         return ResponseEntity.ok(convertToResponse(request));
+    }
+
+    @GetMapping("/attachments/{attachmentId}")
+    public ResponseEntity<byte[]> downloadAttachment(@PathVariable Long attachmentId) {
+        ServiceRequestAttachment attachment = requestService.getAttachment(attachmentId);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + attachment.getFileName() + "\"")
+                .contentType(MediaType.parseMediaType(attachment.getContentType() != null ? attachment.getContentType() : "application/octet-stream"))
+                .body(attachment.getFileData());
     }
 
     @PostMapping("/{id}/submit")
@@ -123,9 +137,15 @@ public class ServiceRequestController {
                 .assigneeName(request.getAssignee() != null ? request.getAssignee().getUsername() : null)
                 .resolution(request.getResolution())
                 .createdAt(request.getCreatedAt())
-                .catalogId(request.getCatalog() != null ? request.getCatalog().getId() : null)
                 .catalogName(request.getCatalog() != null ? request.getCatalog().getName() : null)
                 .dynamicFields(request.getDynamicFields())
+                .attachments(request.getAttachments().stream()
+                        .map(a -> ServiceRequestDTO.AttachmentInfo.builder()
+                                .id(a.getId())
+                                .fileName(a.getFileName())
+                                .fileSize(a.getFileSize())
+                                .build())
+                        .toList())
                 .build();
     }
 }

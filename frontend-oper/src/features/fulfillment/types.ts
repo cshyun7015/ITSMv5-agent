@@ -21,6 +21,13 @@ export interface ServiceRequest {
   resolution?: string;
   slaDeadline?: string;
   createdAt: string;
+  attachments?: AttachmentInfo[];
+}
+
+export interface AttachmentInfo {
+  id: number;
+  fileName: string;
+  fileSize: number;
 }
 
 export interface ApprovalStep {

@@ -60,6 +60,10 @@ public class ServiceRequest extends BaseEntity {
     @Builder.Default
     private List<ServiceRequestApproval> approvals = new ArrayList<>();
 
+    @OneToMany(mappedBy = "serviceRequest", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<ServiceRequestAttachment> attachments = new ArrayList<>();
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "catalog_id")
     private ServiceCatalog catalog;

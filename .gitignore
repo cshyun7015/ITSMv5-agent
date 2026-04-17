@@ -141,3 +141,5 @@ vite.config.ts.timestamp-*
 backend-system/.gradle/
 backend-system/build/
 backend-system/bin/
+e2e/test-results/
+e2e/playwright-report/

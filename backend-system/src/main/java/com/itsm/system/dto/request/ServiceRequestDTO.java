@@ -66,7 +66,19 @@ public class ServiceRequestDTO {
         private Long catalogId;
         private String catalogName;
         private String dynamicFields;
+        private List<AttachmentInfo> attachments;
     }
+
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class AttachmentInfo {
+        private Long id;
+        private String fileName;
+        private Long fileSize;
+    }
+
     @Getter
     @Builder
     @NoArgsConstructor

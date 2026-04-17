@@ -21,8 +21,9 @@ export const requestApi = {
   },
 
   // 임시 저장 (Draft)
-  createDraft: async (data: ServiceRequestDTO): Promise<ServiceRequest> => {
-    const response = await apiClient.post('/requests', data);
+  createDraft: async (data: ServiceRequestDTO | FormData): Promise<ServiceRequest> => {
+    const headers = data instanceof FormData ? { 'Content-Type': 'multipart/form-data' } : {};
+    const response = await apiClient.post('/requests', data, { headers });
     return response.data;
   },
 

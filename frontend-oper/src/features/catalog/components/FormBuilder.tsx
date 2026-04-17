@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 export interface FormField {
   id: string;
   label: string;
-  type: 'text' | 'number' | 'date' | 'select' | 'code-select';
+  type: 'text' | 'number' | 'date' | 'select' | 'code-select' | 'file';
   required: boolean;
   options?: string[];
   codeGroupId?: string;
@@ -90,6 +90,7 @@ const FormBuilder: React.FC<FormBuilderProps> = ({ onSave, onCancel, initialSche
                     <option value="number">Numeric</option>
                     <option value="date">Date Picker</option>
                     <option value="select">Dropdown</option>
+                    <option value="file">File Attachment</option>
                   </select>
                 </div>
                 <div className="checkbox-group">
@@ -163,6 +164,11 @@ const FormBuilder: React.FC<FormBuilderProps> = ({ onSave, onCancel, initialSche
                     <option>{field.codeGroupId ? `[Linked to ${field.codeGroupId}]` : 'Select an option...'}</option>
                     {!field.codeGroupId && field.options?.map(o => <option key={o}>{o}</option>)}
                   </select>
+                ) : field.type === 'file' ? (
+                  <div className="preview-file-box">
+                    <input type="file" disabled />
+                    <span className="file-hint">Select a file to attach...</span>
+                  </div>
                 ) : (
                   <input type={field.type} disabled className="preview-input" placeholder={`Enter ${field.label.toLowerCase()}...`} />
                 )}
@@ -213,6 +219,11 @@ const FormBuilder: React.FC<FormBuilderProps> = ({ onSave, onCancel, initialSche
         .preview-field label { display: block; font-size: 13px; margin-bottom: 6px; color: #94a3b8; }
         .preview-field .req { color: #ef4444; margin-left: 2px; }
         .preview-input { width: 100%; padding: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: #64748b; font-size: 13px; }
+        .preview-file-box { 
+          display: flex; flex-direction: column; gap: 8px; padding: 12px; 
+          background: rgba(255,255,255,0.02); border: 1px dashed rgba(255,255,255,0.1); border-radius: 8px; 
+        }
+        .file-hint { font-size: 11px; color: #475569; }
         
         .builder-footer { margin-top: auto; display: flex; justify-content: flex-end; gap: 12px; pt: 24px; border-top: 1px solid rgba(255,255,255,0.05); flex-shrink: 0; background: inherit; }
         .cancel-btn { background: transparent; border: 1px solid #334155; color: #94a3b8; padding: 12px 24px; border-radius: 8px; font-weight: 600; cursor: pointer; }
