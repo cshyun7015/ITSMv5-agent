@@ -22,9 +22,11 @@ interface RequestDetailProps {
   requestId: number;
   onBack: () => void;
   onRefresh: () => void;
+  onEdit: (request: ServiceRequest) => void;
+  onDelete: () => void;
 }
 
-const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, onBack, onRefresh }) => {
+const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, onBack, onRefresh, onEdit, onDelete }) => {
   const [request, setRequest] = useState<ServiceRequest | null>(null);
   const [approvals, setApprovals] = useState<ApprovalProgress[]>([]);
   const [potentialApprovers, setPotentialApprovers] = useState<Approver[]>([]);
@@ -69,21 +71,17 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, onBack, onRefr
     }
   };
 
-  const handleApprovalAction = async (approved: boolean) => {
-    const comment = prompt(approved ? 'Enter approval comment (optional):' : 'Enter rejection reason (required):');
-    if (!approved && !comment) return;
-
+  const handleDelete = async () => {
+    if (!window.confirm('Are you sure you want to permanently delete this request?')) return;
     try {
-      const myPendingStep = approvals.find(a => a.status === 'PENDING');
-      if (!myPendingStep) return;
-
-      await requestApi.processApproval(myPendingStep.approvalId, approved, comment || '');
-      loadData();
-      onRefresh();
+      await requestApi.deleteRequest(requestId);
+      onDelete();
     } catch (error) {
-      alert('Failed to process approval');
+      alert('Failed to delete request');
     }
   };
+
+  const isEditable = (status: string) => ['DRAFT', 'PENDING_APPROVAL', 'REJECTED'].includes(status);
 
   const getStatusBadge = (status: string) => {
     const configs: Record<string, { color: string, icon: any }> = {
@@ -205,11 +203,24 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, onBack, onRefr
           </div>
 
           <div className="action-panel">
-            {request.status === 'DRAFT' && (
-              <button className="btn-primary w-full shadow-hover" onClick={() => setShowSubmitModal(true)}>
+            {(request.status === 'DRAFT' || request.status === 'REJECTED') && (
+              <button className="btn-primary w-full shadow-hover" onClick={() => setShowSubmitModal(true)} style={{ marginBottom: '12px' }}>
                 <Send size={18} />
                 Submit for Approval
               </button>
+            )}
+
+            {isEditable(request.status) && (
+              <div className="edit-delete-group">
+                <button className="btn-secondary w-full" onClick={() => onEdit(request)}>
+                  <BookOpen size={18} />
+                  Edit Request
+                </button>
+                <button className="btn-danger-outline w-full" onClick={handleDelete} style={{ marginTop: '12px' }}>
+                  <XCircle size={18} />
+                  Delete Request
+                </button>
+              </div>
             )}
 
             {request.status === 'PENDING_APPROVAL' && (

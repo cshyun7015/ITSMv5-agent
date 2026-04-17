@@ -7,10 +7,7 @@ export interface ServiceCatalog {
   icon: string;
   jsonSchema: string;
   approvalRequired: boolean;
-  category: {
-    id: number;
-    name: string;
-  };
+  categoryCode: string;
 }
 
 export interface CatalogCategory {

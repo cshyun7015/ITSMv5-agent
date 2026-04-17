@@ -1,7 +1,6 @@
 package com.itsm.system.web.catalog;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.itsm.system.domain.catalog.CatalogCategory;
 import com.itsm.system.domain.catalog.CatalogCategoryRepository;
 import com.itsm.system.domain.catalog.ServiceCatalog;
 import com.itsm.system.domain.catalog.ServiceCatalogRepository;
@@ -101,11 +100,9 @@ class OperatorCatalogControllerTest {
         // given
         OperatorCatalogController.CatalogCreateRequest request = new OperatorCatalogController.CatalogCreateRequest();
         request.setName("New Template");
-        request.setCategoryId(1L);
+        request.setCategoryCode("CAT-01");
         request.setJsonSchema("{}");
 
-        CatalogCategory category = CatalogCategory.builder().id(1L).name("Cat1").build();
-        given(catalogCategoryRepository.findById(1L)).willReturn(Optional.of(category));
         given(serviceCatalogRepository.save(any(ServiceCatalog.class))).willAnswer(inv -> inv.getArgument(0));
 
         // when & then

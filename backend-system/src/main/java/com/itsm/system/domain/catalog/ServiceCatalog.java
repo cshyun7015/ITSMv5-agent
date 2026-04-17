@@ -31,6 +31,9 @@ public class ServiceCatalog {
     @JoinColumn(name = "category_id")
     private CatalogCategory category;
 
+    @Column(name = "category_code", length = 50)
+    private String categoryCode;
+
     @Lob
     @Column(name = "json_schema", columnDefinition = "LONGTEXT")
     private String jsonSchema;
@@ -49,12 +52,12 @@ public class ServiceCatalog {
     @Column(name = "template_source_id")
     private Long templateSourceId;
 
-    public void update(String name, String description, String icon, String jsonSchema, boolean approvalRequired, CatalogCategory category) {
+    public void update(String name, String description, String icon, String jsonSchema, boolean approvalRequired, String categoryCode) {
         this.name = name;
         this.description = description;
         this.icon = icon;
         this.jsonSchema = jsonSchema;
         this.approvalRequired = approvalRequired;
-        this.category = category;
+        this.categoryCode = categoryCode;
     }
 }

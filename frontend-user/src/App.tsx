@@ -32,9 +32,10 @@ import './styles/global.css';
  */
 const ServicePortal: React.FC = () => {
   const { user, logout } = useAuth();
-  const [view, setView] = React.useState<'dashboard' | 'catalog' | 'list' | 'create' | 'detail' | 'approvals'>('dashboard');
+  const [view, setView] = React.useState<'dashboard' | 'catalog' | 'list' | 'create' | 'detail' | 'approvals' | 'edit'>('dashboard');
   const [selectedRequestId, setSelectedRequestId] = React.useState<number | null>(null);
   const [selectedCatalogItem, setSelectedCatalogItem] = React.useState<CatalogItem | null>(null);
+  const [editingRequest, setEditingRequest] = React.useState<ServiceRequest | null>(null);
   const [requests, setRequests] = React.useState<ServiceRequest[]>([]);
   const [isLoading, setIsLoading] = React.useState(false);
 
@@ -56,7 +57,7 @@ const ServicePortal: React.FC = () => {
     }
   };
 
-  const handleCreateDraft = async (data: ServiceRequestDTO) => {
+  const handleCreateDraft = async (data: any) => {
     setIsLoading(true);
     try {
       await requestApi.createDraft(data);
@@ -69,6 +70,25 @@ const ServicePortal: React.FC = () => {
     }
   };
 
+  const handleUpdateDraft = async (data: any) => {
+    if (!selectedRequestId) return;
+    setIsLoading(true);
+    try {
+      await requestApi.updateRequest(selectedRequestId, data);
+      await loadRequests();
+      setView('detail');
+    } catch (error) {
+      alert('Failed to update request');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteRequest = () => {
+    loadRequests();
+    setView('list');
+  };
+
   const handleSelectRequest = (id: number) => {
     setSelectedRequestId(id);
     setView('detail');
@@ -76,7 +96,22 @@ const ServicePortal: React.FC = () => {
 
   const handleSelectCatalogItem = (item: CatalogItem) => {
     setSelectedCatalogItem(item);
+    setEditingRequest(null);
     setView('create');
+  };
+
+  const handleManualCreate = () => {
+    setSelectedCatalogItem(null);
+    setEditingRequest(null);
+    setView('create');
+  };
+
+  const handleEditRequest = (request: ServiceRequest) => {
+    setEditingRequest(request);
+    // If it's a catalog-based request, we should ideally fetch the catalog item, 
+    // but for now we'll support basic field editing.
+    setSelectedCatalogItem(null); 
+    setView('edit');
   };
 
   return (
@@ -152,7 +187,7 @@ const ServicePortal: React.FC = () => {
           <RequestList 
             requests={requests} 
             onSelect={handleSelectRequest} 
-            onCreate={() => setView('catalog')} 
+            onCreate={(catalogMode) => catalogMode ? setView('catalog') : handleManualCreate()} 
           />
         )}
 
@@ -160,11 +195,12 @@ const ServicePortal: React.FC = () => {
           <CatalogBrowser onSelectItem={handleSelectCatalogItem} />
         )}
 
-        {view === 'create' && selectedCatalogItem && (
+        {(view === 'create' || view === 'edit') && (
           <RequestForm 
             catalogItem={selectedCatalogItem}
-            onSubmit={handleCreateDraft} 
-            onCancel={() => setView('catalog')} 
+            initialData={editingRequest}
+            onSubmit={view === 'edit' ? handleUpdateDraft : handleCreateDraft} 
+            onCancel={() => view === 'edit' ? setView('detail') : (selectedCatalogItem ? setView('catalog') : setView('list'))} 
             isLoading={isLoading}
           />
         )}
@@ -174,6 +210,8 @@ const ServicePortal: React.FC = () => {
             requestId={selectedRequestId} 
             onBack={() => setView('list')}
             onRefresh={loadRequests}
+            onEdit={handleEditRequest}
+            onDelete={handleDeleteRequest}
           />
         )}
 

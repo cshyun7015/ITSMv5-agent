@@ -35,5 +35,17 @@ export const requestApi = {
   // 결재 처리 (승인/반려)
   processApproval: async (approvalId: number, approved: boolean, comment: string) => {
     await apiClient.post(`/requests/approvals/${approvalId}`, { approved, comment });
+  },
+
+  // 요청 수정
+  updateRequest: async (requestId: number, data: FormData): Promise<void> => {
+    await apiClient.put(`/requests/${requestId}`, data, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  },
+
+  // 요청 삭제
+  deleteRequest: async (requestId: number): Promise<void> => {
+    await apiClient.delete(`/requests/${requestId}`);
   }
 };

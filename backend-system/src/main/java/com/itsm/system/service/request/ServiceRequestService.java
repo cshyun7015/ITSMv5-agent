@@ -231,8 +231,20 @@ public class ServiceRequestService {
     }
 
     @Transactional
-    public void updateRequest(Long requestId, ServiceRequestDTO.Update dto, List<MultipartFile> files) {
+    public void updateRequest(Long requestId, Member currentMember, ServiceRequestDTO.Update dto, List<MultipartFile> files) {
         ServiceRequest request = getRequest(requestId);
+
+        // 보안 검증: 운영자가 아닌 사용자는 OPEN 이후 상태의 요청을 수정할 수 없음
+        boolean isStaff = currentMember.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_OPERATOR") || a.getAuthority().equals("ROLE_ADMIN"));
+
+        if (!isStaff) {
+            ServiceRequestStatus s = request.getStatus();
+            if (s == ServiceRequestStatus.OPEN || s == ServiceRequestStatus.IN_PROGRESS || 
+                s == ServiceRequestStatus.RESOLVED || s == ServiceRequestStatus.CLOSED) {
+                throw new IllegalStateException("접수 완료된 요청은 수정할 수 없습니다.");
+            }
+        }
         
         request.setTitle(dto.getTitle());
         request.setDescription(dto.getDescription());
@@ -269,8 +281,21 @@ public class ServiceRequestService {
     }
 
     @Transactional
-    public void deleteRequest(Long requestId) {
+    public void deleteRequest(Long requestId, Member currentMember) {
         ServiceRequest request = getRequest(requestId);
+
+        // 보안 검증: 운영자가 아닌 사용자는 OPEN 이후 상태의 요청을 삭제할 수 없음
+        boolean isStaff = currentMember.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_OPERATOR") || a.getAuthority().equals("ROLE_ADMIN"));
+
+        if (!isStaff) {
+            ServiceRequestStatus s = request.getStatus();
+            if (s == ServiceRequestStatus.OPEN || s == ServiceRequestStatus.IN_PROGRESS || 
+                s == ServiceRequestStatus.RESOLVED || s == ServiceRequestStatus.CLOSED) {
+                throw new IllegalStateException("접수 완료된 요청은 삭제할 수 없습니다.");
+            }
+        }
+
         request.setIsDeleted(true);
         requestRepository.save(request);
     }

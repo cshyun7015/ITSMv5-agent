@@ -32,16 +32,19 @@ public class ServiceRequestController {
 
     @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Void> updateRequest(
+            @AuthenticationPrincipal Member currentMember,
             @PathVariable Long id,
             @RequestPart("request") ServiceRequestDTO.Update dto,
             @RequestPart(value = "files", required = false) List<MultipartFile> files) {
-        requestService.updateRequest(id, dto, files);
+        requestService.updateRequest(id, currentMember, dto, files);
         return ResponseEntity.ok().build();
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteRequest(@PathVariable Long id) {
-        requestService.deleteRequest(id);
+    public ResponseEntity<Void> deleteRequest(
+            @AuthenticationPrincipal Member currentMember,
+            @PathVariable Long id) {
+        requestService.deleteRequest(id, currentMember);
         return ResponseEntity.ok().build();
     }
 

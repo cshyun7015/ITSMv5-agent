@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { catalogApi, ServiceCatalog, CatalogCategory } from '../api/catalogApi';
+import { catalogApi, ServiceCatalog } from '../api/catalogApi';
 import { fulfillmentApi } from '../../fulfillment/api/fulfillmentApi';
+import { CodeDTO } from '../../fulfillment/types';
 import FormBuilder from './FormBuilder';
+import ToastNotification from '../../../components/common/ToastNotification';
+import ConfirmDialog from '../../../components/common/ConfirmDialog';
  
 interface Tenant {
   tenantId: string;
@@ -10,14 +13,23 @@ interface Tenant {
 
 const CatalogManagement: React.FC = () => {
   const [templates, setTemplates] = useState<ServiceCatalog[]>([]);
-  const [categories, setCategories] = useState<CatalogCategory[]>([]);
+  const [categories, setCategories] = useState<CodeDTO[]>([]);
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeView, setActiveView] = useState<'TEMPLATES' | 'CATEGORIES'>('TEMPLATES');
+  const [activeView, setActiveView] = useState<'TEMPLATES'>('TEMPLATES');
   
   const [isDeploying, setIsDeploying] = useState<number | null>(null);
   const [selectedTenants, setSelectedTenants] = useState<string[]>([]);
   
+  // Custom Popup States
+  const [toast, setToast] = useState<{ message: string, type: 'success' | 'error' | 'info' | null }>({ message: '', type: null });
+  const [confirmState, setConfirmState] = useState<{ isOpen: boolean, title: string, message: string, onConfirm: () => void }>({
+    isOpen: false, title: '', message: '', onConfirm: () => {}
+  });
+
+  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
+    setToast({ message, type });
+  };
   // Service Template State
   const [editingTemplate, setEditingTemplate] = useState<ServiceCatalog | null>(null);
   const [isCreating, setIsCreating] = useState(false);
@@ -25,17 +37,8 @@ const CatalogManagement: React.FC = () => {
     name: '',
     description: '',
     icon: '⚙️',
-    categoryId: 0,
+    categoryCode: '',
     approvalRequired: true
-  });
-
-  // Category State
-  const [editingCategory, setEditingCategory] = useState<CatalogCategory | null>(null);
-  const [isCreatingCategory, setIsCreatingCategory] = useState(false);
-  const [categoryForm, setCategoryForm] = useState({
-    name: '',
-    description: '',
-    icon: '📁'
   });
 
   useEffect(() => {
@@ -47,13 +50,13 @@ const CatalogManagement: React.FC = () => {
     try {
       const [tplData, catData, tenantData] = await Promise.all([
         catalogApi.getTemplates(),
-        catalogApi.getCategories(),
+        fulfillmentApi.getCodesByGroup('CATALOG_CATEGORY'),
         fulfillmentApi.getTenants()
       ]);
       setTemplates(tplData);
       setCategories(catData);
       setTenants(tenantData);
-      if (catData.length > 0) setServiceForm(prev => ({ ...prev, categoryId: catData[0].id }));
+      if (catData.length > 0) setServiceForm((prev: any) => ({ ...prev, categoryCode: catData[0].codeId }));
     } catch (error) {
       console.error('Failed to load catalog data', error);
     } finally {
@@ -68,7 +71,7 @@ const CatalogManagement: React.FC = () => {
       name: '',
       description: '',
       icon: '⚙️',
-      categoryId: categories.length > 0 ? categories[0].id : 0,
+      categoryCode: categories.length > 0 ? categories[0].codeId : '',
       approvalRequired: true
     });
     setEditingTemplate(null);
@@ -80,7 +83,7 @@ const CatalogManagement: React.FC = () => {
       name: tpl.name,
       description: tpl.description,
       icon: tpl.icon || '⚙️',
-      categoryId: tpl.category.id,
+      categoryCode: tpl.categoryCode,
       approvalRequired: tpl.approvalRequired
     });
     setEditingTemplate(tpl);
@@ -91,47 +94,56 @@ const CatalogManagement: React.FC = () => {
     try {
       if (editingTemplate) {
         await catalogApi.updateTemplate(editingTemplate.id, { ...serviceForm, jsonSchema: schema });
-        alert('Service template updated.');
+        showToast('Service template updated successfully.');
       } else {
         await catalogApi.createTemplate({ ...serviceForm, jsonSchema: schema });
-        alert('New service template registered.');
+        showToast('New service template has been registered.');
       }
       setIsCreating(false);
       loadData();
     } catch (error) {
-      alert('Failed to save service.');
+      showToast('Failed to save service template.', 'error');
     }
   };
 
-  const handleDeleteTemplate = async (id: number) => {
-    if (!window.confirm('Are you sure you want to delete this global template?')) return;
-    try {
-      await catalogApi.deleteTemplate(id);
-      loadData();
-    } catch (error) {
-      alert('Failed to delete template.');
-    }
+  const handleDeleteTemplate = (id: number) => {
+    setConfirmState({
+      isOpen: true,
+      title: 'Delete Template',
+      message: 'Are you sure you want to permanently delete this global service template? This action cannot be undone.',
+      onConfirm: async () => {
+        try {
+          await catalogApi.deleteTemplate(id);
+          showToast('Template deleted successfully.');
+          loadData();
+        } catch (error) {
+          showToast('Failed to delete template.', 'error');
+        } finally {
+          setConfirmState(prev => ({ ...prev, isOpen: false }));
+        }
+      }
+    });
   };
 
   const handleDeploy = async (templateId: number) => {
     if (selectedTenants.length === 0) {
-      alert('Please select at least one tenant.');
+      showToast('Please select at least one target tenant.', 'info');
       return;
     }
     try {
       await catalogApi.deployToTenants(templateId, selectedTenants);
-      alert(`Service deployed successfully to ${selectedTenants.length} tenants.`);
+      showToast(`Successfully deployed to ${selectedTenants.length} tenants.`);
       setIsDeploying(null);
       setSelectedTenants([]);
     } catch (error) {
-      alert('Deployment failed.');
+      showToast('Service deployment failed.', 'error');
     }
   };
 
   const toggleTenant = (tenantId: string) => {
-    setSelectedTenants(prev => 
+    setSelectedTenants((prev: string[]) => 
       prev.includes(tenantId) 
-        ? prev.filter(id => id !== tenantId) 
+        ? prev.filter((id: string) => id !== tenantId) 
         : [...prev, tenantId]
     );
   };
@@ -140,57 +152,15 @@ const CatalogManagement: React.FC = () => {
     if (selectedTenants.length === tenants.length) {
       setSelectedTenants([]);
     } else {
-      setSelectedTenants(tenants.map(t => t.tenantId));
-    }
-  };
-
-  // --- Category Handlers ---
-
-  const handleCreateCategory = () => {
-    setCategoryForm({ name: '', description: '', icon: '📁' });
-    setEditingCategory(null);
-    setIsCreatingCategory(true);
-  }
-
-  const handleEditCategory = (cat: CatalogCategory) => {
-    setCategoryForm({
-      name: cat.name,
-      description: cat.description || '',
-      icon: cat.icon || '📁'
-    });
-    setEditingCategory(cat);
-    setIsCreatingCategory(true);
-  };
-
-  const handleSaveCategory = async () => {
-    try {
-      if (editingCategory) {
-        await catalogApi.updateCategory(editingCategory.id, categoryForm);
-      } else {
-        await catalogApi.createCategory(categoryForm);
-      }
-      setIsCreatingCategory(false);
-      loadData();
-    } catch (error) {
-      alert('Failed to save category.');
-    }
-  };
-
-  const handleDeleteCategory = async (id: number) => {
-    if (!window.confirm('Delete this category? This will fail if there are services attached.')) return;
-    try {
-      await catalogApi.deleteCategory(id);
-      loadData();
-    } catch (error: any) {
-      if (error.response?.status === 409) {
-        alert('Cannot delete category: It still contains active services.');
-      } else {
-        alert('Failed to delete category.');
-      }
+      setSelectedTenants(tenants.map((t: Tenant) => t.tenantId));
     }
   };
 
   if (isLoading) return <div className="loading">Syncing Catalog Infrastructure...</div>;
+
+  const getCategoryName = (codeId: string) => {
+    return categories.find((c: CodeDTO) => c.codeId === codeId)?.codeName || codeId;
+  };
 
   return (
     <div className="catalog-management">
@@ -198,20 +168,6 @@ const CatalogManagement: React.FC = () => {
         <div className="title-area">
           <h2>Catalog & Template Governance</h2>
           <p>Global service catalog management for multi-tenant deployment</p>
-        </div>
-        <div className="view-switcher">
-          <button 
-            className={`switch-btn ${activeView === 'TEMPLATES' ? 'active' : ''}`}
-            onClick={() => setActiveView('TEMPLATES')}
-          >
-            Template Library
-          </button>
-          <button 
-            className={`switch-btn ${activeView === 'CATEGORIES' ? 'active' : ''}`}
-            onClick={() => setActiveView('CATEGORIES')}
-          >
-            Category Master
-          </button>
         </div>
       </div>
 
@@ -229,8 +185,8 @@ const CatalogManagement: React.FC = () => {
                   </div>
                   <div className="input-group">
                     <label>Category</label>
-                    <select value={serviceForm.categoryId} onChange={e => setServiceForm({...serviceForm, categoryId: parseInt(e.target.value)})}>
-                      {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    <select value={serviceForm.categoryCode} onChange={e => setServiceForm({...serviceForm, categoryCode: e.target.value})}>
+                      {categories.map((c: CodeDTO) => <option key={c.codeId} value={c.codeId}>{c.codeName}</option>)}
                     </select>
                   </div>
                 </div>
@@ -244,48 +200,18 @@ const CatalogManagement: React.FC = () => {
           </div>
         )}
 
-        {/* Category Modal */}
-        {isCreatingCategory && (
-          <div className="modal-overlay">
-            <div className="modal-content glass-panel small-modal">
-               <div className="modal-header">
-                 <h2>{editingCategory ? 'Edit Category' : 'Create Global Category'}</h2>
-               </div>
-               <div className="category-form">
-                 <div className="input-group">
-                    <label>Icon (Emoji)</label>
-                    <input value={categoryForm.icon} onChange={e => setCategoryForm({...categoryForm, icon: e.target.value})} maxLength={2} />
-                 </div>
-                 <div className="input-group">
-                    <label>Category Name</label>
-                    <input value={categoryForm.name} onChange={e => setCategoryForm({...categoryForm, name: e.target.value})} />
-                 </div>
-                 <div className="input-group">
-                    <label>Description</label>
-                    <textarea value={categoryForm.description} onChange={e => setCategoryForm({...categoryForm, description: e.target.value})} />
-                 </div>
-               </div>
-               <div className="modal-footer">
-                  <button className="cancel-btn" onClick={() => setIsCreatingCategory(false)}>Cancel</button>
-                  <button className="confirm-btn" onClick={handleSaveCategory} data-testid="save-category-btn">Save Category</button>
-               </div>
-            </div>
-          </div>
-        )}
-
-        {activeView === 'TEMPLATES' ? (
-          <div className="template-grid">
+        <div className="template-grid">
             <div className="add-card action-card" onClick={handleCreateTemplate} data-testid="add-template-card">
               <div className="icon">+</div>
               <h3>Define New Service</h3>
               <p>Create a global template with dynamic form logic</p>
             </div>
             
-            {templates.map(tpl => (
+            {templates.map((tpl: ServiceCatalog) => (
               <div key={tpl.id} className="template-card glass-panel">
                 <div className="card-top">
                   <div className="icon-box">{tpl.icon || '🛠️'}</div>
-                  <span className="category-tag">{tpl.category.name}</span>
+                  <span className="category-tag">{getCategoryName(tpl.categoryCode)}</span>
                 </div>
                 <h3>{tpl.name}</h3>
                 <p>{tpl.description}</p>
@@ -310,7 +236,7 @@ const CatalogManagement: React.FC = () => {
                         </button>
                       </div>
                       <div className="tenant-list-scroll">
-                        {tenants.map(t => (
+                        {tenants.map((t: Tenant) => (
                           <label key={t.tenantId} className="tenant-checkbox-item">
                             <input 
                               type="checkbox" 
@@ -334,30 +260,22 @@ const CatalogManagement: React.FC = () => {
               </div>
             ))}
           </div>
-        ) : (
-          <div className="category-section">
-             <div className="section-header">
-                <h3>Global Categories</h3>
-                <button className="add-btn" onClick={handleCreateCategory} data-testid="create-category-btn">+ Create Category</button>
-             </div>
-             <div className="category-list">
-                {categories.map(cat => (
-                  <div key={cat.id} className="category-item glass-panel">
-                    <div className="cat-icon">{cat.icon || '📁'}</div>
-                    <div className="cat-info">
-                      <strong>{cat.name}</strong>
-                      <span>{cat.description || 'No description'}</span>
-                    </div>
-                    <div className="cat-actions">
-                      <button className="edit-btn" onClick={() => handleEditCategory(cat)}>Edit</button>
-                      <button className="delete-btn-sm" onClick={() => handleDeleteCategory(cat.id)}>Delete</button>
-                    </div>
-                  </div>
-                ))}
-             </div>
-          </div>
-        )}
       </main>
+
+      {/* Custom Feedback UI */}
+      <ToastNotification 
+        message={toast.message} 
+        type={toast.type} 
+        onClose={() => setToast({ message: '', type: null })} 
+      />
+      
+      <ConfirmDialog 
+        isOpen={confirmState.isOpen}
+        title={confirmState.title}
+        message={confirmState.message}
+        onConfirm={confirmState.onConfirm}
+        onCancel={() => setConfirmState(prev => ({ ...prev, isOpen: false }))}
+      />
 
       <style>{`
         .catalog-management { color: #f1f5f9; animation: fadeIn 0.4s ease; min-height: 80vh; }

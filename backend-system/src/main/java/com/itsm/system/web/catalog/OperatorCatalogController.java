@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,6 +20,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/operator/catalog")
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class OperatorCatalogController {
 
     private final ServiceCatalogRepository serviceCatalogRepository;
@@ -26,9 +28,15 @@ public class OperatorCatalogController {
     private final CatalogDeploymentService catalogDeploymentService;
     private final TenantRepository tenantRepository;
 
+    private boolean isCustomerTenant(Member member) {
+        return tenantRepository.findById(member.getTenant().getTenantId())
+                .map(t -> "CUSTOMER".equals(t.getType()))
+                .orElse(true); // 테넌트 정보가 없으면 안전하게 CUSTOMER로 간주 (접근 차단)
+    }
+
     @GetMapping("/templates")
     public ResponseEntity<List<ServiceCatalog>> getTemplates(@AuthenticationPrincipal Member currentMember) {
-        if (!"MSP_CORE".equals(currentMember.getTenant().getTenantId())) {
+        if (isCustomerTenant(currentMember)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
         return ResponseEntity.ok(serviceCatalogRepository.findAllByIsTemplateTrue());
@@ -39,12 +47,9 @@ public class OperatorCatalogController {
             @AuthenticationPrincipal Member currentMember,
             @RequestBody CatalogCreateRequest request) {
         
-        if (!"MSP_CORE".equals(currentMember.getTenant().getTenantId())) {
+        if (isCustomerTenant(currentMember)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
-
-        CatalogCategory category = catalogCategoryRepository.findById(request.getCategoryId())
-                .orElseThrow(() -> new IllegalArgumentException("Category not found"));
 
         ServiceCatalog template = ServiceCatalog.builder()
                 .name(request.getName())
@@ -52,7 +57,7 @@ public class OperatorCatalogController {
                 .icon(request.getIcon())
                 .jsonSchema(request.getJsonSchema())
                 .approvalRequired(request.isApprovalRequired())
-                .category(category)
+                .categoryCode(request.getCategoryCode())
                 .tenant(currentMember.getTenant())
                 .isTemplate(true)
                 .build();
@@ -66,7 +71,7 @@ public class OperatorCatalogController {
             @PathVariable Long id,
             @RequestBody CatalogCreateRequest request) {
 
-        if (!"MSP_CORE".equals(currentMember.getTenant().getTenantId())) {
+        if (isCustomerTenant(currentMember)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
@@ -77,10 +82,7 @@ public class OperatorCatalogController {
             throw new IllegalArgumentException("Target is not a template");
         }
 
-        CatalogCategory category = catalogCategoryRepository.findById(request.getCategoryId())
-                .orElseThrow(() -> new IllegalArgumentException("Category not found"));
-
-        template.update(request.getName(), request.getDescription(), request.getIcon(), request.getJsonSchema(), request.isApprovalRequired(), category);
+        template.update(request.getName(), request.getDescription(), request.getIcon(), request.getJsonSchema(), request.isApprovalRequired(), request.getCategoryCode());
         
         return ResponseEntity.ok(serviceCatalogRepository.save(template));
     }
@@ -90,7 +92,7 @@ public class OperatorCatalogController {
             @AuthenticationPrincipal Member currentMember,
             @PathVariable Long id) {
 
-        if (!"MSP_CORE".equals(currentMember.getTenant().getTenantId())) {
+        if (isCustomerTenant(currentMember)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
@@ -110,7 +112,7 @@ public class OperatorCatalogController {
             @AuthenticationPrincipal Member currentMember,
             @RequestBody DeployRequest request) {
         
-        if (!"MSP_CORE".equals(currentMember.getTenant().getTenantId())) {
+        if (isCustomerTenant(currentMember)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
@@ -137,7 +139,7 @@ public class OperatorCatalogController {
                 .description(request.getDescription())
                 .icon(request.getIcon())
                 .tenant(currentMember.getTenant())
-                .isTemplate("MSP_CORE".equals(currentMember.getTenant().getTenantId()))
+                .isTemplate(!isCustomerTenant(currentMember))
                 .build();
 
         return ResponseEntity.ok(catalogCategoryRepository.save(category));
@@ -152,8 +154,8 @@ public class OperatorCatalogController {
         CatalogCategory category = catalogCategoryRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Category not found"));
 
-        // Only MSP can edit global templates categories
-        if (category.isTemplate() && !"MSP_CORE".equals(currentMember.getTenant().getTenantId())) {
+        // Only MSP/Operator can edit global templates categories
+        if (category.isTemplate() && isCustomerTenant(currentMember)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
@@ -169,7 +171,7 @@ public class OperatorCatalogController {
         CatalogCategory category = catalogCategoryRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Category not found"));
 
-        if (category.isTemplate() && !"MSP_CORE".equals(currentMember.getTenant().getTenantId())) {
+        if (category.isTemplate() && isCustomerTenant(currentMember)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
@@ -189,7 +191,7 @@ public class OperatorCatalogController {
         private String icon;
         private String jsonSchema;
         private boolean approvalRequired;
-        private Long categoryId;
+        private String categoryCode;
     }
 
     @lombok.Data

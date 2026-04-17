@@ -5,10 +5,11 @@ import { Plus, Calendar, AlertCircle, Clock, CheckCircle2, XCircle, Search, Chev
 interface RequestListProps {
   requests: ServiceRequest[];
   onSelect: (requestId: number) => void;
-  onCreate: () => void;
+  onCreate: (catalogMode: boolean) => void;
 }
 
 const RequestList: React.FC<RequestListProps> = ({ requests, onSelect, onCreate }) => {
+  const isEditable = (status: string) => ['DRAFT', 'PENDING_APPROVAL', 'REJECTED'].includes(status);
   const getStatusBadge = (status: string) => {
     const configs: Record<string, { color: string, icon: any }> = {
       'DRAFT': { color: '#64748b', icon: <Clock size={12} /> },
@@ -54,10 +55,16 @@ const RequestList: React.FC<RequestListProps> = ({ requests, onSelect, onCreate 
           <h2>Active Requests</h2>
           <p>Track the progress and manage your submitted IT service tickets</p>
         </div>
-        <button className="btn-primary" onClick={onCreate}>
-          <Plus size={18} />
-          New Request
-        </button>
+        <div className="header-actions">
+          <button className="btn-secondary" onClick={() => onCreate(false)}>
+            <Plus size={18} />
+            Manual Request
+          </button>
+          <button className="btn-primary" onClick={() => onCreate(true)}>
+            <BookOpen size={18} />
+            Catalog Request
+          </button>
+        </div>
       </div>
 
       {requests.length === 0 ? (
@@ -73,7 +80,10 @@ const RequestList: React.FC<RequestListProps> = ({ requests, onSelect, onCreate 
             <div key={req.requestId} className="request-card premium-card" onClick={() => onSelect(req.requestId)}>
               <div className="card-top">
                 <span className="request-id">REQ-{req.requestId}</span>
-                {getStatusBadge(req.status)}
+                <div className="card-status-group">
+                  {isEditable(req.status) && <span className="editable-tag" title="Edit/Delete Available">🛠️</span>}
+                  {getStatusBadge(req.status)}
+                </div>
               </div>
               <h3 className="card-title">{req.title}</h3>
               <div className="card-footer-meta">
@@ -134,6 +144,11 @@ const RequestList: React.FC<RequestListProps> = ({ requests, onSelect, onCreate 
         .empty-icon { color: var(--color-border); margin-bottom: 8px; }
         .empty-state h3 { margin: 0; color: var(--color-text-main); font-size: 20px; font-weight: 700; }
         .empty-state p { margin: 0; color: var(--color-text-dim); }
+
+        .header-actions { display: flex; gap: 12px; }
+        
+        .card-status-group { display: flex; align-items: center; gap: 8px; }
+        .editable-tag { font-size: 14px; opacity: 0.6; }
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
       `}</style>

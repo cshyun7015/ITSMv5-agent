@@ -5,21 +5,25 @@ import DynamicFormRenderer from '../../service-catalog/components/DynamicFormRen
 import { Send, ArrowLeft, AlertCircle, Clock, CheckCircle, Info } from 'lucide-react';
 
 interface RequestFormProps {
-  catalogItem: CatalogItem;
-  onSubmit: (data: ServiceRequestDTO) => void;
+  catalogItem?: CatalogItem | null;
+  initialData?: ServiceRequest | null;
+  onSubmit: (data: any) => void;
   onCancel: () => void;
   isLoading: boolean;
 }
 
-const RequestForm: React.FC<RequestFormProps> = ({ catalogItem, onSubmit, onCancel, isLoading }) => {
+const RequestForm: React.FC<RequestFormProps> = ({ catalogItem, initialData, onSubmit, onCancel, isLoading }) => {
+  const isEdit = !!initialData;
   const [formData, setFormData] = useState<ServiceRequestDTO>({
-    title: `[${catalogItem.categoryName}] ${catalogItem.name}`,
-    description: '',
-    priority: 'NORMAL',
-    catalogId: catalogItem.id
+    title: initialData?.title || (catalogItem ? `[${catalogItem.categoryName}] ${catalogItem.name}` : ''),
+    description: initialData?.description || '',
+    priority: (initialData?.priority as ServiceRequestPriority) || 'NORMAL',
+    catalogId: catalogItem?.id || undefined
   });
 
-  const [dynamicValues, setDynamicValues] = useState<Record<string, any>>({});
+  const [dynamicValues, setDynamicValues] = useState<Record<string, any>>(
+    initialData?.dynamicFields ? JSON.parse(initialData.dynamicFields) : {}
+  );
 
   const handleDynamicChange = (id: string, value: any) => {
     setDynamicValues(prev => ({ ...prev, [id]: value }));
@@ -59,12 +63,12 @@ const RequestForm: React.FC<RequestFormProps> = ({ catalogItem, onSubmit, onCanc
       <div className="form-header">
         <button className="back-btn" onClick={onCancel} disabled={isLoading}>
           <ArrowLeft size={18} />
-          Back to Catalog
+          {isEdit ? 'Back to Details' : 'Back to Selection'}
         </button>
         <div className="item-info">
-            <span className="cat-label">{catalogItem.categoryName}</span>
-            <h2>{catalogItem.name} Request</h2>
-            <p>{catalogItem.description}</p>
+            <span className="cat-label">{catalogItem?.categoryName || 'General'}</span>
+            <h2>{isEdit ? 'Update Request' : (catalogItem ? `${catalogItem.name} Request` : 'General Service Request')}</h2>
+            <p>{isEdit ? `Modifying REQ-${initialData.requestId}` : (catalogItem?.description || 'Submit a manual request for any IT service or inquiry.')}</p>
         </div>
       </div>
 
@@ -120,18 +124,20 @@ const RequestForm: React.FC<RequestFormProps> = ({ catalogItem, onSubmit, onCanc
             </div>
         </div>
 
-        <div className="form-section">
-            <div className="section-title">
-              <LayoutGrid size={16} />
-              <h3>Service Specific Details</h3>
-            </div>
-            <DynamicFormRenderer 
-                schema={catalogItem.jsonSchema} 
-                values={dynamicValues} 
-                onChange={handleDynamicChange}
-                disabled={isLoading}
-            />
-        </div>
+        {catalogItem?.jsonSchema && (
+          <div className="form-section">
+              <div className="section-title">
+                <LayoutGrid size={16} />
+                <h3>Service Specific Details</h3>
+              </div>
+              <DynamicFormRenderer 
+                  schema={catalogItem.jsonSchema} 
+                  values={dynamicValues} 
+                  onChange={handleDynamicChange}
+                  disabled={isLoading}
+              />
+          </div>
+        )}
 
         <div className="form-actions">
           <button type="button" className="btn-secondary" onClick={onCancel} disabled={isLoading}>Cancel</button>
@@ -139,12 +145,12 @@ const RequestForm: React.FC<RequestFormProps> = ({ catalogItem, onSubmit, onCanc
             {isLoading ? (
               <>
                 <div className="spinner-small" />
-                Submitting...
+                {isEdit ? 'Updating...' : 'Submitting...'}
               </>
             ) : (
               <>
                 <Send size={18} />
-                Submit Request
+                {isEdit ? 'Save Changes' : 'Submit Request'}
               </>
             )}
           </button>
