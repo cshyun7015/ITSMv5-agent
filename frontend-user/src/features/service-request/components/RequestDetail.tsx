@@ -15,7 +15,8 @@ import {
   FileText,
   UserCheck,
   Send,
-  Info
+  Info,
+  BookOpen
 } from 'lucide-react';
 
 interface RequestDetailProps {
@@ -68,6 +69,22 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, onBack, onRefr
       onRefresh();
     } catch (error) {
       alert('Failed to submit request');
+    }
+  };
+
+  const handleApprovalAction = async (approved: boolean) => {
+    const comment = prompt(approved ? 'Enter approval comment (optional):' : 'Enter rejection reason (required):');
+    if (!approved && !comment) return;
+
+    try {
+      const myPendingStep = approvals.find(a => a.status === 'PENDING');
+      if (!myPendingStep) return;
+
+      await requestApi.processApproval(myPendingStep.approvalId, approved, comment || '');
+      loadData();
+      onRefresh();
+    } catch (error) {
+      alert('Failed to process approval');
     }
   };
 
@@ -337,12 +354,6 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, onBack, onRefr
 
         .action-panel { margin-top: 32px; }
         .approval-button-group { display: flex; flex-direction: column; gap: 12px; }
-        .btn-danger-outline { 
-          display: flex; align-items: center; justify-content: center; gap: 8px;
-          background: #fff; border: 1px solid #ef4444; color: #ef4444; 
-          padding: 14px; border-radius: 10px; font-weight: 700; cursor: pointer; transition: var(--transition);
-        }
-        .btn-danger-outline:hover { background: #fef2f2; }
 
         .modal-overlay.glass-background { background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(4px); }
         .modal-content { padding: 40px; width: 500px; border-radius: var(--radius-xl); box-shadow: var(--shadow-premium); }

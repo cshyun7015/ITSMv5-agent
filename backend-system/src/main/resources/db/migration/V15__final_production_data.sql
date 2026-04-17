@@ -80,10 +80,14 @@ SET @oper2_id = LAST_INSERT_ID();
 -- User 1
 INSERT INTO members (tenant_id, team_id, username, password, email) VALUES ('ucomp1', @team_cust1, 'user1', @pwd, 'user1@cust.com');
 SET @user1_id = LAST_INSERT_ID();
+INSERT INTO members (tenant_id, team_id, username, password, email) VALUES ('ucomp1', @team_cust1, 'manager1', @pwd, 'manager1@cust.com');
+SET @manager1_id = LAST_INSERT_ID();
 
 -- User 2
 INSERT INTO members (tenant_id, team_id, username, password, email) VALUES ('ucomp2', @team_cust2, 'user2', @pwd, 'user2@cust.com');
 SET @user2_id = LAST_INSERT_ID();
+INSERT INTO members (tenant_id, team_id, username, password, email) VALUES ('ucomp2', @team_cust2, 'manager2', @pwd, 'manager2@cust.com');
+SET @manager2_id = LAST_INSERT_ID();
 
 -- 6. 권한(Roles) 매핑
 INSERT INTO member_roles (member_id, role_id) VALUES (@msp_id, 'ROLE_ADMIN');
@@ -91,3 +95,5 @@ INSERT INTO member_roles (member_id, role_id) VALUES (@oper1_id, 'ROLE_OPERATOR'
 INSERT INTO member_roles (member_id, role_id) VALUES (@oper2_id, 'ROLE_OPERATOR');
 INSERT INTO member_roles (member_id, role_id) VALUES (@user1_id, 'ROLE_USER');
 INSERT INTO member_roles (member_id, role_id) VALUES (@user2_id, 'ROLE_USER');
+INSERT INTO member_roles (member_id, role_id) VALUES (@manager1_id, 'ROLE_MANAGER');
+INSERT INTO member_roles (member_id, role_id) VALUES (@manager2_id, 'ROLE_MANAGER');

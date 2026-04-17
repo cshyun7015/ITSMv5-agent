@@ -4,12 +4,13 @@ export type ApprovalStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 
 export interface ServiceRequest {
   requestId: number;
-  title: String;
-  description: String;
+  title: string;
+  description: string;
   status: ServiceRequestStatus;
   priority: ServiceRequestPriority;
   requesterName: string;
   deadline?: string;
+  dynamicFields?: string;
   createdAt: string;
   updatedAt: string;
 }

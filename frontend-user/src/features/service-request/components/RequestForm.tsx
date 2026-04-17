@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ServiceRequestDTO, ServiceRequestPriority } from '../../../types/request';
+import { ServiceRequest, ServiceRequestDTO, ServiceRequestPriority } from '../../../types/request';
 import { CatalogItem } from '../../service-catalog/api/catalogApi';
 import DynamicFormRenderer from '../../service-catalog/components/DynamicFormRenderer';
 import { Send, ArrowLeft, AlertCircle, Clock, CheckCircle, Info } from 'lucide-react';
@@ -207,17 +207,6 @@ const RequestForm: React.FC<RequestFormProps> = ({ catalogItem, initialData, onS
         .priority-chip.active.low { border-color: #10b981; color: #10b981; background: rgba(16, 185, 129, 0.08); box-shadow: 0 4px 12px rgba(16, 185, 129, 0.1); }
 
         .form-actions { display: flex; justify-content: flex-end; gap: 16px; margin-top: 56px; padding-top: 32px; border-top: 1px solid var(--color-border-soft); }
-        .btn-secondary { background: var(--color-surface-soft); border: 1px solid var(--color-border); color: var(--color-text-sub); padding: 14px 28px; border-radius: 10px; font-weight: 700; cursor: pointer; transition: var(--transition); }
-        .btn-secondary:hover { background: #e2e8f0; }
-        .btn-primary { 
-          display: flex; align-items: center; gap: 10px;
-          background: var(--color-primary); color: #fff; border: none; padding: 14px 32px; 
-          border-radius: 10px; font-weight: 700; cursor: pointer; transition: var(--transition);
-          box-shadow: 0 4px 14px rgba(59, 130, 246, 0.4);
-        }
-        .btn-primary:hover { background: var(--color-primary-hover); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4); }
-        .btn-primary:active { transform: translateY(0); }
-        .btn-primary:disabled { background: var(--color-text-dim); opacity: 0.7; cursor: not-allowed; transform: none; box-shadow: none; }
 
         .spinner-small {
           width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%;

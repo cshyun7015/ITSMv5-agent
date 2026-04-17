@@ -1,6 +1,6 @@
 import React from 'react';
 import { ServiceRequest } from '../../../types/request';
-import { Plus, Calendar, AlertCircle, Clock, CheckCircle2, XCircle, Search, ChevronRight } from 'lucide-react';
+import { Plus, Calendar, AlertCircle, Clock, CheckCircle2, XCircle, Search, ChevronRight, BookOpen } from 'lucide-react';
 
 interface RequestListProps {
   requests: ServiceRequest[];
@@ -56,11 +56,11 @@ const RequestList: React.FC<RequestListProps> = ({ requests, onSelect, onCreate 
           <p>Track the progress and manage your submitted IT service tickets</p>
         </div>
         <div className="header-actions">
-          <button className="btn-secondary" onClick={() => onCreate(false)}>
+          <button className="btn-secondary shadow-hover" onClick={() => onCreate(false)}>
             <Plus size={18} />
             Manual Request
           </button>
-          <button className="btn-primary" onClick={() => onCreate(true)}>
+          <button className="btn-primary shadow-hover" onClick={() => onCreate(true)}>
             <BookOpen size={18} />
             Catalog Request
           </button>
@@ -72,7 +72,7 @@ const RequestList: React.FC<RequestListProps> = ({ requests, onSelect, onCreate 
           <div className="empty-icon"><Search size={48} /></div>
           <h3>No requests found</h3>
           <p>You haven't submitted any service requests yet.</p>
-          <button className="btn-secondary" onClick={onCreate} style={{ marginTop: '16px' }}>Start your first request</button>
+          <button className="btn-secondary" onClick={() => onCreate(true)} style={{ marginTop: '16px' }}>Start your first request</button>
         </div>
       ) : (
         <div className="request-grid">
