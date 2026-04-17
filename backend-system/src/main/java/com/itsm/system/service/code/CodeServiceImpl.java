@@ -60,6 +60,11 @@ public class CodeServiceImpl implements CodeService {
     }
 
     @Override
+    public void deleteCodesByGroup(String groupId) {
+        codeRepository.deleteByGroupId(groupId);
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public List<String> getAllGroupIds() {
         return codeRepository.findDistinctGroupIds();

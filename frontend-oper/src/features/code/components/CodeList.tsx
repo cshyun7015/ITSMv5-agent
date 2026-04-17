@@ -3,10 +3,11 @@ import { CodeDTO } from '../../fulfillment/types';
 interface CodeListProps {
   codes: CodeDTO[];
   onEdit: (code: CodeDTO) => void;
+  onDelete: (id: number) => void;
   isLoading?: boolean;
 }
 
-const CodeList: React.FC<CodeListProps> = ({ codes, onEdit, isLoading }) => {
+const CodeList: React.FC<CodeListProps> = ({ codes, onEdit, onDelete, isLoading }) => {
   if (isLoading) {
     return <div className="loader-container">Loading codes...</div>;
   }
@@ -19,9 +20,10 @@ const CodeList: React.FC<CodeListProps> = ({ codes, onEdit, isLoading }) => {
       <table className="code-list__table">
         <thead className="code-list__header">
           <tr>
-            <th>Group ID</th>
+            <th>Order</th>
             <th>Code ID</th>
             <th>Name</th>
+            <th>Description</th>
             <th>Status</th>
             <th>Actions</th>
           </tr>
@@ -29,18 +31,24 @@ const CodeList: React.FC<CodeListProps> = ({ codes, onEdit, isLoading }) => {
         <tbody className="code-list__body">
           {codes.map((code) => (
             <tr key={code.id} className="code-list__row">
-              <td className="code-list__cell">{code.groupId}</td>
-              <td className="code-list__cell">{code.codeId}</td>
-              <td className="code-list__cell">{code.codeName}</td>
+              <td className="code-list__cell code-list__cell--order">{code.sortOrder}</td>
+              <td className="code-list__cell code-list__cell--id">{code.codeId}</td>
+              <td className="code-list__cell code-list__cell--name">{code.codeName}</td>
+              <td className="code-list__cell code-list__cell--desc">{code.description || '-'}</td>
               <td className="code-list__cell">
                 <span className={`status-badge ${code.isActive ? 'status-badge--active' : 'status-badge--inactive'}`}>
                   {code.isActive ? 'Active' : 'Inactive'}
                 </span>
               </td>
               <td className="code-list__cell">
-                <button className="btn-icon" onClick={() => onEdit(code)}>
-                  Edit
-                </button>
+                <div className="action-buttons">
+                  <button className="btn-icon btn-icon--edit" onClick={() => onEdit(code)}>
+                    Edit
+                  </button>
+                  <button className="btn-icon btn-icon--delete" onClick={() => code.id && onDelete(code.id)}>
+                    Delete
+                  </button>
+                </div>
               </td>
             </tr>
           ))}
@@ -101,17 +109,33 @@ const CodeList: React.FC<CodeListProps> = ({ codes, onEdit, isLoading }) => {
           color: #f87171;
           border: 1px solid rgba(239, 68, 68, 0.2);
         }
+        .action-buttons {
+          display: flex;
+          gap: 8px;
+        }
         .btn-icon {
           background: transparent;
-          color: var(--primary);
-          border: 1px solid var(--primary);
-          padding: 6px 14px;
+          padding: 6px 12px;
           border-radius: 8px;
           cursor: pointer;
           transition: var(--transition-smooth);
+          font-size: 0.8rem;
+          font-weight: 600;
         }
-        .btn-icon:hover {
+        .btn-icon--edit {
+          color: var(--primary);
+          border: 1px solid var(--primary);
+        }
+        .btn-icon--edit:hover {
           background: var(--primary);
+          color: white;
+        }
+        .btn-icon--delete {
+          color: #ef4444;
+          border: 1px solid #ef4444;
+        }
+        .btn-icon--delete:hover {
+          background: #ef4444;
           color: white;
         }
       `}</style>

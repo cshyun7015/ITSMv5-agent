@@ -13,4 +13,6 @@ public interface CodeRepository extends JpaRepository<Code, Long> {
 
     @org.springframework.data.jpa.repository.Query("SELECT DISTINCT c.groupId FROM Code c WHERE c.isDeleted = false")
     List<String> findDistinctGroupIds();
+
+    void deleteByGroupId(String groupId);
 }

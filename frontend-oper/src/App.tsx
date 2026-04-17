@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import './styles/global.css';
 import { AuthProvider, useAuth } from './features/auth/context/AuthContext';
 import LoginPage from './features/auth/components/LoginPage';
-import CodeList from './features/code/components/CodeList';
-import CodeDrawer from './features/code/components/CodeDrawer';
+import CodeManagement from './features/code/components/CodeManagement';
 import FulfillmentList from './features/fulfillment/components/FulfillmentList';
 import FulfillmentDetail from './features/fulfillment/components/FulfillmentDetail';
 import IncidentBoard from './features/incident/components/IncidentBoard';
@@ -18,39 +17,6 @@ const AdminCommandCenter: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'catalog' | 'codes' | 'fulfillment' | 'incidents'>('dashboard');
   const [selectedRequestId, setSelectedRequestId] = useState<number | null>(null);
   const [selectedIncidentId, setSelectedIncidentId] = useState<number | null>(null);
-
-  const [codes, setCodes] = useState<CodeDTO[]>([]);
-  const [isLoadingCodes, setIsLoadingCodes] = useState(false);
-  const [isDrawerOpen, setDrawerOpen] = useState(false);
-  const [selectedCode, setSelectedCode] = useState<CodeDTO | null>(null);
-
-  const fetchCodes = async () => {
-    setIsLoadingCodes(true);
-    try {
-      const data = await codeApi.getAllCodes();
-      setCodes(data);
-    } catch (error) {
-      console.error('Failed to fetch codes', error);
-    } finally {
-      setIsLoadingCodes(false);
-    }
-  };
-
-  useEffect(() => {
-    if (activeTab === 'codes') {
-      fetchCodes();
-    }
-  }, [activeTab]);
-
-  const handleEdit = (code: CodeDTO) => {
-    setSelectedCode(code);
-    setDrawerOpen(true);
-  };
-
-  const handleAdd = () => {
-    setSelectedCode(null);
-    setDrawerOpen(true);
-  };
 
   return (
     <div className="app-container">
@@ -96,15 +62,7 @@ const AdminCommandCenter: React.FC = () => {
           ) : activeTab === 'catalog' ? (
             <CatalogManagement />
           ) : activeTab === 'codes' ? (
-            <div className="code-manager">
-              <div className="code-manager__header">
-                <h2 className="code-manager__title">Code Configuration</h2>
-                <button className="header__button" onClick={handleAdd}>
-                  + Add New Code
-                </button>
-              </div>
-              <CodeList codes={codes} onEdit={handleEdit} isLoading={isLoadingCodes} />
-            </div>
+            <CodeManagement />
           ) : activeTab === 'fulfillment' ? (
             <div className="fulfillment-section">
               {selectedRequestId ? (
@@ -132,14 +90,6 @@ const AdminCommandCenter: React.FC = () => {
           )}
         </div>
       </main>
-
-      <CodeDrawer 
-        isOpen={isDrawerOpen} 
-        onClose={() => setDrawerOpen(false)} 
-        onSuccess={() => { setDrawerOpen(false); fetchCodes(); }}
-        initialData={selectedCode}
-        title={selectedCode ? 'Edit Code' : 'Create New Code'} 
-      />
 
       <style>{`
         .app-container {

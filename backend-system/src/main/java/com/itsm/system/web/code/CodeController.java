@@ -45,4 +45,10 @@ public class CodeController {
         codeService.deleteCode(id);
         return ResponseEntity.noContent().build();
     }
+
+    @DeleteMapping("/groups/{groupId}")
+    public ResponseEntity<Void> deleteCodesByGroup(@PathVariable String groupId) {
+        codeService.deleteCodesByGroup(groupId);
+        return ResponseEntity.noContent().build();
+    }
 }

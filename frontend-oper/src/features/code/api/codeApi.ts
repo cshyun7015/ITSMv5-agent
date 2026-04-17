@@ -35,5 +35,10 @@ export const codeApi = {
   // 코드 삭제
   deleteCode: async (id: number): Promise<void> => {
     await apiClient.delete(`/codes/${id}`);
+  },
+  
+  // 그룹 단위 삭제
+  deleteCodesByGroup: async (groupId: string): Promise<void> => {
+    await apiClient.delete(`/codes/groups/${groupId}`);
   }
 };
