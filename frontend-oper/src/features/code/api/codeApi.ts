@@ -14,6 +14,12 @@ export const codeApi = {
     return response.data;
   },
 
+  // 모든 그룹 ID 목록 조회
+  getAllGroupIds: async (): Promise<string[]> => {
+    const response = await apiClient.get<string[]>('/codes/groups');
+    return response.data;
+  },
+
   // 코드 생성
   createCode: async (code: CodeDTO): Promise<CodeDTO> => {
     const response = await apiClient.post<CodeDTO>('/codes', code);

@@ -7,7 +7,7 @@ import java.util.List;
 
 @Repository
 public interface CodeRepository extends JpaRepository<Code, Long> {
-    List<Code> findByGroupId(String groupId);
+    List<Code> findByGroupIdOrderBySortOrderAsc(String groupId);
     java.util.Optional<Code> findByGroupIdAndCodeId(String groupId, String codeId);
     List<Code> findByIsActiveTrueOrderBySortOrderAsc();
 

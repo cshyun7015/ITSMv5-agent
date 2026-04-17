@@ -28,7 +28,7 @@ public class CodeServiceImpl implements CodeService {
     @Override
     @Transactional(readOnly = true)
     public List<CodeDTO> getCodesByGroup(String groupId) {
-        return codeRepository.findByGroupId(groupId).stream()
+        return codeRepository.findByGroupIdOrderBySortOrderAsc(groupId).stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }

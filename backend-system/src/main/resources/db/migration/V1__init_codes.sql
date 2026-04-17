@@ -1,8 +1,3 @@
--- MSP 전용 코드 관리를 위한 시스템 스키마 초기화
-CREATE SCHEMA IF NOT EXISTS `system_mgmt` DEFAULT CHARACTER SET utf8mb4;
-
-USE `system_mgmt`;
-
 -- codes 테이블 생성
 CREATE TABLE IF NOT EXISTS `codes` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
