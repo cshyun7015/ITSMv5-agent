@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { fulfillmentApi } from '../api/fulfillmentApi';
-import { ServiceRequest, ServiceRequestPriority } from '../types';
+import { ServiceRequest, ServiceRequestPriority, CodeDTO } from '../types';
 
 interface RequestFormModalProps {
   request?: ServiceRequest; // 존재하면 수정 모드, 없으면 생성 모드
@@ -19,14 +19,39 @@ const RequestFormModal: React.FC<RequestFormModalProps> = ({ request, onClose, o
   const [title, setTitle] = useState(request?.title || '');
   const [description, setDescription] = useState(request?.description || '');
   const [priority, setPriority] = useState<ServiceRequestPriority>(request?.priority || 'NORMAL');
+  const [priorityOptions, setPriorityOptions] = useState<CodeDTO[]>([]);
+  const [status, setStatus] = useState(request?.status || 'DRAFT');
+  const [statusOptions, setStatusOptions] = useState<CodeDTO[]>([]);
+  const [resolution, setResolution] = useState(request?.resolution || '');
   const [files, setFiles] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (!isEdit) {
       loadTenants();
+    } else {
+      loadStatusOptions();
+      loadPriorityOptions();
     }
   }, []);
+
+  const loadStatusOptions = async () => {
+    try {
+      const data = await fulfillmentApi.getCodesByGroup('SR_STATUS');
+      setStatusOptions(data);
+    } catch (error) {
+      console.error('Failed to load status options', error);
+    }
+  };
+
+  const loadPriorityOptions = async () => {
+    try {
+      const data = await fulfillmentApi.getCodesByGroup('SR_PRIORITY');
+      setPriorityOptions(data);
+    } catch (error) {
+      console.error('Failed to load priority options', error);
+    }
+  };
 
   useEffect(() => {
     if (targetTenantId && useManualRequester) {
@@ -66,7 +91,7 @@ const RequestFormModal: React.FC<RequestFormModalProps> = ({ request, onClose, o
     try {
       if (isEdit) {
         await fulfillmentApi.updateRequest(request!.requestId, {
-          title, description, priority
+          title, description, priority, status, resolution
         }, files);
       } else {
         await fulfillmentApi.createRequest({
@@ -188,9 +213,17 @@ const RequestFormModal: React.FC<RequestFormModalProps> = ({ request, onClose, o
                 onChange={(e) => setPriority(e.target.value as ServiceRequestPriority)}
                 className="modern-input"
               >
-                <option value="LOW">LOW - Standard Buffer</option>
-                <option value="NORMAL">NORMAL - Priority Process</option>
-                <option value="EMERGENCY">EMERGENCY - Critical Escalation</option>
+                {priorityOptions.length > 0 ? (
+                  priorityOptions.map(opt => (
+                    <option key={opt.codeId} value={opt.codeId}>{opt.codeId} - {opt.codeName}</option>
+                  ))
+                ) : (
+                  <>
+                    <option value="LOW">LOW - Standard Buffer</option>
+                    <option value="NORMAL">NORMAL - Priority Process</option>
+                    <option value="EMERGENCY">EMERGENCY - Critical Escalation</option>
+                  </>
+                )}
               </select>
             </div>
 
@@ -217,6 +250,49 @@ const RequestFormModal: React.FC<RequestFormModalProps> = ({ request, onClose, o
               </label>
             </div>
           </div>
+
+          {isEdit && (
+            <div className="form-row animate-in">
+              <div className="form-group half">
+                <label>Current Status</label>
+                <select 
+                  value={status} 
+                  onChange={(e) => setStatus(e.target.value as any)}
+                  className="modern-input status-select"
+                >
+                  {statusOptions.length > 0 ? (
+                    statusOptions.map(opt => (
+                      <option key={opt.codeId} value={opt.codeId}>{opt.codeId} ({opt.codeName})</option>
+                    ))
+                  ) : (
+                    <>
+                      <option value="DRAFT">DRAFT (작성 중)</option>
+                      <option value="PENDING_APPROVAL">PENDING_APPROVAL (결재 대기)</option>
+                      <option value="OPEN">OPEN (접수 완료)</option>
+                      <option value="IN_PROGRESS">IN_PROGRESS (처리 중)</option>
+                      <option value="RESOLVED">RESOLVED (해결 완료)</option>
+                      <option value="CLOSED">CLOSED (종료)</option>
+                      <option value="REJECTED">REJECTED (반려)</option>
+                    </>
+                  )}
+                </select>
+              </div>
+              
+              {status === 'RESOLVED' && (
+                <div className="form-group half animate-in">
+                  <label>Resolution Summary</label>
+                  <textarea 
+                    value={resolution} 
+                    onChange={(e) => setResolution(e.target.value)}
+                    className="modern-input resolution-area"
+                    placeholder="Describe how the request was resolved..."
+                    rows={3}
+                    required
+                  />
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="form-actions">
             <button type="button" className="btn-cancel" onClick={onClose} disabled={isSubmitting}>Cancel</button>
@@ -280,6 +356,9 @@ const RequestFormModal: React.FC<RequestFormModalProps> = ({ request, onClose, o
           transition: all 0.2s;
         }
         .existing-file-item:hover { background: rgba(59,130,246,0.2); text-decoration: underline; }
+
+        .status-select { border-color: #3b82f6; font-weight: 600; }
+        .resolution-area { border-color: #10b981; min-height: 80px; }
 
         .form-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 20px; }
         .btn-cancel { background: transparent; border: none; color: #94a3b8; padding: 10px 20px; cursor: pointer; }

@@ -1,12 +1,59 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { CodeDTO } from '../../fulfillment/types';
+import { codeApi } from '../api/codeApi';
 
 interface CodeDrawerProps {
   isOpen: boolean;
   onClose: () => void;
+  onSuccess: () => void;
+  initialData: CodeDTO | null;
   title: string;
 }
 
-const CodeDrawer: React.FC<CodeDrawerProps> = ({ isOpen, onClose, title }) => {
+const CodeDrawer: React.FC<CodeDrawerProps> = ({ isOpen, onClose, onSuccess, initialData, title }) => {
+  const [formData, setFormData] = useState<Partial<CodeDTO>>({
+    groupId: '',
+    codeId: '',
+    codeName: '',
+    description: '',
+    sortOrder: 10,
+    isActive: true
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (initialData) {
+      setFormData(initialData);
+    } else {
+      setFormData({
+        groupId: '',
+        codeId: '',
+        codeName: '',
+        description: '',
+        sortOrder: 10,
+        isActive: true
+      });
+    }
+  }, [initialData, isOpen]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    try {
+      if (initialData?.id) {
+        await codeApi.updateCode(initialData.id, formData as CodeDTO);
+      } else {
+        await codeApi.createCode(formData as CodeDTO);
+      }
+      onSuccess();
+    } catch (error) {
+      console.error('Failed to save code', error);
+      alert('Failed to save code. Please check console for details.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -17,27 +64,78 @@ const CodeDrawer: React.FC<CodeDrawerProps> = ({ isOpen, onClose, title }) => {
           <button className="btn-close" onClick={onClose}>&times;</button>
         </header>
 
-        <form className="drawer-form">
+        <form className="drawer-form" onSubmit={handleSubmit}>
           <div className="form-group">
             <label className="form-label">Group ID</label>
-            <input type="text" className="form-input" placeholder="e.g. TICKET_TYPE" />
+            <input 
+              type="text" 
+              className="form-input" 
+              required
+              value={formData.groupId}
+              onChange={(e) => setFormData({ ...formData, groupId: e.target.value })}
+              placeholder="e.g. SR_STATUS" 
+            />
           </div>
           <div className="form-group">
             <label className="form-label">Code ID</label>
-            <input type="text" className="form-input" placeholder="e.g. INCIDENT" />
+            <input 
+              type="text" 
+              className="form-input" 
+              required
+              value={formData.codeId}
+              onChange={(e) => setFormData({ ...formData, codeId: e.target.value })}
+              placeholder="e.g. OPEN" 
+            />
           </div>
           <div className="form-group">
             <label className="form-label">Code Name</label>
-            <input type="text" className="form-input" placeholder="e.g. Incident Report" />
+            <input 
+              type="text" 
+              className="form-input" 
+              required
+              value={formData.codeName}
+              onChange={(e) => setFormData({ ...formData, codeName: e.target.value })}
+              placeholder="e.g. 접수 완료" 
+            />
           </div>
           <div className="form-group">
             <label className="form-label">Description</label>
-            <textarea className="form-input" rows={3} placeholder="Explain the purpose of this code" />
+            <textarea 
+              className="form-input" 
+              rows={3} 
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              placeholder="Explain the purpose of this code" 
+            />
+          </div>
+
+          <div className="form-row">
+            <div className="form-group half">
+              <label className="form-label">Sort Order</label>
+              <input 
+                type="number" 
+                className="form-input" 
+                value={formData.sortOrder}
+                onChange={(e) => setFormData({ ...formData, sortOrder: parseInt(e.target.value) })}
+              />
+            </div>
+            <div className="form-group half checkbox">
+              <label className="checkbox-label">
+                <input 
+                  type="checkbox" 
+                  checked={formData.isActive}
+                  onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+                />
+                Active
+              </label>
+            </div>
           </div>
           
           <div className="drawer-actions">
             <button type="button" className="btn-secondary" onClick={onClose}>Cancel</button>
-            <button type="submit" className="btn-primary">Save Changes</button>
+            <button type="submit" className="btn-primary" disabled={isSubmitting}>
+              {isSubmitting ? 'Saving...' : 'Save Changes'}
+            </button>
           </div>
         </form>
       </div>

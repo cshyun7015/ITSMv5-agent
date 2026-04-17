@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './styles/global.css';
 import { AuthProvider, useAuth } from './features/auth/context/AuthContext';
 import LoginPage from './features/auth/components/LoginPage';
@@ -10,13 +10,8 @@ import IncidentBoard from './features/incident/components/IncidentBoard';
 import IncidentDetail from './features/incident/components/IncidentDetail';
 import DashboardPage from './features/dashboard/components/DashboardPage';
 import CatalogManagement from './features/catalog/components/CatalogManagement';
-
-const MOCK_CODES = [
-  { id: 1, groupId: 'TICKET_PRIORITY', codeId: 'P1', codeName: 'Critical', isActive: true },
-  { id: 2, groupId: 'TICKET_PRIORITY', codeId: 'P2', codeName: 'High', isActive: true },
-  { id: 3, groupId: 'TICKET_PRIORITY', codeId: 'P3', codeName: 'Normal', isActive: true },
-  { id: 4, groupId: 'SERVICE_TYPE', codeId: 'REQ', codeName: 'Service Request', isActive: true },
-];
+import { codeApi } from './features/code/api/codeApi';
+import { CodeDTO } from './features/fulfillment/types';
 
 const AdminCommandCenter: React.FC = () => {
   const { user, logout } = useAuth();
@@ -24,10 +19,30 @@ const AdminCommandCenter: React.FC = () => {
   const [selectedRequestId, setSelectedRequestId] = useState<number | null>(null);
   const [selectedIncidentId, setSelectedIncidentId] = useState<number | null>(null);
 
+  const [codes, setCodes] = useState<CodeDTO[]>([]);
+  const [isLoadingCodes, setIsLoadingCodes] = useState(false);
   const [isDrawerOpen, setDrawerOpen] = useState(false);
-  const [selectedCode, setSelectedCode] = useState<any>(null);
+  const [selectedCode, setSelectedCode] = useState<CodeDTO | null>(null);
 
-  const handleEdit = (code: any) => {
+  const fetchCodes = async () => {
+    setIsLoadingCodes(true);
+    try {
+      const data = await codeApi.getAllCodes();
+      setCodes(data);
+    } catch (error) {
+      console.error('Failed to fetch codes', error);
+    } finally {
+      setIsLoadingCodes(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'codes') {
+      fetchCodes();
+    }
+  }, [activeTab]);
+
+  const handleEdit = (code: CodeDTO) => {
     setSelectedCode(code);
     setDrawerOpen(true);
   };
@@ -51,7 +66,7 @@ const AdminCommandCenter: React.FC = () => {
             { id: 'catalog', label: 'Service Catalog', icon: '📋' },
             { id: 'incidents', label: 'Incidents', icon: '⚠️' },
             { id: 'fulfillment', label: 'Requests', icon: '📩' },
-            { id: 'codes', label: 'System Codes', icon: '⚙️' }
+            { id: 'codes', label: 'Codes', icon: '🏷️' }
           ].map(item => (
             <button 
               key={item.id}
@@ -83,12 +98,12 @@ const AdminCommandCenter: React.FC = () => {
           ) : activeTab === 'codes' ? (
             <div className="code-manager">
               <div className="code-manager__header">
-                <h2 className="code-manager__title">System Code Configuration</h2>
+                <h2 className="code-manager__title">Code Configuration</h2>
                 <button className="header__button" onClick={handleAdd}>
                   + Add New Code
                 </button>
               </div>
-              <CodeList codes={MOCK_CODES} onEdit={handleEdit} />
+              <CodeList codes={codes} onEdit={handleEdit} isLoading={isLoadingCodes} />
             </div>
           ) : activeTab === 'fulfillment' ? (
             <div className="fulfillment-section">
@@ -121,6 +136,8 @@ const AdminCommandCenter: React.FC = () => {
       <CodeDrawer 
         isOpen={isDrawerOpen} 
         onClose={() => setDrawerOpen(false)} 
+        onSuccess={() => { setDrawerOpen(false); fetchCodes(); }}
+        initialData={selectedCode}
         title={selectedCode ? 'Edit Code' : 'Create New Code'} 
       />
 

@@ -34,6 +34,8 @@ public class ServiceRequestDTO {
         private String title;
         private String description;
         private ServiceRequestPriority priority;
+        private ServiceRequestStatus status;
+        private String resolution;
     }
 
     @Getter

@@ -1,7 +1,12 @@
 import apiClient from '../../../api/client';
-import { ServiceRequest, ApprovalStep } from '../types';
+import { ServiceRequest, ApprovalStep, CodeDTO } from '../types';
 
 export const fulfillmentApi = {
+  // 공통 코드 조회
+  getCodesByGroup: async (groupId: string): Promise<CodeDTO[]> => {
+    const response = await apiClient.get<CodeDTO[]>(`/codes/group/${groupId}`);
+    return response.data;
+  },
   // 운영자용 전체 요청 목록 조회
   getAllRequests: async (): Promise<ServiceRequest[]> => {
     const response = await apiClient.get<ServiceRequest[]>('/requests/all');

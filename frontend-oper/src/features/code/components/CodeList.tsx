@@ -1,19 +1,19 @@
-import React from 'react';
-
-interface CodeItem {
-  id: number;
-  groupId: string;
-  codeId: string;
-  codeName: string;
-  isActive: boolean;
-}
+import { CodeDTO } from '../../fulfillment/types';
 
 interface CodeListProps {
-  codes: CodeItem[];
-  onEdit: (code: CodeItem) => void;
+  codes: CodeDTO[];
+  onEdit: (code: CodeDTO) => void;
+  isLoading?: boolean;
 }
 
-const CodeList: React.FC<CodeListProps> = ({ codes, onEdit }) => {
+const CodeList: React.FC<CodeListProps> = ({ codes, onEdit, isLoading }) => {
+  if (isLoading) {
+    return <div className="loader-container">Loading codes...</div>;
+  }
+
+  if (codes.length === 0) {
+    return <div className="empty-container">No codes found. Add your first configuration code above.</div>;
+  }
   return (
     <div className="code-list">
       <table className="code-list__table">

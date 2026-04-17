@@ -233,13 +233,18 @@ public class ServiceRequestService {
     @Transactional
     public void updateRequest(Long requestId, ServiceRequestDTO.Update dto, List<MultipartFile> files) {
         ServiceRequest request = getRequest(requestId);
-        if (request.getStatus() != ServiceRequestStatus.DRAFT && request.getStatus() != ServiceRequestStatus.OPEN) {
-            throw new IllegalStateException("Only DRAFT or OPEN requests can be updated");
-        }
         
         request.setTitle(dto.getTitle());
         request.setDescription(dto.getDescription());
         request.setPriority(dto.getPriority());
+        
+        if (dto.getStatus() != null) {
+            request.setStatus(dto.getStatus());
+        }
+        
+        if (dto.getResolution() != null) {
+            request.setResolution(dto.getResolution());
+        }
         
         requestRepository.save(request);
         
