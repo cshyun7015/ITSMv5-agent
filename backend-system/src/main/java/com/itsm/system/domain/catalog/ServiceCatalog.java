@@ -26,6 +26,7 @@ public class ServiceCatalog {
 
     private String icon;
 
+    @JsonIgnore
     @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id")

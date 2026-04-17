@@ -7,6 +7,8 @@ import java.util.List;
 public interface ServiceCatalogRepository extends JpaRepository<ServiceCatalog, Long> {
     List<ServiceCatalog> findAllByTenant(Tenant tenant);
     List<ServiceCatalog> findAllByIsTemplateTrue();
+    List<ServiceCatalog> findAllByTemplateSourceId(Long templateSourceId);
+    boolean existsByTenant_TenantIdAndTemplateSourceId(String tenantId, Long templateSourceId);
     List<ServiceCatalog> findAllByTenantAndCategory(Tenant tenant, CatalogCategory category);
     long countByCategory(CatalogCategory category);
 }

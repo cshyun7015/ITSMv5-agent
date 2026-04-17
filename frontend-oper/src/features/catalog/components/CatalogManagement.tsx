@@ -20,6 +20,7 @@ const CatalogManagement: React.FC = () => {
   
   const [isDeploying, setIsDeploying] = useState<number | null>(null);
   const [selectedTenants, setSelectedTenants] = useState<string[]>([]);
+  const [isFetchingDeployments, setIsFetchingDeployments] = useState(false);
   
   // Custom Popup States
   const [toast, setToast] = useState<{ message: string, type: 'success' | 'error' | 'info' | null }>({ message: '', type: null });
@@ -48,19 +49,62 @@ const CatalogManagement: React.FC = () => {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const [tplData, catData, tenantData] = await Promise.all([
+      const results = await Promise.allSettled([
         catalogApi.getTemplates(),
         fulfillmentApi.getCodesByGroup('CATALOG_CATEGORY'),
         fulfillmentApi.getTenants()
       ]);
-      setTemplates(tplData);
-      setCategories(catData);
-      setTenants(tenantData);
-      if (catData.length > 0) setServiceForm((prev: any) => ({ ...prev, categoryCode: catData[0].codeId }));
+
+      if (results[0].status === 'fulfilled') {
+        setTemplates(results[0].value);
+      } else {
+        console.error('Failed to load templates', results[0].reason);
+        setToast({ message: '템플릿 목록을 불러오는데 실패했습니다.', type: 'error' });
+      }
+
+      if (results[1].status === 'fulfilled') {
+        const catData = results[1].value;
+        setCategories(catData);
+        if (catData && catData.length > 0 && !serviceForm.categoryCode) {
+          setServiceForm(prev => ({ ...prev, categoryCode: catData[0].codeId }));
+        }
+      } else {
+        console.error('Failed to load categories', results[1].reason);
+        setToast({ message: '카테고리 정보를 불러오는데 실패했습니다.', type: 'error' });
+      }
+
+      if (results[2].status === 'fulfilled') {
+        setTenants(results[2].value);
+      } else {
+        console.error('Failed to load tenants', results[2].reason);
+        setToast({ message: '테넌트 정보를 불러오는데 실패했습니다.', type: 'error' });
+      }
     } catch (error) {
-      console.error('Failed to load catalog data', error);
+      console.error('Critical error in loadData', error);
+      setToast({ message: '데이터 로딩 중 예상치 못한 오류가 발생했습니다.', type: 'error' });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isDeploying) {
+      fetchExistingDeployments(isDeploying);
+    } else {
+      setSelectedTenants([]);
+    }
+  }, [isDeploying]);
+
+  const fetchExistingDeployments = async (templateId: number) => {
+    setIsFetchingDeployments(true);
+    try {
+      const deployedIds = await catalogApi.getDeployments(templateId);
+      setSelectedTenants(deployedIds);
+    } catch (error) {
+      console.error('Failed to fetch deployments', error);
+      showToast('배포 현황을 불러오는데 실패했습니다.', 'error');
+    } finally {
+      setIsFetchingDeployments(false);
     }
   };
 
@@ -126,13 +170,9 @@ const CatalogManagement: React.FC = () => {
   };
 
   const handleDeploy = async (templateId: number) => {
-    if (selectedTenants.length === 0) {
-      showToast('Please select at least one target tenant.', 'info');
-      return;
-    }
     try {
       await catalogApi.deployToTenants(templateId, selectedTenants);
-      showToast(`Successfully deployed to ${selectedTenants.length} tenants.`);
+      showToast(`Deployment status updated for ${tenants.length} potential tenants.`);
       setIsDeploying(null);
       setSelectedTenants([]);
     } catch (error) {
@@ -251,8 +291,8 @@ const CatalogManagement: React.FC = () => {
                     </div>
                     <div className="overlay-actions">
                       <button className="cancel-btn" onClick={() => { setIsDeploying(null); setSelectedTenants([]); }}>Cancel</button>
-                      <button className="confirm-btn" onClick={() => handleDeploy(tpl.id)} disabled={selectedTenants.length === 0}>
-                        Deploy to {selectedTenants.length} Tenants
+                      <button className="confirm-btn" onClick={() => handleDeploy(tpl.id)} disabled={isFetchingDeployments}>
+                        {isFetchingDeployments ? 'Fetching status...' : 'Save & Sync Deployments'}
                       </button>
                     </div>
                   </div>

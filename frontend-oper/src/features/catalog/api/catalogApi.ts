@@ -41,6 +41,11 @@ export const catalogApi = {
     await apiClient.post('/operator/catalog/deploy', { templateId, targetTenantIds });
   },
 
+  getDeployments: async (templateId: number): Promise<string[]> => {
+    const response = await apiClient.get<string[]>(`/operator/catalog/templates/${templateId}/deployments`);
+    return response.data;
+  },
+
   getCategories: async (): Promise<CatalogCategory[]> => {
     const response = await apiClient.get<CatalogCategory[]>('/operator/catalog/categories');
     return response.data;

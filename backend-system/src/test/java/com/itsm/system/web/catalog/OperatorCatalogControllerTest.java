@@ -120,7 +120,7 @@ class OperatorCatalogControllerTest {
     @DisplayName("특정 테넌트에 템플릿 배포 API 요청 시 정상 응답을 반환해야 함")
     void deployToTenantSuccess() throws Exception {
         // given
-        OperatorCatalogController.DeployRequest request = new OperatorCatalogController.DeployRequest();
+        OperatorCatalogController.CatalogDeployRequest request = new OperatorCatalogController.CatalogDeployRequest();
         request.setTemplateId(100L);
         request.setTargetTenantIds(List.of("CUST01"));
 

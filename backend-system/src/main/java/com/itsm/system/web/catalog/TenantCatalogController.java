@@ -19,21 +19,34 @@ import java.util.stream.Collectors;
 public class TenantCatalogController {
 
     private final CatalogDeploymentService catalogDeploymentService;
+    private final com.itsm.system.domain.code.CodeRepository codeRepository;
 
     @GetMapping
     public ResponseEntity<List<CatalogResponse>> getMyCatalog(@AuthenticationPrincipal Member currentMember) {
         List<ServiceCatalog> catalog = catalogDeploymentService.getCatalogForTenant(currentMember.getTenant());
         
         List<CatalogResponse> response = catalog.stream()
-                .map(c -> CatalogResponse.builder()
+                .map(c -> {
+                    String categoryName = "Uncategorized";
+                    if (c.getCategoryCode() != null) {
+                        categoryName = codeRepository.findByGroupIdAndCodeId("CATALOG_CATEGORY", c.getCategoryCode())
+                                .map(com.itsm.system.domain.code.Code::getCodeName)
+                                .orElse(c.getCategoryCode());
+                    } else if (c.getCategory() != null) {
+                        categoryName = c.getCategory().getName();
+                    }
+
+                    return CatalogResponse.builder()
                         .id(c.getId())
                         .name(c.getName())
                         .description(c.getDescription())
                         .icon(c.getIcon())
-                        .categoryName(c.getCategory().getName())
+                        .categoryName(categoryName)
+                        .categoryCode(c.getCategoryCode())
                         .jsonSchema(c.getJsonSchema())
                         .approvalRequired(c.isApprovalRequired())
-                        .build())
+                        .build();
+                })
                 .collect(Collectors.toList());
 
         return ResponseEntity.ok(response);
@@ -47,6 +60,7 @@ public class TenantCatalogController {
         private String description;
         private String icon;
         private String categoryName;
+        private String categoryCode;
         private String jsonSchema;
         private boolean approvalRequired;
     }

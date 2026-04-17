@@ -5,7 +5,6 @@ import com.itsm.system.domain.catalog.CatalogCategoryRepository;
 import com.itsm.system.domain.catalog.ServiceCatalog;
 import com.itsm.system.domain.catalog.ServiceCatalogRepository;
 import com.itsm.system.domain.member.Member;
-import com.itsm.system.domain.tenant.Tenant;
 import com.itsm.system.domain.tenant.TenantRepository;
 import com.itsm.system.service.catalog.CatalogDeploymentService;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@lombok.extern.slf4j.Slf4j
 @RestController
 @RequestMapping("/api/v1/operator/catalog")
 @RequiredArgsConstructor
@@ -29,17 +29,40 @@ public class OperatorCatalogController {
     private final TenantRepository tenantRepository;
 
     private boolean isCustomerTenant(Member member) {
-        return tenantRepository.findById(member.getTenant().getTenantId())
+        if (member == null || member.getTenant() == null) {
+            log.warn("Security check failed: Member or Tenant information is missing");
+            return true; // 기본적으로 차단
+        }
+        
+        String tenantId = member.getTenant().getTenantId();
+        return tenantRepository.findById(tenantId)
                 .map(t -> "CUSTOMER".equals(t.getType()))
-                .orElse(true); // 테넌트 정보가 없으면 안전하게 CUSTOMER로 간주 (접근 차단)
+                .orElseGet(() -> {
+                    log.error("Tenant not found in DB: {}", tenantId);
+                    return true; // 테넌트 정보가 없으면 안전하게 차단
+                });
     }
 
     @GetMapping("/templates")
-    public ResponseEntity<List<ServiceCatalog>> getTemplates(@AuthenticationPrincipal Member currentMember) {
+    public ResponseEntity<List<CatalogTemplateResponse>> getTemplates(@AuthenticationPrincipal Member currentMember) {
         if (isCustomerTenant(currentMember)) {
+            log.warn("Access denied for customer tenant user: {}", currentMember.getUsername());
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
-        return ResponseEntity.ok(serviceCatalogRepository.findAllByIsTemplateTrue());
+        List<ServiceCatalog> templates = serviceCatalogRepository.findAllByIsTemplateTrue();
+        List<CatalogTemplateResponse> response = templates.stream()
+                .map(t -> CatalogTemplateResponse.builder()
+                        .id(t.getId())
+                        .name(t.getName())
+                        .description(t.getDescription())
+                        .icon(t.getIcon())
+                        .categoryCode(t.getCategoryCode())
+                        .jsonSchema(t.getJsonSchema())
+                        .approvalRequired(t.isApprovalRequired())
+                        .isTemplate(t.isTemplate())
+                        .build())
+                .collect(java.util.stream.Collectors.toList());
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/templates")
@@ -107,20 +130,33 @@ public class OperatorCatalogController {
         return ResponseEntity.ok().build();
     }
 
+    @GetMapping("/templates/{templateId}/deployments")
+    public ResponseEntity<List<String>> getDeployments(
+            @AuthenticationPrincipal Member currentMember,
+            @PathVariable Long templateId) {
+        
+        if (isCustomerTenant(currentMember)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        
+        List<ServiceCatalog> deployments = serviceCatalogRepository.findAllByTemplateSourceId(templateId);
+        List<String> deployedTenantIds = deployments.stream()
+                .map(d -> d.getTenant().getTenantId())
+                .collect(java.util.stream.Collectors.toList());
+        
+        return ResponseEntity.ok(deployedTenantIds);
+    }
+
     @PostMapping("/deploy")
     public ResponseEntity<Void> deployToTenant(
             @AuthenticationPrincipal Member currentMember,
-            @RequestBody DeployRequest request) {
+            @RequestBody CatalogDeployRequest request) {
         
         if (isCustomerTenant(currentMember)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
-        for (String tenantId : request.getTargetTenantIds()) {
-            Tenant targetTenant = tenantRepository.findById(tenantId)
-                    .orElseThrow(() -> new IllegalArgumentException("Target tenant not found: " + tenantId));
-            catalogDeploymentService.deployTemplate(request.getTemplateId(), targetTenant);
-        }
+        catalogDeploymentService.syncDeployments(request.getTemplateId(), request.getTargetTenantIds());
         return ResponseEntity.ok().build();
     }
 
@@ -195,9 +231,22 @@ public class OperatorCatalogController {
     }
 
     @lombok.Data
-    public static class DeployRequest {
+    public static class CatalogDeployRequest {
         private Long templateId;
         private List<String> targetTenantIds;
+    }
+
+    @lombok.Builder
+    @lombok.Getter
+    public static class CatalogTemplateResponse {
+        private Long id;
+        private String name;
+        private String description;
+        private String icon;
+        private String categoryCode;
+        private String jsonSchema;
+        private boolean approvalRequired;
+        private boolean isTemplate;
     }
 
     @lombok.Data

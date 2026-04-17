@@ -1,11 +1,11 @@
 package com.itsm.system.service.catalog;
 
-import com.itsm.system.domain.catalog.CatalogCategory;
-import com.itsm.system.domain.catalog.CatalogCategoryRepository;
 import com.itsm.system.domain.catalog.ServiceCatalog;
 import com.itsm.system.domain.catalog.ServiceCatalogRepository;
 import com.itsm.system.domain.tenant.Tenant;
+import com.itsm.system.domain.tenant.TenantRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,17 +13,22 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class CatalogDeploymentService {
-
     private final ServiceCatalogRepository serviceCatalogRepository;
-    private final CatalogCategoryRepository catalogCategoryRepository;
+    private final TenantRepository tenantRepository;
 
     /**
      * 템플릿 서비스를 특정 테넌트에 배포합니다.
-     * 이미 동일한 소스에서 복제된 이력이 있다면 기존 항목을 업데이트하거나 생략할 수 있습니다.
+     * 카테고리 정보는 공통 코드(categoryCode)를 그대로 복제합니다.
      */
     @Transactional
     public void deployTemplate(Long templateId, Tenant targetTenant) {
+        if (serviceCatalogRepository.existsByTenant_TenantIdAndTemplateSourceId(targetTenant.getTenantId(), templateId)) {
+            log.info("Template {} already deployed to tenant {}, skipping.", templateId, targetTenant.getTenantId());
+            return;
+        }
+
         ServiceCatalog template = serviceCatalogRepository.findById(templateId)
                 .orElseThrow(() -> new IllegalArgumentException("Template not found: " + templateId));
 
@@ -31,15 +36,12 @@ public class CatalogDeploymentService {
             throw new IllegalArgumentException("Target is not a template");
         }
 
-        // 1. 카테고리 매칭 또는 복제
-        CatalogCategory targetCategory = findOrCreateCategory(template.getCategory(), targetTenant);
-
-        // 2. 서비스 복제
+        // 서비스 복제 (카테고리 엔티티 대신 categoryCode 사용)
         ServiceCatalog deployedService = ServiceCatalog.builder()
                 .name(template.getName())
                 .description(template.getDescription())
                 .icon(template.getIcon())
-                .category(targetCategory)
+                .categoryCode(template.getCategoryCode())
                 .jsonSchema(template.getJsonSchema())
                 .approvalRequired(template.isApprovalRequired())
                 .tenant(targetTenant)
@@ -50,21 +52,47 @@ public class CatalogDeploymentService {
         serviceCatalogRepository.save(deployedService);
     }
 
-    private CatalogCategory findOrCreateCategory(CatalogCategory sourceCategory, Tenant targetTenant) {
-        // 동일한 이름의 템플릿 기반 카테고리가 이미 존재하는지 확인
-        return catalogCategoryRepository.findAllByTenant(targetTenant).stream()
-                .filter(c -> c.getName().equals(sourceCategory.getName()))
-                .findFirst()
-                .orElseGet(() -> {
-                    CatalogCategory newCategory = CatalogCategory.builder()
-                            .name(sourceCategory.getName())
-                            .description(sourceCategory.getDescription())
-                            .icon(sourceCategory.getIcon())
-                            .tenant(targetTenant)
-                            .isTemplate(false)
-                            .build();
-                    return catalogCategoryRepository.save(newCategory);
-                });
+    /**
+     * 템플릿의 배포 상태를 요청된 테넌트 리스트와 동기화합니다.
+     * 1. 현재 배포된 테넌트 리스트 조회
+     * 2. 요청 리스트에 없는데 기존에 배포된 경우 -> 삭제
+     * 3. 요청 리스트에 있는데 기존에 없는 경우 -> 신규 배포
+     */
+    @Transactional
+    public void syncDeployments(Long templateId, List<String> targetTenantIds) {
+        // 기존 배포된 목록 조회
+        List<ServiceCatalog> existingDeployments = serviceCatalogRepository.findAllByTemplateSourceId(templateId);
+        
+        // 테넌트별로 기존 배포 그룹화
+        java.util.Map<String, List<ServiceCatalog>> tenantToDeployments = existingDeployments.stream()
+                .collect(java.util.stream.Collectors.groupingBy(d -> d.getTenant().getTenantId()));
+
+        // 1. 기존 배포 중 처리
+        tenantToDeployments.forEach((tenantId, deployments) -> {
+            if (!targetTenantIds.contains(tenantId)) {
+                // 대상 리스트에 없으면 모두 삭제
+                log.info("Removing all deployments for template {} from tenant {}", templateId, tenantId);
+                serviceCatalogRepository.deleteAll(deployments);
+            } else {
+                // 대상 리스트에 있으면 중복 제거 (하나만 남기고 나머지 삭제)
+                if (deployments.size() > 1) {
+                    log.info("Found duplicate deployments for template {} in tenant {}, cleaning up.", templateId, tenantId);
+                    serviceCatalogRepository.deleteAll(deployments.subList(1, deployments.size()));
+                }
+            }
+        });
+
+        // 2. 신규 배포 처리
+        for (String tenantId : targetTenantIds) {
+            if (!tenantToDeployments.containsKey(tenantId)) {
+                Tenant tenant = tenantRepository.findById(tenantId)
+                        .orElseThrow(() -> new IllegalArgumentException("Tenant not found: " + tenantId));
+                deployTemplate(templateId, tenant);
+            }
+        }
+        
+        // 변경사항 즉시 반영 (검증용)
+        serviceCatalogRepository.flush();
     }
 
     /**
