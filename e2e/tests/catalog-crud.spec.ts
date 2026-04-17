@@ -15,7 +15,7 @@ test.describe('Operator Catalog Management E2E', () => {
     await expect(page).toHaveURL(/.*MSP_CORE/);
     
     // 카탈로그 관리 메뉴 이동
-    await page.click('text=Global Catalog');
+    await page.click('text=Service Catalog');
   });
 
   test('카테고리 생성 및 수정 성공 시나리오', async ({ page }) => {

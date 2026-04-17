@@ -48,8 +48,6 @@ public class AuthControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    private String testToken;
-
     @BeforeEach
     void setUp() throws Exception {
         // 테넌트 생성

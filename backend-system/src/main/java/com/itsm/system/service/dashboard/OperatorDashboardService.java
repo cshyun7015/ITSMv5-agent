@@ -3,11 +3,14 @@ package com.itsm.system.service.dashboard;
 import com.itsm.system.domain.incident.Incident;
 import com.itsm.system.domain.incident.IncidentPriority;
 import com.itsm.system.domain.incident.IncidentStatus;
+import com.itsm.system.domain.member.Member;
 import com.itsm.system.domain.request.ServiceRequest;
 import com.itsm.system.domain.request.ServiceRequestRepository;
 import com.itsm.system.domain.request.ServiceRequestStatus;
 import com.itsm.system.domain.tenant.Tenant;
 import com.itsm.system.domain.tenant.TenantRepository;
+import com.itsm.system.domain.tenant.TenantRelationRepository;
+import com.itsm.system.domain.tenant.TenantRelation;
 import com.itsm.system.dto.dashboard.OperatorDashboardDTO;
 import com.itsm.system.repository.incident.IncidentRepository;
 import lombok.RequiredArgsConstructor;
@@ -25,19 +28,51 @@ public class OperatorDashboardService {
     private final IncidentRepository incidentRepository;
     private final ServiceRequestRepository serviceRequestRepository;
     private final TenantRepository tenantRepository;
+    private final TenantRelationRepository tenantRelationRepository;
 
     @Transactional(readOnly = true)
-    public OperatorDashboardDTO getOperatorDashboardSummary() {
-        List<Incident> allIncidents = incidentRepository.findAll();
-        List<ServiceRequest> allRequests = serviceRequestRepository.findAll();
-        List<Tenant> allTenants = tenantRepository.findAll().stream()
-                .filter(t -> !"MSP_CORE".equals(t.getTenantId()))
+    public OperatorDashboardDTO getOperatorDashboardSummary(Member currentMember) {
+        String tenantId = currentMember.getTenant().getTenantId();
+        Tenant currentTenant = tenantRepository.findById(tenantId)
+                .orElseThrow(() -> new RuntimeException("Tenant not found: " + tenantId));
+
+        // 권한 체크: MSP 또는 운영사 소속 사용자만 접근 가능
+        String currentTenantType = currentTenant.getType();
+        if (!"MSP".equals(currentTenantType) && !"OPERATOR".equals(currentTenantType)) {
+            throw new org.springframework.security.access.AccessDeniedException("Only MSP or Operators can access this dashboard");
+        }
+
+        String currentTenantId = currentTenant.getTenantId();
+
+        List<Tenant> managedTenants;
+        if ("MSP".equals(currentTenantType)) {
+            // MSP 관리자는 모든 테넌트 조회 (본인 제외)
+            managedTenants = tenantRepository.findAll().stream()
+                    .filter(t -> !"OPER_MSP".equals(t.getTenantId()))
+                    .collect(Collectors.toList());
+        } else {
+            // 개별 운영사는 본인이 관리하는 테넌트만 조회
+            managedTenants = tenantRelationRepository.findByOperator_TenantId(currentTenantId).stream()
+                    .map(TenantRelation::getCustomer)
+                    .collect(Collectors.toList());
+        }
+
+        List<String> managedTenantIds = managedTenants.stream()
+                .map(Tenant::getTenantId)
+                .collect(Collectors.toList());
+
+        List<Incident> allIncidents = incidentRepository.findAll().stream()
+                .filter(i -> managedTenantIds.contains(i.getTenant().getTenantId()))
+                .collect(Collectors.toList());
+                
+        List<ServiceRequest> allRequests = serviceRequestRepository.findAll().stream()
+                .filter(sr -> managedTenantIds.contains(sr.getTenant().getTenantId()))
                 .collect(Collectors.toList());
 
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime slaRiskLimit = now.plusHours(2);
 
-        // 1. Global Metrics
+        // 1. Metrics for Managed Tenants
         long activeIncidents = allIncidents.stream()
                 .filter(i -> i.getStatus() != IncidentStatus.RESOLVED && i.getStatus() != IncidentStatus.CLOSED)
                 .count();
@@ -52,7 +87,7 @@ public class OperatorDashboardService {
                 .count();
 
         // 2. Tenant Summaries
-        List<OperatorDashboardDTO.TenantSummary> tenantSummaries = allTenants.stream()
+        List<OperatorDashboardDTO.TenantSummary> tenantSummaries = managedTenants.stream()
                 .map(tenant -> {
                     List<Incident> tenantIncidents = allIncidents.stream()
                             .filter(i -> i.getTenant().getTenantId().equals(tenant.getTenantId()))

@@ -20,12 +20,11 @@ public class OperatorDashboardController {
 
     @GetMapping("/summary")
     public ResponseEntity<?> getSummary(@AuthenticationPrincipal Member currentMember) {
-        // 권한 체크: MSP_CORE 소속 운영자만 접근 가능
-        if (!"MSP_CORE".equals(currentMember.getTenant().getTenantId())) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Access denied for this tenant");
+        try {
+            OperatorDashboardDTO summary = operatorDashboardService.getOperatorDashboardSummary(currentMember);
+            return ResponseEntity.ok(summary);
+        } catch (org.springframework.security.access.AccessDeniedException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
         }
-        
-        OperatorDashboardDTO summary = operatorDashboardService.getOperatorDashboardSummary();
-        return ResponseEntity.ok(summary);
     }
 }

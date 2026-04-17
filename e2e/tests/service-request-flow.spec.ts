@@ -10,7 +10,7 @@ test.describe('Service Request with File Attachment Flow', () => {
     await page.fill('input[placeholder="••••••••"]', 'password');
     await page.click('button:has-text("Sign In")');
 
-    await page.click('text=Global Catalog');
+    await page.click('text=Service Catalog');
     await page.click('text=New Service');
     
     const serviceName = `공인 인증서 교체 (E2E) ${Date.now()}`;
@@ -77,7 +77,7 @@ test.describe('Service Request with File Attachment Flow', () => {
     // 3. 운영자 포탈에서 확인 및 다운로드
     await page.bringToFront();
     await page.goto('http://localhost:3000'); // Refresh to see fulfillment board
-    await page.click('text=Fulfillment');
+    await page.click('text=Requests');
     
     await expect(page.locator('text=포탈 서버 인증서 갱신 요청')).toBeVisible();
     await page.click('text=포탈 서버 인증서 갱신 요청');

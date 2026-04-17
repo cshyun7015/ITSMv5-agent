@@ -48,9 +48,9 @@ const AdminCommandCenter: React.FC = () => {
         <nav className="header__nav">
           {[
             { id: 'dashboard', label: 'Dashboard', icon: '📈' },
-            { id: 'catalog', label: 'Global Catalog', icon: '🌐' },
+            { id: 'catalog', label: 'Service Catalog', icon: '📋' },
             { id: 'incidents', label: 'Incidents', icon: '⚠️' },
-            { id: 'fulfillment', label: 'Fulfillment', icon: '🛠️' },
+            { id: 'fulfillment', label: 'Requests', icon: '📩' },
             { id: 'codes', label: 'System Codes', icon: '⚙️' }
           ].map(item => (
             <button 

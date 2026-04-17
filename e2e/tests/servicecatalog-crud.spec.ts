@@ -8,8 +8,8 @@ test.describe('Service Catalog CRUD E2E Test', () => {
     await page.fill('input[type="password"]', 'password');
     await page.click('button:has-text("Sign In")');
 
-    // 2. 서비스 카탈로그 선택 (Global Catalog 메뉴)
-    await page.click('text=Global Catalog');
+    // 2. 서비스 카탈로그 선택 (Service Catalog 메뉴)
+    await page.click('text=Service Catalog');
     await expect(page.locator('h2')).toContainText('Catalog & Template Governance');
   });
 
