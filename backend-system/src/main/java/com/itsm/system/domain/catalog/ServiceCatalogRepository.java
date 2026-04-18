@@ -11,4 +11,5 @@ public interface ServiceCatalogRepository extends JpaRepository<ServiceCatalog, 
     boolean existsByTenant_TenantIdAndTemplateSourceId(String tenantId, Long templateSourceId);
     List<ServiceCatalog> findAllByTenantAndCategory(Tenant tenant, CatalogCategory category);
     long countByCategory(CatalogCategory category);
+    long countByIsTemplateTrue();
 }

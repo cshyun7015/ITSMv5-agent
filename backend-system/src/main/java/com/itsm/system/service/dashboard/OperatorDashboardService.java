@@ -81,7 +81,7 @@ public class OperatorDashboardService {
 
         // 1. Core Metrics Aggregation
         long totalTenants = managedTenants.size();
-        long totalCatalogs = serviceCatalogRepository.count();
+        long totalCatalogs = serviceCatalogRepository.countByIsTemplateTrue();
 
         long activeIncidents = allIncidents.stream()
                 .filter(i -> i.getStatus() != IncidentStatus.RESOLVED && i.getStatus() != IncidentStatus.CLOSED)
