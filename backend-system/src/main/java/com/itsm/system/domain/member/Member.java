@@ -84,4 +84,19 @@ public class Member extends BaseEntity implements UserDetails {
 
     @Override
     public boolean isEnabled() { return isActive && !isDeleted; }
+
+    public void updateInfo(String email, Boolean isActive) {
+        this.email = email;
+        if (isActive != null) {
+            this.isActive = isActive;
+        }
+    }
+
+    public void updatePassword(String encodedPassword) {
+        this.password = encodedPassword;
+    }
+
+    public void delete() {
+        this.isDeleted = true;
+    }
 }

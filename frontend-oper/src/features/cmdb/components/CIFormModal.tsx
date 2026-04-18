@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ciApi } from '../api/ciApi';
 import { incidentApi } from '../../incident/api/incidentApi';
 import { codeApi } from '../../code/api/codeApi';
+import { fulfillmentApi } from '../../fulfillment/api/fulfillmentApi';
 import { ConfigurationItem, CIRequest } from '../types';
 import { CodeDTO } from '../../fulfillment/types';
 import { useAuth } from '../../auth/context/AuthContext';
@@ -16,10 +17,12 @@ const CIFormModal: React.FC<CIFormModalProps> = ({ ci, onClose, onSuccess }) => 
   const { user } = useAuth();
   const isEdit = !!ci;
 
+  const [tenants, setTenants] = useState<any[]>([]);
   const [types, setTypes] = useState<CodeDTO[]>([]);
   const [statuses, setStatuses] = useState<CodeDTO[]>([]);
   const [operators, setOperators] = useState<any[]>([]);
 
+  const [targetTenantId, setTargetTenantId] = useState(ci?.tenantId || '');
   const [name, setName] = useState(ci?.name || '');
   const [typeCode, setTypeCode] = useState(ci?.typeCode || 'SERVER');
   const [statusCode, setStatusCode] = useState(ci?.statusCode || 'PROVISIONING');
@@ -36,14 +39,21 @@ const CIFormModal: React.FC<CIFormModalProps> = ({ ci, onClose, onSuccess }) => 
 
   const loadMetadata = async () => {
     try {
-      const [typeData, statusData, operatorData] = await Promise.all([
+      const [tenantData, typeData, statusData, operatorData] = await Promise.all([
+        fulfillmentApi.getTenants(),
         codeApi.getCodesByGroup('CI_TYPE'),
         codeApi.getCodesByGroup('CI_STATUS'),
         incidentApi.getOperators()
       ]);
+      setTenants(tenantData);
       setTypes(typeData);
       setStatuses(statusData);
       setOperators(operatorData);
+      
+      // If adding new, default to first tenant if available
+      if (!isEdit && tenantData.length > 0 && !targetTenantId) {
+        setTargetTenantId(tenantData[0].tenantId);
+      }
     } catch (error) {
       console.error('Failed to load CMDB metadata');
     }
@@ -51,12 +61,15 @@ const CIFormModal: React.FC<CIFormModalProps> = ({ ci, onClose, onSuccess }) => 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user?.tenantId) return;
+    if (!targetTenantId) {
+      alert('Please select a customer.');
+      return;
+    }
     setIsSubmitting(true);
 
     try {
       const payload: CIRequest = {
-        tenantId: user.tenantId,
+        tenantId: targetTenantId,
         name,
         typeCode,
         statusCode,
@@ -88,6 +101,23 @@ const CIFormModal: React.FC<CIFormModalProps> = ({ ci, onClose, onSuccess }) => 
         </header>
 
         <form onSubmit={handleSubmit} className="standard-form">
+          <div className="form-section customer-section">
+            <label>Customer Company (Tenant) <span className="required-star">*</span></label>
+            <select 
+              value={targetTenantId} 
+              onChange={e => setTargetTenantId(e.target.value)} 
+              className="modern-input tenant-select"
+              required
+              disabled={isEdit}
+            >
+              <option value="" disabled>Select a customer...</option>
+              {tenants.map(t => (
+                <option key={t.tenantId} value={t.tenantId}>{t.name} ({t.tenantId})</option>
+              ))}
+            </select>
+            {isEdit && <span className="helper-text">Customer cannot be changed after registration.</span>}
+          </div>
+
           <div className="form-section">
             <label>CI Name <span className="required-star">*</span></label>
             <input 
@@ -161,6 +191,11 @@ const CIFormModal: React.FC<CIFormModalProps> = ({ ci, onClose, onSuccess }) => 
 
         .standard-form { padding: 32px; display: flex; flex-direction: column; gap: 24px; }
         .form-section { display: flex; flex-direction: column; gap: 8px; }
+        
+        .customer-section { background: rgba(59, 130, 246, 0.05); padding: 16px; border-radius: 12px; border: 1px solid rgba(59, 130, 246, 0.1); }
+        .tenant-select { border-color: rgba(59, 130, 246, 0.3) !important; font-weight: 700; color: #60a5fa !important; }
+        .helper-text { font-size: 11px; color: #64748b; margin-top: 4px; }
+
         .form-row { display: flex; gap: 16px; }
         .form-group { flex: 1; display: flex; flex-direction: column; gap: 8px; }
         .form-group label, .form-section label { font-size: 13px; font-weight: 700; color: #64748b; }
@@ -170,7 +205,8 @@ const CIFormModal: React.FC<CIFormModalProps> = ({ ci, onClose, onSuccess }) => 
           background: rgba(255,255,255,0.03); border: 1px solid #1e293b; border-radius: 12px; padding: 12px 16px;
           color: #fff; font-size: 14px; outline: none; transition: all 0.2s;
         }
-        .modern-input:focus { border-color: #3b82f6; background: rgba(255,255,255,0.05); }
+        .modern-input:focus:not(:disabled) { border-color: #3b82f6; background: rgba(255,255,255,0.05); }
+        .modern-input:disabled { opacity: 0.6; cursor: not-allowed; }
         .textarea { resize: vertical; min-height: 100px; }
 
         .form-actions { display: flex; justify-content: flex-end; gap: 16px; margin-top: 12px; }
@@ -186,5 +222,4 @@ const CIFormModal: React.FC<CIFormModalProps> = ({ ci, onClose, onSuccess }) => 
   );
 };
 
-// End of CIFormModal
 export default CIFormModal;

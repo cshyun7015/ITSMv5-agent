@@ -11,6 +11,7 @@ import java.time.LocalDateTime;
 public class ConfigurationItemDTO {
     private Long ciId;
     private String tenantId;
+    private String tenantName;
     private String name;
     private String typeCode;
     private String statusCode;

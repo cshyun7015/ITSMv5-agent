@@ -72,7 +72,10 @@ const CIList: React.FC = () => {
             <div className="item-main">
               <div className="id-tag">CI-{String(ci.ciId).padStart(5, '0')}</div>
               <div className="title-row">
-                <h3>{ci.name}</h3>
+                <div className="title-left">
+                  <h3>{ci.name}</h3>
+                  <span className="customer-badge">{ci.tenantName}</span>
+                </div>
                 <span className={`status-pill ${ci.statusCode}`}>{ci.statusCode}</span>
               </div>
               <div className="meta-row">
@@ -130,7 +133,10 @@ const CIList: React.FC = () => {
         .item-main { flex: 1; }
         .id-tag { font-size: 11px; font-weight: 800; color: #3b82f6; font-family: 'JetBrains Mono', monospace; margin-bottom: 4px; }
         .title-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .title-left { display: flex; align-items: center; gap: 12px; }
         .title-row h3 { margin: 0; font-size: 17px; font-weight: 700; color: #f8fafc; }
+        
+        .customer-badge { background: rgba(59, 130, 246, 0.1); color: #60a5fa; font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(59, 130, 246, 0.2); }
         
         .status-pill { font-size: 10px; font-weight: 800; padding: 2px 10px; border-radius: 6px; text-transform: uppercase; }
         .status-pill.ACTIVE { background: #059669; color: #fff; }

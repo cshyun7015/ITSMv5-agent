@@ -1,6 +1,7 @@
 export interface ConfigurationItem {
   ciId: number;
   tenantId: string;
+  tenantName: string;
   name: string;
   typeCode: string; // SERVER, DATABASE, NETWORK, APPLICATION, TERMINAL
   statusCode: string; // PROVISIONING, ACTIVE, MAINTENANCE, RETIRED, DECOMMISSIONED

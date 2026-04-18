@@ -11,12 +11,13 @@ import DashboardPage from './features/dashboard/components/DashboardPage';
 import CatalogManagement from './features/catalog/components/CatalogManagement';
 import ChangeBoard from './features/change/components/ChangeBoard';
 import CIList from './features/cmdb/components/CIList';
+import OperatorList from './features/operator/components/OperatorList';
 import { codeApi } from './features/code/api/codeApi';
 import { CodeDTO } from './features/fulfillment/types';
 
 const AdminCommandCenter: React.FC = () => {
   const { user, logout } = useAuth();
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'catalog' | 'cis' | 'changes' | 'codes' | 'fulfillment' | 'incidents'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'catalog' | 'cis' | 'changes' | 'codes' | 'fulfillment' | 'incidents' | 'opers'>('dashboard');
   const [selectedRequestId, setSelectedRequestId] = useState<number | null>(null);
   const [selectedIncidentId, setSelectedIncidentId] = useState<number | null>(null);
 
@@ -71,6 +72,8 @@ const AdminCommandCenter: React.FC = () => {
             <ChangeBoard />
           ) : activeTab === 'codes' ? (
             <CodeManagement />
+          ) : activeTab === 'opers' ? (
+            <OperatorList />
           ) : activeTab === 'fulfillment' ? (
             <div className="fulfillment-section">
               {selectedRequestId ? (

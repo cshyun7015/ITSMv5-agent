@@ -49,6 +49,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/auth/**").permitAll()
                 .requestMatchers("/api/v1/public/**").permitAll()
                 .requestMatchers("/api/v1/incidents/alerts").permitAll()
+                .requestMatchers("/api/v1/cis/**").hasAnyRole("OPERATOR", "ADMIN")
+                .requestMatchers("/api/v1/operators/**").hasRole("ADMIN")
                 .requestMatchers("/error").permitAll()
                 .anyRequest().authenticated()
             )

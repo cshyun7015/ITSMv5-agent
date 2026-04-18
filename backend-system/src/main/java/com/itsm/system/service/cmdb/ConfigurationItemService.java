@@ -64,14 +64,14 @@ public class ConfigurationItemService {
 
     @Transactional(readOnly = true)
     public List<ConfigurationItemDTO> listCIs(String tenantId) {
-        return configurationItemRepository.findByTenant_TenantId(tenantId).stream()
+        return configurationItemRepository.findAllWithDetailsByTenantId(tenantId).stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
     public ConfigurationItemDTO getCI(Long id) {
-        return configurationItemRepository.findById(Objects.requireNonNull(id))
+        return configurationItemRepository.findByIdWithDetails(Objects.requireNonNull(id))
                 .map(this::convertToDTO)
                 .orElseThrow(() -> new IllegalArgumentException("CI not found"));
     }
@@ -84,7 +84,8 @@ public class ConfigurationItemService {
     private ConfigurationItemDTO convertToDTO(ConfigurationItem ci) {
         return ConfigurationItemDTO.builder()
                 .ciId(ci.getCiId())
-                .tenantId(ci.getTenant().getTenantId())
+                .tenantId(ci.getTenant() != null ? ci.getTenant().getTenantId() : null)
+                .tenantName(ci.getTenant() != null ? ci.getTenant().getName() : "Unknown")
                 .name(ci.getName())
                 .typeCode(ci.getTypeCode())
                 .statusCode(ci.getStatusCode())
