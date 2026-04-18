@@ -18,8 +18,12 @@ public class ConfigurationItemController {
     private final ConfigurationItemService configurationItemService;
 
     @GetMapping
-    public ResponseEntity<List<ConfigurationItemDTO>> listCIs(@RequestParam String tenantId) {
-        return ResponseEntity.ok(configurationItemService.listCIs(tenantId));
+    public ResponseEntity<List<ConfigurationItemDTO>> listCIs(
+            @RequestParam String tenantId,
+            org.springframework.security.core.Authentication authentication) {
+        boolean isAdmin = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+        return ResponseEntity.ok(configurationItemService.listCIs(tenantId, isAdmin));
     }
 
     @GetMapping("/{id}")

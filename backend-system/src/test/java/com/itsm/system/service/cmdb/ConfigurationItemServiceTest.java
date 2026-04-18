@@ -64,7 +64,7 @@ class ConfigurationItemServiceTest {
                 .willReturn(Arrays.asList(testCI));
 
         // when
-        List<ConfigurationItemDTO> result = configurationItemService.listCIs("TEST_TENANT");
+        List<ConfigurationItemDTO> result = configurationItemService.listCIs("TEST_TENANT", false);
 
         // then
         assertThat(result).hasSize(1);

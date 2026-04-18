@@ -22,4 +22,5 @@ public class ConfigurationItemDTO {
     private String description;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private boolean isDeleted;
 }

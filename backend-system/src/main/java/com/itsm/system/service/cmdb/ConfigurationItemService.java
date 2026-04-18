@@ -63,8 +63,12 @@ public class ConfigurationItemService {
     }
 
     @Transactional(readOnly = true)
-    public List<ConfigurationItemDTO> listCIs(String tenantId) {
-        return configurationItemRepository.findAllWithDetailsByTenantId(tenantId).stream()
+    public List<ConfigurationItemDTO> listCIs(String tenantId, boolean includeDeleted) {
+        List<ConfigurationItem> items = includeDeleted 
+                ? configurationItemRepository.findAllWithDetailsByTenantIdIncludingDeleted(tenantId)
+                : configurationItemRepository.findAllWithDetailsByTenantId(tenantId);
+        
+        return items.stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
@@ -107,6 +111,7 @@ public class ConfigurationItemService {
                 .ownerName(ci.getOwner() != null ? ci.getOwner().getUsername() : null)
                 .createdAt(ci.getCreatedAt())
                 .updatedAt(ci.getUpdatedAt())
+                .isDeleted(ci.getIsDeleted())
                 .build();
     }
 }

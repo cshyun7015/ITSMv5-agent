@@ -54,7 +54,7 @@ class ConfigurationItemControllerTest {
     void listCIs_ShouldReturnOk() throws Exception {
         // given
         ConfigurationItemDTO dto = ConfigurationItemDTO.builder().name("Test CI").build();
-        given(configurationItemService.listCIs("ocomp1")).willReturn(Arrays.asList(dto));
+        given(configurationItemService.listCIs("ocomp1", false)).willReturn(Arrays.asList(dto));
 
         // when & then
         mockMvc.perform(get("/api/v1/cis")
