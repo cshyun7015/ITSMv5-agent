@@ -33,17 +33,47 @@ const DashboardPage: React.FC = () => {
       </header>
 
       <section className="stats-section">
-        <div className="stat-card">
-          <span className="label">Managed Tenants</span>
-          <span className="value">{summary.tenantSummaries.length}</span>
+        <div className="stat-card tenants">
+          <div className="stat-header">
+            <span className="icon">🏢</span>
+            <span className="label">Managed Tenants</span>
+          </div>
+          <span className="value">{summary.totalTenants}</span>
         </div>
-        <div className={`stat-card ${summary.totalActiveIncidents > 0 ? 'active' : ''}`}>
-          <span className="label">Total Active Incidents</span>
+        <div className="stat-card catalogs">
+          <div className="stat-header">
+            <span className="icon">📋</span>
+            <span className="label">Service Catalogs</span>
+          </div>
+          <span className="value">{summary.totalCatalogs}</span>
+        </div>
+        <div className={`stat-card requests ${summary.totalActiveRequests > 0 ? 'active' : ''}`}>
+          <div className="stat-header">
+            <span className="icon">📩</span>
+            <span className="label">Active Requests</span>
+          </div>
+          <span className="value">{summary.totalActiveRequests}</span>
+        </div>
+        <div className={`stat-card incidents ${summary.totalActiveIncidents > 0 ? 'risk' : ''}`}>
+          <div className="stat-header">
+            <span className="icon">⚠️</span>
+            <span className="label">Active Incidents</span>
+          </div>
           <span className="value">{summary.totalActiveIncidents}</span>
         </div>
-        <div className={`stat-card ${summary.slaRiskCount > 0 ? 'risk-blink' : ''}`}>
-          <span className="label">SLA at Risk</span>
-          <span className="value">{summary.slaRiskCount}</span>
+        <div className={`stat-card changes ${summary.totalActiveChanges > 0 ? 'process' : ''}`}>
+          <div className="stat-header">
+            <span className="icon">🔄</span>
+            <span className="label">Active Changes</span>
+          </div>
+          <span className="value">{summary.totalActiveChanges}</span>
+        </div>
+        <div className="stat-card cis">
+          <div className="stat-header">
+            <span className="icon">📦</span>
+            <span className="label">Active CI (Assets)</span>
+          </div>
+          <span className="value">{summary.totalActiveCIs}</span>
         </div>
       </section>
 
@@ -110,36 +140,78 @@ const DashboardPage: React.FC = () => {
           align-items: center;
           margin-bottom: 24px;
         }
-        .op-header h1 { font-size: 24px; font-weight: 700; color: #fff; }
-        .refresh-status { font-size: 12px; color: #10b981; }
+        .op-header h1 { font-size: 24px; font-weight: 800; color: #fff; letter-spacing: -0.5px; }
+        .refresh-status { 
+          font-size: 11px; 
+          color: #10b981; 
+          background: rgba(16, 185, 129, 0.1);
+          padding: 4px 10px;
+          border-radius: 20px;
+          border: 1px solid rgba(16, 185, 129, 0.2);
+          text-transform: uppercase;
+          font-weight: 700;
+        }
 
         .stats-section {
           display: grid;
           grid-template-columns: repeat(3, 1fr);
-          gap: 20px;
-          margin-bottom: 24px;
-        }
-        .stat-card {
-          background: #1e293b;
-          border: 1px solid #334155;
-          padding: 20px;
-          border-radius: 12px;
-          display: flex;
-          flex-direction: column;
-        }
-        .stat-card.active { border-color: #3b82f6; }
-        .stat-card.risk-blink {
-          border-color: #ef4444;
-          box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
-          animation: blink-border 1s infinite alternate;
-        }
-        @keyframes blink-border {
-          from { border-color: #ef4444; }
-          to { border-color: #7f1d1d; }
+          grid-template-rows: repeat(2, auto);
+          gap: 16px;
+          margin-bottom: 32px;
         }
 
-        .stat-card .label { font-size: 13px; color: #94a3b8; margin-bottom: 8px; }
-        .stat-card .value { font-size: 36px; font-weight: 800; }
+        .stat-card {
+          background: rgba(30, 41, 59, 0.7);
+          backdrop-filter: blur(12px);
+          border: 1px solid rgba(255, 255, 255, 0.05);
+          padding: 24px;
+          border-radius: 16px;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+          transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .stat-card:hover {
+          transform: translateY(-4px);
+          background: rgba(30, 41, 59, 0.9);
+          box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .stat-header {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+        .stat-header .icon {
+          font-size: 20px;
+          background: rgba(255, 255, 255, 0.03);
+          width: 36px;
+          height: 36px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 10px;
+        }
+
+        .stat-card .label { font-size: 13px; color: #94a3b8; font-weight: 600; }
+        .stat-card .value { font-size: 32px; font-weight: 800; color: #fff; }
+
+        /* KPI Specific Accents */
+        .stat-card.tenants .icon { background: rgba(59, 130, 246, 0.1); }
+        .stat-card.catalogs .icon { background: rgba(139, 92, 246, 0.1); }
+        .stat-card.requests.active { border-color: rgba(16, 185, 129, 0.3); }
+        .stat-card.requests.active .icon { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+        
+        .stat-card.incidents.risk {
+          border-color: rgba(239, 68, 68, 0.3);
+          box-shadow: 0 0 15px rgba(239, 68, 68, 0.1);
+        }
+        .stat-card.incidents .icon { background: rgba(239, 68, 68, 0.1); }
+        
+        .stat-card.changes.process { border-color: rgba(245, 158, 11, 0.3); }
+        .stat-card.changes .icon { background: rgba(245, 158, 11, 0.1); }
+        
+        .stat-card.cis .icon { background: rgba(148, 163, 184, 0.1); }
 
         .dashboard-grid {
           display: grid;
@@ -150,48 +222,53 @@ const DashboardPage: React.FC = () => {
         .grid-left { display: flex; flex-direction: column; gap: 24px; }
 
         .tenant-status, .resource-monitor, .log-monitor {
-          background: #1e293b;
-          border: 1px solid #334155;
-          border-radius: 12px;
-          padding: 20px;
+          background: rgba(30, 41, 59, 0.4);
+          backdrop-filter: blur(10px);
+          border: 1px solid rgba(255, 255, 255, 0.05);
+          border-radius: 16px;
+          padding: 24px;
         }
         .tenant-status h3, .resource-monitor h3, .log-monitor h3 {
           font-size: 16px;
-          margin-bottom: 16px;
+          margin-bottom: 20px;
           color: #94a3b8;
+          font-weight: 700;
         }
 
         .tenant-list { display: flex; flex-direction: column; gap: 12px; }
         .tenant-item {
           display: flex;
           justify-content: space-between;
-          padding: 12px;
-          background: #0f172a;
-          border-radius: 8px;
+          padding: 14px;
+          background: rgba(15, 23, 42, 0.3);
+          border-radius: 10px;
+          border: 1px solid rgba(255, 255, 255, 0.02);
         }
         .tenant-info { display: flex; align-items: center; gap: 12px; }
         .tenant-color { width: 4px; height: 16px; border-radius: 2px; }
-        .tenant-name { font-weight: 500; font-size: 14px; }
+        .tenant-name { font-weight: 600; font-size: 14px; color: #e2e8f0; }
 
         .tenant-metrics { display: flex; align-items: center; gap: 16px; }
-        .inc-count { font-size: 12px; color: #94a3b8; }
+        .inc-count { font-size: 12px; color: #64748b; }
 
         .status-pill {
-          padding: 2px 8px;
-          border-radius: 4px;
+          padding: 4px 10px;
+          border-radius: 6px;
           font-size: 10px;
-          font-weight: 700;
+          font-weight: 800;
           text-transform: uppercase;
+          letter-spacing: 0.5px;
         }
-        .status-pill.green { background: #064e3b; color: #34d399; }
-        .status-pill.yellow { background: #451a03; color: #fbbf24; }
-        .status-pill.red { background: #450a0a; color: #f87171; }
+        .status-pill.green { background: rgba(6, 78, 59, 0.4); color: #34d399; border: 1px solid rgba(52, 211, 153, 0.2); }
+        .status-pill.yellow { background: rgba(69, 26, 3, 0.4); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.2); }
+        .status-pill.red { background: rgba(69, 10, 10, 0.4); color: #f87171; border: 1px solid rgba(248, 113, 113, 0.2); }
 
         .iframe-container { display: flex; flex-direction: column; gap: 12px; }
+        .iframe-container iframe { border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.05); }
         
         .log-viewport {
           background: #020617;
-          border-radius: 8px;
+          border-radius: 12px;
           padding: 16px;
           height: 380px;
           font-family: 'JetBrains Mono', monospace;
@@ -200,12 +277,10 @@ const DashboardPage: React.FC = () => {
           display: flex;
           align-items: center;
           justify-content: center;
+          border: 1px solid rgba(255, 255, 255, 0.05);
         }
-        .empty-logs { color: #475569; font-style: italic; }
-        .log-line { margin-bottom: 6px; color: #cbd5e1; width: 100%; }
-        .log-line span { color: #64748b; margin-right: 8px; }
-
-        .loading { padding: 40px; text-align: center; color: #94a3b8; }
+        .empty-logs { color: #334155; font-style: italic; }
+        .loading { padding: 40px; text-align: center; color: #64748b; }
       `}</style>
     </div>
   );

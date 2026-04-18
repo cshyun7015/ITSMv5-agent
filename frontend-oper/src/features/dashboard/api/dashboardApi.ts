@@ -9,9 +9,12 @@ export interface TenantSummary {
 }
 
 export interface OperatorDashboardSummary {
+  totalTenants: number;
+  totalCatalogs: number;
   totalActiveIncidents: number;
-  totalPendingRequests: number;
-  slaRiskCount: number;
+  totalActiveRequests: number;
+  totalActiveChanges: number;
+  totalActiveCIs: number;
   tenantSummaries: TenantSummary[];
 }
 

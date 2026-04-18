@@ -11,6 +11,9 @@ import com.itsm.system.domain.tenant.Tenant;
 import com.itsm.system.domain.tenant.TenantRepository;
 import com.itsm.system.domain.tenant.TenantRelationRepository;
 import com.itsm.system.domain.tenant.TenantRelation;
+import com.itsm.system.domain.catalog.ServiceCatalogRepository;
+import com.itsm.system.domain.change.ChangeRequestRepository;
+import com.itsm.system.domain.cmdb.ConfigurationItemRepository;
 import com.itsm.system.dto.dashboard.OperatorDashboardDTO;
 import com.itsm.system.repository.incident.IncidentRepository;
 import lombok.RequiredArgsConstructor;
@@ -18,7 +21,6 @@ import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -31,6 +33,9 @@ public class OperatorDashboardService {
     private final ServiceRequestRepository serviceRequestRepository;
     private final TenantRepository tenantRepository;
     private final TenantRelationRepository tenantRelationRepository;
+    private final ServiceCatalogRepository serviceCatalogRepository;
+    private final ChangeRequestRepository changeRequestRepository;
+    private final ConfigurationItemRepository configurationItemRepository;
 
     @Transactional(readOnly = true)
     public OperatorDashboardDTO getOperatorDashboardSummary(@NonNull Member currentMember) {
@@ -74,21 +79,26 @@ public class OperatorDashboardService {
                 .filter(sr -> managedTenantIds.contains(sr.getTenant().getTenantId()))
                 .collect(Collectors.toList());
 
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime slaRiskLimit = now.plusHours(2);
+        // 1. Core Metrics Aggregation
+        long totalTenants = managedTenants.size();
+        long totalCatalogs = serviceCatalogRepository.count();
 
-        // 1. Metrics for Managed Tenants
         long activeIncidents = allIncidents.stream()
                 .filter(i -> i.getStatus() != IncidentStatus.RESOLVED && i.getStatus() != IncidentStatus.CLOSED)
                 .count();
 
-        long pendingRequests = allRequests.stream()
+        long activeRequests = allRequests.stream()
                 .filter(sr -> sr.getStatus() != ServiceRequestStatus.RESOLVED && sr.getStatus() != ServiceRequestStatus.CLOSED)
                 .count();
 
-        long slaRiskCount = allIncidents.stream()
-                .filter(i -> i.getStatus() != IncidentStatus.RESOLVED && i.getStatus() != IncidentStatus.CLOSED)
-                .filter(i -> i.getSlaDeadline() != null && i.getSlaDeadline().isBefore(slaRiskLimit))
+        long activeChanges = changeRequestRepository.findAll().stream()
+                .filter(cr -> managedTenantIds.contains(cr.getTenant().getTenantId()))
+                .filter(cr -> !"CLOSED".equals(cr.getStatusCode()) && !"REJECTED".equals(cr.getStatusCode()))
+                .count();
+
+        long activeCIs = configurationItemRepository.findAll().stream()
+                .filter(ci -> managedTenantIds.contains(ci.getTenant().getTenantId()))
+                .filter(ci -> "ACTIVE".equals(ci.getStatusCode()))
                 .count();
 
         // 2. Tenant Summaries
@@ -117,9 +127,12 @@ public class OperatorDashboardService {
                 .collect(Collectors.toList());
 
         return OperatorDashboardDTO.builder()
+                .totalTenants(totalTenants)
+                .totalCatalogs(totalCatalogs)
                 .totalActiveIncidents(activeIncidents)
-                .totalPendingRequests(pendingRequests)
-                .slaRiskCount(slaRiskCount)
+                .totalActiveRequests(activeRequests)
+                .totalActiveChanges(activeChanges)
+                .totalActiveCIs(activeCIs)
                 .tenantSummaries(tenantSummaries)
                 .build();
     }

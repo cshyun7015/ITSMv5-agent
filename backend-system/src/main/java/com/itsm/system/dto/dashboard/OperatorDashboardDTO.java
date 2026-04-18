@@ -8,9 +8,12 @@ import java.util.List;
 @Builder
 public class OperatorDashboardDTO {
     
+    private long totalTenants;
+    private long totalCatalogs;
     private long totalActiveIncidents;
-    private long totalPendingRequests;
-    private long slaRiskCount; // Deadline within 2 hours
+    private long totalActiveRequests;
+    private long totalActiveChanges;
+    private long totalActiveCIs;
     
     private List<TenantSummary> tenantSummaries;
 
