@@ -72,4 +72,19 @@ public class IncidentService {
         return incidentRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Incident not found"));
     }
+
+    @Transactional
+    public Incident updateIncident(Long id, String title, String description, 
+                                   IncidentImpact impact, IncidentUrgency urgency, 
+                                   String category) {
+        Incident incident = getIncident(id);
+        incident.update(title, description, impact, urgency, category);
+        return incidentRepository.save(incident);
+    }
+
+    @Transactional
+    public void deleteIncident(Long id) {
+        Incident incident = getIncident(id);
+        incidentRepository.delete(incident);
+    }
 }

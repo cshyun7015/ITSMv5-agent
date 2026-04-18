@@ -102,4 +102,14 @@ public class Incident extends BaseEntity {
     public void close() {
         this.status = IncidentStatus.CLOSED;
     }
+
+    public void update(String title, String description, IncidentImpact impact, 
+                       IncidentUrgency urgency, String category) {
+        this.title = title;
+        this.description = description;
+        this.impact = impact;
+        this.urgency = urgency;
+        this.category = category;
+        calculatePriority();
+    }
 }

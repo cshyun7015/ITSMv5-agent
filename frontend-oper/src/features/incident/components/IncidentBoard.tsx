@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { incidentApi } from '../api/incidentApi';
 import { Incident } from '../types';
+import IncidentFormModal from './IncidentFormModal';
 
 interface IncidentBoardProps {
   onSelectIncident: (id: number) => void;
@@ -9,6 +10,7 @@ interface IncidentBoardProps {
 const IncidentBoard: React.FC<IncidentBoardProps> = ({ onSelectIncident }) => {
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     loadIncidents();
@@ -47,9 +49,14 @@ const IncidentBoard: React.FC<IncidentBoardProps> = ({ onSelectIncident }) => {
           <h2>Active Incidents</h2>
           <span className="count-badge">{activeIncidents.length} Issues</span>
         </div>
-        <div className="stats-box">
-          <div className="stat critical">P1: {incidents.filter(i => i.priority === 'P1').length}</div>
-          <div className="stat high">P2: {incidents.filter(i => i.priority === 'P2').length}</div>
+        <div className="board-actions">
+          <div className="stats-box">
+            <div className="stat critical">P1: {incidents.filter(i => i.priority === 'P1').length}</div>
+            <div className="stat high">P2: {incidents.filter(i => i.priority === 'P2').length}</div>
+          </div>
+          <button className="btn-register" onClick={() => setIsModalOpen(true)}>
+            + Register Incident
+          </button>
         </div>
       </div>
 
@@ -140,9 +147,31 @@ const IncidentBoard: React.FC<IncidentBoardProps> = ({ onSelectIncident }) => {
           50% { background: rgba(239, 68, 68, 0.15); }
         }
         .blinking { animation: blink 1.5s infinite; }
+      `}</style>
 
-        .all-clear { text-align: center; padding: 60px 20px; color: #94a3b8; }
-        .all-clear .icon { font-size: 48px; margin-bottom: 16px; }
+      {isModalOpen && (
+        <IncidentFormModal 
+          onClose={() => setIsModalOpen(false)} 
+          onSuccess={loadIncidents} 
+        />
+      )}
+
+      <style>{`
+        .incident-board { width: 100%; }
+        .board-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+        .title-area { display: flex; align-items: center; gap: 12px; }
+        .count-badge { background: rgba(255,255,255,0.1); padding: 4px 10px; border-radius: 20px; font-size: 14px; color: #94a3b8; }
+        
+        .board-actions { display: flex; align-items: center; gap: 20px; }
+        .btn-register { 
+          background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; border: none; 
+          padding: 10px 18px; border-radius: 10px; font-weight: 700; font-size: 14px; 
+          cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+        .btn-register:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(37, 99, 235, 0.4); }
+
+        .stats-box { display: flex; gap: 16px; }
+        .stat { padding: 4px 12px; border-radius: 6px; font-weight: 700; font-size: 13px; }
       `}</style>
     </div>
   );

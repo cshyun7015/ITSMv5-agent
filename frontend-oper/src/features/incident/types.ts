@@ -28,4 +28,5 @@ export interface IncidentReportRequest {
   impact: IncidentImpact;
   urgency: IncidentUrgency;
   category: string;
+  source?: string;
 }

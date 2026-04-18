@@ -34,5 +34,16 @@ export const incidentApi = {
   // 해결 처리
   resolve: async (id: number, resolution: string): Promise<void> => {
     await apiClient.post(`/incidents/${id}/resolve`, { resolution });
+  },
+
+  // 인시던트 수정
+  updateIncident: async (id: number, data: IncidentReportRequest): Promise<Incident> => {
+    const response = await apiClient.put<Incident>(`/incidents/${id}`, data);
+    return response.data;
+  },
+
+  // 인시던트 삭제
+  deleteIncident: async (id: number): Promise<void> => {
+    await apiClient.delete(`/incidents/${id}`);
   }
 };

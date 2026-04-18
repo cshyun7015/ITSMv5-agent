@@ -66,13 +66,29 @@ public class IncidentController {
         incidentService.assignSpecialist(id, currentMember.getMemberId());
         return ResponseEntity.ok().build();
     }
-
     @PostMapping("/{id}/resolve")
     public ResponseEntity<Void> resolve(
             @PathVariable Long id,
             @RequestBody IncidentDTO.Resolve dto) {
         incidentService.resolveIncident(id, dto.getResolution());
         return ResponseEntity.ok().build();
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<IncidentDTO.Response> updateIncident(
+            @PathVariable Long id,
+            @RequestBody IncidentDTO.Request dto) {
+        Incident incident = incidentService.updateIncident(
+                id, dto.getTitle(), dto.getDescription(),
+                dto.getImpact(), dto.getUrgency(), dto.getCategory()
+        );
+        return ResponseEntity.ok(convertToResponse(incident));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteIncident(@PathVariable Long id) {
+        incidentService.deleteIncident(id);
+        return ResponseEntity.noContent().build();
     }
 
     private IncidentDTO.Response convertToResponse(Incident incident) {

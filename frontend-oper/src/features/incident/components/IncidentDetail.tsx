@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { incidentApi } from '../api/incidentApi';
 import { Incident } from '../types';
+import IncidentFormModal from './IncidentFormModal';
+import ConfirmDialog from '../../../components/common/ConfirmDialog';
 
 interface IncidentDetailProps {
   incidentId: number;
@@ -13,6 +15,9 @@ const IncidentDetail: React.FC<IncidentDetailProps> = ({ incidentId, onBack, onU
   const [isLoading, setIsLoading] = useState(true);
   const [resolution, setResolution] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
 
   useEffect(() => {
     loadIncident();
@@ -61,16 +66,32 @@ const IncidentDetail: React.FC<IncidentDetailProps> = ({ incidentId, onBack, onU
     }
   };
 
+  const handleDelete = async () => {
+    try {
+      await incidentApi.deleteIncident(incidentId);
+      onUpdated();
+      onBack();
+    } catch (error) {
+      alert('Failed to delete incident');
+    }
+  };
+
   if (isLoading) return <div className="loading">Retrieving telemetry data...</div>;
-  if (!incident) return <div>Incident not found.</div>;
+  if (!incident) return <div className="loading">Incident not found.</div>;
 
   return (
     <div className="incident-detail">
       <div className="detail-nav">
         <button className="back-link" onClick={onBack}>← Back to Board</button>
-        <div className="incident-title-block">
-          <span className={`priority-indicator ${incident.priority}`}>{incident.priority}</span>
-          <h1>{incident.title}</h1>
+        <div className="detail-header-row">
+          <div className="incident-title-block">
+            <span className={`priority-indicator ${incident.priority}`}>{incident.priority}</span>
+            <h1>{incident.title}</h1>
+          </div>
+          <div className="header-actions">
+            <button className="btn-edit-action" onClick={() => setIsEditModalOpen(true)}>Edit</button>
+            <button className="btn-delete-action" onClick={() => setIsDeleteConfirmOpen(true)}>Delete</button>
+          </div>
         </div>
       </div>
 
@@ -150,11 +171,37 @@ const IncidentDetail: React.FC<IncidentDetailProps> = ({ incidentId, onBack, onU
         </div>
       </div>
 
+      {isEditModalOpen && (
+        <IncidentFormModal 
+          incident={incident} 
+          onClose={() => setIsEditModalOpen(false)} 
+          onSuccess={() => { loadIncident(); onUpdated(); }} 
+        />
+      )}
+
+      <ConfirmDialog 
+        isOpen={isDeleteConfirmOpen}
+        title="Delete Incident"
+        message="Are you sure you want to delete this incident? This action cannot be undone."
+        onConfirm={handleDelete}
+        onCancel={() => setIsDeleteConfirmOpen(false)}
+      />
+
       <style>{`
         .incident-detail { padding: 10px; }
         .detail-nav { margin-bottom: 32px; }
+        .detail-header-row { display: flex; justify-content: space-between; align-items: center; }
+        .header-actions { display: flex; gap: 12px; }
         .back-link { background: none; border: none; color: #3b82f6; cursor: pointer; padding: 0; margin-bottom: 12px; font-weight: 500; }
         .incident-title-block { display: flex; align-items: center; gap: 16px; }
+
+        .btn-edit-action, .btn-delete-action {
+          background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+          color: #94a3b8; padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600;
+          cursor: pointer; transition: all 0.2s;
+        }
+        .btn-edit-action:hover { background: rgba(59, 130, 246, 0.1); color: #60a5fa; border-color: rgba(59, 130, 246, 0.2); }
+        .btn-delete-action:hover { background: rgba(239, 68, 68, 0.1); color: #f87171; border-color: rgba(239, 68, 68, 0.2); }
         .priority-indicator { padding: 4px 12px; border-radius: 4px; font-weight: 800; font-size: 18px; }
         .priority-indicator.P1 { background: #ef4444; color: white; box-shadow: 0 0 15px rgba(239, 68, 68, 0.4); }
         .priority-indicator.P2 { background: #f59e0b; color: white; }
