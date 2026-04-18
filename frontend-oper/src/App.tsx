@@ -10,12 +10,13 @@ import IncidentDetail from './features/incident/components/IncidentDetail';
 import DashboardPage from './features/dashboard/components/DashboardPage';
 import CatalogManagement from './features/catalog/components/CatalogManagement';
 import ChangeBoard from './features/change/components/ChangeBoard';
+import CIList from './features/cmdb/components/CIList';
 import { codeApi } from './features/code/api/codeApi';
 import { CodeDTO } from './features/fulfillment/types';
 
 const AdminCommandCenter: React.FC = () => {
   const { user, logout } = useAuth();
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'catalog' | 'changes' | 'codes' | 'fulfillment' | 'incidents'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'catalog' | 'cis' | 'changes' | 'codes' | 'fulfillment' | 'incidents'>('dashboard');
   const [selectedRequestId, setSelectedRequestId] = useState<number | null>(null);
   const [selectedIncidentId, setSelectedIncidentId] = useState<number | null>(null);
 
@@ -30,6 +31,7 @@ const AdminCommandCenter: React.FC = () => {
         <nav className="header__nav">
           {[
             { id: 'dashboard', label: 'Dashboard', icon: '📈' },
+            { id: 'cis', label: 'CIs', icon: '📦' },
             { id: 'catalog', label: 'Service Catalog', icon: '📋' },
             { id: 'changes', label: 'Changes', icon: '🔄' },
             { id: 'incidents', label: 'Incidents', icon: '⚠️' },
@@ -61,6 +63,8 @@ const AdminCommandCenter: React.FC = () => {
         <div className="workspace-panel">
           {activeTab === 'dashboard' ? (
             <DashboardPage />
+          ) : activeTab === 'cis' ? (
+            <CIList />
           ) : activeTab === 'catalog' ? (
             <CatalogManagement />
           ) : activeTab === 'changes' ? (
