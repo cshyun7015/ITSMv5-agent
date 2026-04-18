@@ -6,6 +6,7 @@ import { fulfillmentApi } from '../../fulfillment/api/fulfillmentApi';
 import { ConfigurationItem, CIRequest } from '../types';
 import { CodeDTO } from '../../fulfillment/types';
 import { useAuth } from '../../auth/context/AuthContext';
+import ConfirmDialog from '../../../components/common/ConfirmDialog';
 
 interface CIFormModalProps {
   ci?: ConfigurationItem;
@@ -32,6 +33,8 @@ const CIFormModal: React.FC<CIFormModalProps> = ({ ci, onClose, onSuccess }) => 
   const [description, setDescription] = useState(ci?.description || '');
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [isHardDelete, setIsHardDelete] = useState(false);
 
   useEffect(() => {
     loadMetadata();
@@ -59,14 +62,21 @@ const CIFormModal: React.FC<CIFormModalProps> = ({ ci, onClose, onSuccess }) => 
     }
   };
 
-  const handleDelete = async () => {
-    if (!ci || !window.confirm('Are you sure you want to retire this asset from CMDB?')) return;
+  const handleDeleteClick = () => {
+    if (!ci) return;
+    setIsDeleteConfirmOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!ci) return;
+    setIsDeleteConfirmOpen(false);
     setIsSubmitting(true);
     try {
-      await ciApi.deleteCI(ci.ciId);
+      await ciApi.deleteCI(ci.ciId, isHardDelete);
       onSuccess();
     } catch (error) {
       console.error('Failed to delete CI');
+      alert('Failed to delete asset. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -186,7 +196,7 @@ const CIFormModal: React.FC<CIFormModalProps> = ({ ci, onClose, onSuccess }) => 
               <button 
                 type="button" 
                 className="btn-delete" 
-                onClick={handleDelete} 
+                onClick={handleDeleteClick} 
                 disabled={isSubmitting}
                 style={{ marginRight: 'auto' }}
               >
@@ -200,6 +210,39 @@ const CIFormModal: React.FC<CIFormModalProps> = ({ ci, onClose, onSuccess }) => 
           </div>
         </form>
       </div>
+
+      <ConfirmDialog
+        isOpen={isDeleteConfirmOpen}
+        title="Delete Configuration Item"
+        message="Please select the deletion method for this asset."
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setIsDeleteConfirmOpen(false)}
+      >
+        <div className="delete-options">
+          <label className={`delete-option-card ${!isHardDelete ? 'active' : ''}`}>
+            <input 
+              type="radio" 
+              checked={!isHardDelete} 
+              onChange={() => setIsHardDelete(false)} 
+            />
+            <div className="option-info">
+              <span className="option-title">Soft Delete (Recommended)</span>
+              <p className="option-desc">Keep record for audit history but hide from active lists.</p>
+            </div>
+          </label>
+          <label className={`delete-option-card danger ${isHardDelete ? 'active' : ''}`}>
+            <input 
+              type="radio" 
+              checked={isHardDelete} 
+              onChange={() => setIsHardDelete(true)} 
+            />
+            <div className="option-info">
+              <span className="option-title">Hard Delete (Physical)</span>
+              <p className="option-desc">Permanently remove this record and all associated data from the database.</p>
+            </div>
+          </label>
+        </div>
+      </ConfirmDialog>
 
       <style>{`
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 3000; }
@@ -248,6 +291,20 @@ const CIFormModal: React.FC<CIFormModalProps> = ({ ci, onClose, onSuccess }) => 
         }
         .btn-delete:hover:not(:disabled) { background: #f43f5e; color: #fff; box-shadow: 0 4px 15px rgba(244, 63, 94, 0.3); }
         .btn-delete:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .delete-options { display: flex; flex-direction: column; gap: 12px; margin-top: 8px; }
+        .delete-option-card {
+          display: flex; align-items: flex-start; gap: 12px; padding: 12px;
+          background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05);
+          border-radius: 12px; cursor: pointer; transition: all 0.2s;
+        }
+        .delete-option-card:hover { background: rgba(255,255,255,0.05); }
+        .delete-option-card.active { border-color: #3b82f6; background: rgba(59, 130, 246, 0.1); }
+        .delete-option-card.danger.active { border-color: #f43f5e; background: rgba(244, 63, 94, 0.1); }
+        
+        .option-info { display: flex; flex-direction: column; gap: 2px; }
+        .option-title { font-size: 14px; font-weight: 700; color: #fff; }
+        .option-desc { font-size: 11px; color: #94a3b8; margin: 0; line-height: 1.4; }
       `}</style>
     </div>
   );

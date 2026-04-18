@@ -26,8 +26,8 @@ export const ciApi = {
     return response.data;
   },
 
-  // CI 삭제
-  deleteCI: async (id: number): Promise<void> => {
-    await apiClient.delete(`/cis/${id}`);
+  // CI 삭제 (논리 삭제 또는 물리 삭제 선택)
+  deleteCI: async (id: number, hard: boolean = false): Promise<void> => {
+    await apiClient.delete(`/cis/${id}?hard=${hard}`);
   }
 };

@@ -89,7 +89,7 @@ const CIList: React.FC = () => {
         <div className="board-actions">
           <div className="stats-box">
             <div className="stat active">Active: {cis.filter(c => c.statusCode === 'ACTIVE').length}</div>
-            <div className="stat maintenance">Alert: {cis.filter(c => c.statusCode === 'MAINTENANCE').length}</div>
+            <div className="stat maintenance">Maintenance: {cis.filter(c => c.statusCode === 'MAINTENANCE').length}</div>
           </div>
           <button className="btn-register" onClick={() => handleOpenModal()}>
             + Register CI

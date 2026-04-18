@@ -3,12 +3,15 @@ import React from 'react';
 interface ConfirmDialogProps {
   isOpen: boolean;
   title: string;
-  message: string;
+  message?: string;
   onConfirm: () => void;
   onCancel: () => void;
+  children?: React.ReactNode;
 }
 
-const ConfirmDialog: React.FC<ConfirmDialogProps> = ({ isOpen, title, message, onConfirm, onCancel }) => {
+const ConfirmDialog: React.FC<ConfirmDialogProps> = ({ 
+  isOpen, title, message, onConfirm, onCancel, children 
+}) => {
   if (!isOpen) return null;
 
   return (
@@ -16,7 +19,8 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({ isOpen, title, message, o
       <div className="custom-confirm-modal glass-panel">
         <div className="confirm-icon">⚠️</div>
         <h3>{title}</h3>
-        <p>{message}</p>
+        {message && <p>{message}</p>}
+        {children && <div className="confirm-extra-content">{children}</div>}
         <div className="confirm-actions">
           <button className="confirm-btn-cancel" onClick={onCancel}>Cancel</button>
           <button className="confirm-btn-action" onClick={onConfirm}>Confirm</button>
@@ -41,6 +45,7 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({ isOpen, title, message, o
         .confirm-icon { font-size: 40px; margin-bottom: 16px; }
         .custom-confirm-modal h3 { margin: 0 0 12px 0; font-size: 20px; color: #fff; }
         .custom-confirm-modal p { margin: 0 0 24px 0; color: #94a3b8; font-size: 15px; line-height: 1.5; }
+        .confirm-extra-content { margin-bottom: 24px; text-align: left; }
         .confirm-actions { display: flex; gap: 12px; justify-content: center; }
         .confirm-btn-cancel {
           background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
