@@ -17,6 +17,8 @@ public class OperatorDTO {
     private String roleId;   // ROLE_ADMIN or ROLE_OPERATOR
     private String tenantId;
     private String tenantName;
+    private Long teamId;
+    private String teamName;
     private Boolean isActive;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

@@ -25,11 +25,24 @@ public class OperatorService {
     private final MemberRepository memberRepository;
     private final RoleRepository roleRepository;
     private final TenantRepository tenantRepository;
+    private final com.itsm.system.domain.tenant.TeamRepository teamRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Transactional(readOnly = true)
-    public List<OperatorDTO> listOperators() {
-        return memberRepository.findAll().stream()
+    public List<OperatorDTO> listOperatorsByTenant(String tenantId) {
+        List<Member> members;
+        if ("MSP_CORE".equals(tenantId)) {
+            members = memberRepository.findAll();
+        } else {
+            // Find ROLE_OPERATOR and ROLE_ADMIN in the specific tenant
+            // Note: In MemberRepository we have findByTenant_TenantIdAndRoles_RoleId
+            // But for simplicity in service, we filter here or use custom repo methods
+            members = memberRepository.findAll().stream()
+                    .filter(m -> m.getTenant() != null && m.getTenant().getTenantId().equals(tenantId))
+                    .collect(Collectors.toList());
+        }
+
+        return members.stream()
                 .filter(m -> !m.getIsDeleted())
                 .filter(m -> m.getRoles().stream()
                         .anyMatch(r -> r.getRoleId().equals("ROLE_OPERATOR") || r.getRoleId().equals("ROLE_ADMIN")))
@@ -38,18 +51,27 @@ public class OperatorService {
     }
 
     @Transactional(readOnly = true)
-    public OperatorDTO getOperator(Long id) {
-        return memberRepository.findById(Objects.requireNonNull(id))
+    public OperatorDTO getOperator(Long id, String tenantId) {
+        Member operator = memberRepository.findById(Objects.requireNonNull(id))
                 .filter(m -> !m.getIsDeleted())
-                .map(this::convertToDTO)
                 .orElseThrow(() -> new IllegalArgumentException("Operator not found"));
+
+        if (!"MSP_CORE".equals(tenantId) && !operator.getTenant().getTenantId().equals(tenantId)) {
+            throw new org.springframework.security.access.AccessDeniedException("Access denied to operator in another tenant");
+        }
+
+        return convertToDTO(operator);
     }
 
     @Transactional
-    public OperatorDTO createOperator(OperatorDTO dto) {
-        // Default to MSP_CORE tenant for operators
-        Tenant tenant = tenantRepository.findById("MSP_CORE")
-                .orElseThrow(() -> new IllegalArgumentException("Default Tenant not found"));
+    public OperatorDTO createOperator(OperatorDTO dto, String tenantId) {
+        // Allow administrators to specify a different tenant
+        String targetTenantId = (("MSP_CORE".equals(tenantId) || "OPER_MSP".equals(tenantId)) && dto.getTenantId() != null)
+                ? dto.getTenantId()
+                : tenantId;
+
+        Tenant tenant = tenantRepository.findById(Objects.requireNonNull(targetTenantId))
+                .orElseThrow(() -> new IllegalArgumentException("Tenant not found: " + targetTenantId));
 
         String roleToAssign = dto.getRoleId() != null ? dto.getRoleId() : "ROLE_OPERATOR";
         Role operatorRole = roleRepository.findByRoleId(roleToAssign)
@@ -64,13 +86,22 @@ public class OperatorService {
                 .roles(new HashSet<>(Collections.singletonList(operatorRole)))
                 .build();
 
+        if (dto.getTeamId() != null) {
+            teamRepository.findById(Objects.requireNonNull(dto.getTeamId()))
+                    .ifPresent(operator::updateTeam);
+        }
+
         return convertToDTO(memberRepository.save(Objects.requireNonNull(operator)));
     }
 
     @Transactional
-    public OperatorDTO updateOperator(Long id, OperatorDTO dto) {
+    public OperatorDTO updateOperator(Long id, OperatorDTO dto, String tenantId) {
         Member operator = memberRepository.findById(Objects.requireNonNull(id))
                 .orElseThrow(() -> new IllegalArgumentException("Operator not found"));
+
+        if (!"MSP_CORE".equals(tenantId) && !operator.getTenant().getTenantId().equals(tenantId)) {
+            throw new org.springframework.security.access.AccessDeniedException("Cannot update operator in another tenant");
+        }
 
         operator.updateInfo(dto.getEmail(), dto.getIsActive());
         
@@ -84,14 +115,25 @@ public class OperatorService {
             operator.assignRoles(new HashSet<>(Collections.singletonList(newRole)));
         }
 
+        if (dto.getTeamId() != null) {
+            teamRepository.findById(Objects.requireNonNull(dto.getTeamId()))
+                    .ifPresent(operator::updateTeam);
+        } else if (dto.getTeamId() == null && "null".equals(String.valueOf(dto.getTeamId()))) { // Handle explicit clear if needed
+             operator.updateTeam(null);
+        }
+
         return convertToDTO(memberRepository.save(operator));
     }
 
     @Transactional
-    public void deleteOperator(Long id) {
+    public void deleteOperator(Long id, String tenantId) {
         Member operator = memberRepository.findById(Objects.requireNonNull(id))
                 .orElseThrow(() -> new IllegalArgumentException("Operator not found"));
         
+        if (!"MSP_CORE".equals(tenantId) && !operator.getTenant().getTenantId().equals(tenantId)) {
+            throw new org.springframework.security.access.AccessDeniedException("Cannot delete operator in another tenant");
+        }
+
         operator.delete();
         memberRepository.save(operator);
     }
@@ -110,6 +152,8 @@ public class OperatorService {
                 .roleId(roleId)
                 .tenantId(member.getTenant().getTenantId())
                 .tenantName(member.getTenant().getName())
+                .teamId(member.getTeam() != null ? member.getTeam().getTeamId() : null)
+                .teamName(member.getTeam() != null ? member.getTeam().getName() : null)
                 .isActive(member.getIsActive())
                 .createdAt(member.getCreatedAt())
                 .updatedAt(member.getUpdatedAt())

@@ -1,6 +1,11 @@
 import React, { useState } from 'react';
 import { operatorApi } from '../api/operatorApi';
-import { Operator, OperatorRequest } from '../types';
+import { Operator, OperatorRequest, Team } from '../types';
+
+interface Organization {
+  orgId: number;
+  name: string;
+}
 
 interface OperatorFormModalProps {
   operator?: Operator;
@@ -13,9 +18,44 @@ const OperatorFormModal: React.FC<OperatorFormModalProps> = ({ operator, onClose
   const [username, setUsername] = useState(operator?.username || '');
   const [email, setEmail] = useState(operator?.email || '');
   const [roleId, setRoleId] = useState(operator?.roleId || 'ROLE_OPERATOR');
+  const [teamId, setTeamId] = useState<number | null>(operator?.teamId || null);
+  const [orgId, setOrgId] = useState<number | null>(null); // For ADMIN to pick tenant
   const [password, setPassword] = useState('');
   const [isActive, setIsActive] = useState(operator ? operator.isActive : true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [allTeams, setAllTeams] = useState<Team[]>([]);
+  const [organizations, setOrganizations] = useState<Organization[]>([]);
+  const [loadingMetadata, setLoadingMetadata] = useState(false);
+
+  React.useEffect(() => {
+    const fetchData = async () => {
+      setLoadingMetadata(true);
+      try {
+        const teams = await operatorApi.getTeams();
+        setAllTeams(teams);
+        
+        // Extract unique organizations from teams for ADMIN selection
+        const orgsMap = new Map<number, Organization>();
+        teams.forEach(t => {
+            if (t.orgId) orgsMap.set(t.orgId, { orgId: t.orgId, name: t.orgName || 'Unknown Org' });
+        });
+        setOrganizations(Array.from(orgsMap.values()));
+
+        if (operator?.teamId) {
+            const currentTeam = teams.find(t => t.teamId === operator.teamId);
+            if (currentTeam) setOrgId(currentTeam.orgId);
+        }
+      } catch (error) {
+        console.error('Failed to fetch teams', error);
+      } finally {
+        setLoadingMetadata(false);
+      }
+    };
+    fetchData();
+  }, [operator]);
+
+  // Filter teams based on selected organization
+  const filteredTeams = orgId ? allTeams.filter(t => t.orgId === orgId) : allTeams;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,6 +67,7 @@ const OperatorFormModal: React.FC<OperatorFormModalProps> = ({ operator, onClose
         email,
         password: password || undefined,
         roleId,
+        teamId,
         isActive
       };
 
@@ -76,6 +117,45 @@ const OperatorFormModal: React.FC<OperatorFormModalProps> = ({ operator, onClose
               required 
               placeholder="kim@example.com" 
             />
+          </div>
+
+          {organizations.length > 1 && (
+            <div className="form-section">
+                <label>Organization (Tenant) <span className="required-star">*</span></label>
+                <select 
+                    value={orgId || ''} 
+                    onChange={e => {
+                        const newOrgId = Number(e.target.value);
+                        setOrgId(newOrgId);
+                        setTeamId(null); // Reset team when org changes
+                    }}
+                    className="modern-input select-input"
+                    required
+                >
+                    <option value="">Select Organization</option>
+                    {organizations.map(org => (
+                        <option key={org.orgId} value={org.orgId}>{org.name}</option>
+                    ))}
+                </select>
+            </div>
+          )}
+
+          <div className="form-section">
+            <label>Assigned Team</label>
+            <select 
+              value={teamId || ''} 
+              onChange={e => setTeamId(e.target.value ? Number(e.target.value) : null)} 
+              className="modern-input select-input"
+              disabled={loadingMetadata || (organizations.length > 1 && !orgId)}
+            >
+              <option value="">Not Assigned</option>
+              {filteredTeams.map(team => (
+                <option key={team.teamId} value={team.teamId}>
+                  {team.name} {organizations.length > 1 && !orgId ? `(${team.orgName})` : ''}
+                </option>
+              ))}
+            </select>
+            {loadingMetadata && <span className="helper-text">Loading teams...</span>}
           </div>
 
           <div className="form-section">
@@ -177,6 +257,11 @@ const OperatorFormModal: React.FC<OperatorFormModalProps> = ({ operator, onClose
           background: rgba(255,255,255,0.03); border: 1px solid #1e293b; border-radius: 12px; padding: 12px 16px;
           color: #fff; font-size: 14px; outline: none; transition: all 0.2s;
         }
+        .select-input {
+          appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+          background-repeat: no-repeat; background-position: right 12px center; background-size: 16px; padding-right: 40px;
+        }
+        .select-input option { background: #0f172a; color: #fff; }
         .modern-input:focus:not(:disabled) { border-color: #3b82f6; background: rgba(255,255,255,0.05); }
         .modern-input:disabled { opacity: 0.6; cursor: not-allowed; }
 

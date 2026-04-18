@@ -92,6 +92,10 @@ public class Member extends BaseEntity implements UserDetails {
         }
     }
 
+    public void updateTeam(Team team) {
+        this.team = team;
+    }
+
     public void updatePassword(String encodedPassword) {
         this.password = encodedPassword;
     }
@@ -102,5 +106,9 @@ public class Member extends BaseEntity implements UserDetails {
 
     public void delete() {
         this.isDeleted = true;
+    }
+
+    public String getTenantId() {
+        return this.tenant != null ? this.tenant.getTenantId() : null;
     }
 }

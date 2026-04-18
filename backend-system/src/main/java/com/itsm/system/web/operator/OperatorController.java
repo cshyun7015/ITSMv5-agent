@@ -5,41 +5,58 @@ import com.itsm.system.service.operator.OperatorService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/v1/operators")
+@RequestMapping("/api/v1/operator/operators")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('ADMIN')")
 public class OperatorController {
 
     private final OperatorService operatorService;
 
     @GetMapping
-    public ResponseEntity<List<OperatorDTO>> listOperators() {
-        return ResponseEntity.ok(operatorService.listOperators());
+    public ResponseEntity<List<OperatorDTO>> listOperators(@AuthenticationPrincipal UserDetails userDetails) {
+        String tenantId = getTenantId(userDetails);
+        return ResponseEntity.ok(operatorService.listOperatorsByTenant(tenantId));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<OperatorDTO> getOperator(@PathVariable Long id) {
-        return ResponseEntity.ok(operatorService.getOperator(id));
+    public ResponseEntity<OperatorDTO> getOperator(@PathVariable Long id, @AuthenticationPrincipal UserDetails userDetails) {
+        String tenantId = getTenantId(userDetails);
+        return ResponseEntity.ok(operatorService.getOperator(id, tenantId));
     }
 
     @PostMapping
-    public ResponseEntity<OperatorDTO> createOperator(@RequestBody OperatorDTO dto) {
-        return ResponseEntity.ok(operatorService.createOperator(dto));
+    @PreAuthorize("hasAnyRole('ADMIN', 'OPERATOR')")
+    public ResponseEntity<OperatorDTO> createOperator(@RequestBody OperatorDTO dto, @AuthenticationPrincipal UserDetails userDetails) {
+        String tenantId = getTenantId(userDetails);
+        return ResponseEntity.ok(operatorService.createOperator(dto, tenantId));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<OperatorDTO> updateOperator(@PathVariable Long id, @RequestBody OperatorDTO dto) {
-        return ResponseEntity.ok(operatorService.updateOperator(id, dto));
+    @PreAuthorize("hasAnyRole('ADMIN', 'OPERATOR')")
+    public ResponseEntity<OperatorDTO> updateOperator(@PathVariable Long id, @RequestBody OperatorDTO dto, @AuthenticationPrincipal UserDetails userDetails) {
+        String tenantId = getTenantId(userDetails);
+        return ResponseEntity.ok(operatorService.updateOperator(id, dto, tenantId));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteOperator(@PathVariable Long id) {
-        operatorService.deleteOperator(id);
+    @PreAuthorize("hasAnyRole('ADMIN', 'OPERATOR')")
+    public ResponseEntity<Void> deleteOperator(@PathVariable Long id, @AuthenticationPrincipal UserDetails userDetails) {
+        String tenantId = getTenantId(userDetails);
+        operatorService.deleteOperator(id, tenantId);
         return ResponseEntity.ok().build();
+    }
+
+    private String getTenantId(UserDetails userDetails) {
+        try {
+            return (String) userDetails.getClass().getMethod("getTenantId").invoke(userDetails);
+        } catch (Exception e) {
+            return "OPER_MSP";
+        }
     }
 }
