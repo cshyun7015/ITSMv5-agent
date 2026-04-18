@@ -7,6 +7,7 @@ interface GroupSidebarProps {
   onDeleteGroup: (groupId: string) => void;
   onAddGroup: () => void;
   isLoading?: boolean;
+  isAdmin?: boolean;
 }
 
 const GroupSidebar: React.FC<GroupSidebarProps> = ({ 
@@ -15,7 +16,8 @@ const GroupSidebar: React.FC<GroupSidebarProps> = ({
   onSelectGroup, 
   onDeleteGroup,
   onAddGroup,
-  isLoading 
+  isLoading,
+  isAdmin
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -36,9 +38,11 @@ const GroupSidebar: React.FC<GroupSidebarProps> = ({
           />
           <span className="search-icon">🔍</span>
         </div>
-        <button className="add-group-btn" onClick={onAddGroup} title="Add New Group">
-          <span>+</span>
-        </button>
+        {isAdmin && (
+          <button className="add-group-btn" onClick={onAddGroup} title="Add New Group">
+            <span>+</span>
+          </button>
+        )}
       </div>
 
       <div className="group-sidebar__list">
@@ -56,16 +60,18 @@ const GroupSidebar: React.FC<GroupSidebarProps> = ({
                 <span className="group-item__icon">📁</span>
                 <span className="group-item__name">{group}</span>
               </button>
-              <button 
-                className="group-delete-btn" 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDeleteGroup(group);
-                }}
-                title="Delete Group"
-              >
-                🗑️
-              </button>
+              {isAdmin && (
+                <button 
+                  className="group-delete-btn" 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDeleteGroup(group);
+                  }}
+                  title="Delete Group"
+                >
+                  🗑️
+                </button>
+              )}
             </div>
           ))
         )}

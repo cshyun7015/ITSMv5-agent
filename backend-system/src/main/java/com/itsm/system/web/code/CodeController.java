@@ -4,6 +4,7 @@ import com.itsm.system.dto.code.CodeDTO;
 import com.itsm.system.service.code.CodeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -32,22 +33,26 @@ public class CodeController {
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<CodeDTO> createCode(@RequestBody CodeDTO codeDTO) {
         return ResponseEntity.ok(codeService.createCode(Objects.requireNonNull(codeDTO)));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<CodeDTO> updateCode(@PathVariable Long id, @RequestBody CodeDTO codeDTO) {
         return ResponseEntity.ok(codeService.updateCode(Objects.requireNonNull(id), Objects.requireNonNull(codeDTO)));
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteCode(@PathVariable Long id) {
         codeService.deleteCode(Objects.requireNonNull(id));
         return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/groups/{groupId}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteCodesByGroup(@PathVariable String groupId) {
         codeService.deleteCodesByGroup(Objects.requireNonNull(groupId));
         return ResponseEntity.noContent().build();

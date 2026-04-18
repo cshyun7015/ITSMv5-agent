@@ -98,6 +98,7 @@ public class OperatorDashboardService {
 
         long activeCIs = configurationItemRepository.findAll().stream()
                 .filter(ci -> managedTenantIds.contains(ci.getTenant().getTenantId()))
+                .filter(ci -> !ci.getIsDeleted())
                 .filter(ci -> "ACTIVE".equals(ci.getStatusCode()))
                 .count();
 

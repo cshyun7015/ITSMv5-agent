@@ -85,6 +85,7 @@ public class ServiceRequestController {
         return ResponseEntity.ok().build();
     }
 
+    @PostMapping("/{id}/resolve")
     public ResponseEntity<Void> resolve(
             @PathVariable @NonNull Long id,
             @RequestBody ServiceRequestDTO.Resolve dto) {
@@ -113,12 +114,14 @@ public class ServiceRequestController {
         return ResponseEntity.ok(requests.stream().map(this::convertToResponse).toList());
     }
 
+    @GetMapping("/{id}")
     public ResponseEntity<ServiceRequestDTO.Response> getRequest(
             @PathVariable @NonNull Long id) {
         ServiceRequest request = requestService.getRequest(id);
         return ResponseEntity.ok(convertToResponse(request));
     }
 
+    @GetMapping("/{id}/approvals")
     public ResponseEntity<List<ServiceRequestDTO.ApprovalResponse>> getApprovals(
             @PathVariable @NonNull Long id) {
         return ResponseEntity.ok(requestService.getApprovalSteps(id).stream()

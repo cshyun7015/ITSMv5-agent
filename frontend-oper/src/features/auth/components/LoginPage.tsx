@@ -10,16 +10,14 @@ const LoginPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const performLogin = async (tId: string, uName: string, pWord: string) => {
     setLoading(true);
     setError('');
-
     try {
       const response = await apiClient.post('/auth/login', {
-        tenantId,
-        username,
-        password,
+        tenantId: tId,
+        username: uName,
+        password: pWord,
       });
 
       const { accessToken, ...user } = response.data;
@@ -29,6 +27,11 @@ const LoginPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await performLogin(tenantId, username, password);
   };
 
   return (
@@ -75,10 +78,30 @@ const LoginPage: React.FC = () => {
 
           {error && <div className="error-message">{error}</div>}
 
-          <button type="submit" disabled={loading}>
+          <button type="submit" className="login-btn" disabled={loading}>
             {loading ? 'Authenticating...' : 'Sign In'}
           </button>
         </form>
+
+        <div className="dev-login-assistance">
+          <p>Debug Access</p>
+          <div className="dev-buttons">
+            <button 
+              className="dev-btn admin" 
+              onClick={() => performLogin('OPER_MSP', 'msp', 'pwd')}
+              disabled={loading}
+            >
+              Login as ADMIN
+            </button>
+            <button 
+              className="dev-btn oper" 
+              onClick={() => performLogin('ocomp1', 'oper1', 'pwd')}
+              disabled={loading}
+            >
+              Login as OPERATOR
+            </button>
+          </div>
+        </div>
       </div>
 
       <style>{`
@@ -141,7 +164,7 @@ const LoginPage: React.FC = () => {
           margin-bottom: 24px;
           text-align: center;
         }
-        button {
+        .login-btn {
           width: 100%;
           padding: 14px;
           background: #3b82f6;
@@ -151,13 +174,57 @@ const LoginPage: React.FC = () => {
           font-weight: 600;
           cursor: pointer;
           transition: background 0.2s;
+          margin-bottom: 24px;
         }
-        button:hover {
+        .login-btn:hover {
           background: #2563eb;
         }
-        button:disabled {
+        .login-btn:disabled {
           opacity: 0.5;
           cursor: not-allowed;
+        }
+
+        .dev-login-assistance {
+          border-top: 1px solid rgba(255, 255, 255, 0.05);
+          padding-top: 24px;
+          text-align: center;
+        }
+        .dev-login-assistance p {
+          color: #64748b;
+          font-size: 11px;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+          font-weight: 700;
+          margin-bottom: 16px;
+        }
+        .dev-buttons {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        }
+        .dev-btn {
+          padding: 10px;
+          border: 1px solid rgba(255, 255, 255, 0.05);
+          background: rgba(255, 255, 255, 0.02);
+          color: #94a3b8;
+          border-radius: 10px;
+          font-size: 12px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        .dev-btn:hover {
+          background: rgba(255, 255, 255, 0.05);
+          color: #fff;
+          border-color: rgba(255, 255, 255, 0.1);
+        }
+        .dev-btn.admin:hover {
+          border-color: rgba(59, 130, 246, 0.3);
+          color: #60a5fa;
+        }
+        .dev-btn.oper:hover {
+          border-color: rgba(16, 185, 129, 0.3);
+          color: #34d399;
         }
       `}</style>
     </div>

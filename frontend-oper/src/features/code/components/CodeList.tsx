@@ -5,9 +5,10 @@ interface CodeListProps {
   onEdit: (code: CodeDTO) => void;
   onDelete: (id: number) => void;
   isLoading?: boolean;
+  isAdmin?: boolean;
 }
 
-const CodeList: React.FC<CodeListProps> = ({ codes, onEdit, onDelete, isLoading }) => {
+const CodeList: React.FC<CodeListProps> = ({ codes, onEdit, onDelete, isLoading, isAdmin }) => {
   if (isLoading) {
     return <div className="loader-container">Loading codes...</div>;
   }
@@ -41,14 +42,16 @@ const CodeList: React.FC<CodeListProps> = ({ codes, onEdit, onDelete, isLoading 
                 </span>
               </td>
               <td className="code-list__cell">
-                <div className="action-buttons">
-                  <button className="btn-icon btn-icon--edit" onClick={() => onEdit(code)}>
-                    Edit
-                  </button>
-                  <button className="btn-icon btn-icon--delete" onClick={() => code.id && onDelete(code.id)}>
-                    Delete
-                  </button>
-                </div>
+                {isAdmin && (
+                  <div className="action-buttons">
+                    <button className="btn-icon btn-icon--edit" onClick={() => onEdit(code)}>
+                      Edit
+                    </button>
+                    <button className="btn-icon btn-icon--delete" onClick={() => code.id && onDelete(code.id)}>
+                      Delete
+                    </button>
+                  </div>
+                )}
               </td>
             </tr>
           ))}

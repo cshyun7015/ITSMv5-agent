@@ -5,8 +5,12 @@ import CodeDrawer from './CodeDrawer';
 import ConfirmDialog from '../../../components/common/ConfirmDialog';
 import { codeApi } from '../api/codeApi';
 import { CodeDTO } from '../../fulfillment/types';
+import { useAuth } from '../../auth/context/AuthContext';
 
 const CodeManagement: React.FC = () => {
+  const { user } = useAuth();
+  const isAdmin = user?.roles?.includes('ROLE_ADMIN') ?? false;
+
   const [groupIds, setGroupIds] = useState<string[]>([]);
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [codes, setCodes] = useState<CodeDTO[]>([]);
@@ -84,7 +88,7 @@ const CodeManagement: React.FC = () => {
       onConfirm: async () => {
         try {
           await codeApi.deleteCode(id);
-          setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+          setConfirmConfig((prev: any) => ({ ...prev, isOpen: false }));
           handleRefresh();
         } catch (error) {
           alert('Failed to delete code');
@@ -101,7 +105,7 @@ const CodeManagement: React.FC = () => {
       onConfirm: async () => {
         try {
           await codeApi.deleteCodesByGroup(groupId);
-          setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+          setConfirmConfig((prev: any) => ({ ...prev, isOpen: false }));
           if (selectedGroupId === groupId) {
             setSelectedGroupId(null);
           }
@@ -140,6 +144,7 @@ const CodeManagement: React.FC = () => {
           onDeleteGroup={handleDeleteGroup}
           onAddGroup={handleCreateGroup}
           isLoading={isLoadingGroups}
+          isAdmin={isAdmin}
         />
         
         <div className="code-management__main">
@@ -152,7 +157,9 @@ const CodeManagement: React.FC = () => {
             </div>
             <div className="header-actions">
               <button className="btn-secondary" onClick={handleRefresh}>🔄 Refresh</button>
-              <button className="btn-primary" onClick={handleAdd}>+ Add New Code</button>
+              {isAdmin && (
+                <button className="btn-primary" onClick={handleAdd}>+ Add New Code</button>
+              )}
             </div>
           </div>
 
@@ -162,6 +169,7 @@ const CodeManagement: React.FC = () => {
               onEdit={handleEdit} 
               onDelete={handleDeleteCode}
               isLoading={isLoadingCodes} 
+              isAdmin={isAdmin}
             />
           </div>
         </div>
@@ -183,7 +191,7 @@ const CodeManagement: React.FC = () => {
         title={confirmConfig.title}
         message={confirmConfig.message}
         onConfirm={confirmConfig.onConfirm}
-        onCancel={() => setConfirmConfig(prev => ({ ...prev, isOpen: false }))}
+        onCancel={() => setConfirmConfig((prev: any) => ({ ...prev, isOpen: false }))}
       />
 
       <style>{`
