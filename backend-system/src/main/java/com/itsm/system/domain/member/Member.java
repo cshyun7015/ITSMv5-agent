@@ -96,6 +96,10 @@ public class Member extends BaseEntity implements UserDetails {
         this.password = encodedPassword;
     }
 
+    public void assignRoles(Set<Role> roles) {
+        this.roles = roles;
+    }
+
     public void delete() {
         this.isDeleted = true;
     }

@@ -14,6 +14,7 @@ public class OperatorDTO {
     private String username;
     private String email;
     private String password; // Only for Create/Update
+    private String roleId;   // ROLE_ADMIN or ROLE_OPERATOR
     private String tenantId;
     private String tenantName;
     private Boolean isActive;

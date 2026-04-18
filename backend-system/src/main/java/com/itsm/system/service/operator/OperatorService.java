@@ -51,8 +51,9 @@ public class OperatorService {
         Tenant tenant = tenantRepository.findById("MSP_CORE")
                 .orElseThrow(() -> new IllegalArgumentException("Default Tenant not found"));
 
-        Role operatorRole = roleRepository.findByRoleId("ROLE_OPERATOR")
-                .orElseThrow(() -> new IllegalArgumentException("ROLE_OPERATOR not found"));
+        String roleToAssign = dto.getRoleId() != null ? dto.getRoleId() : "ROLE_OPERATOR";
+        Role operatorRole = roleRepository.findByRoleId(roleToAssign)
+                .orElseThrow(() -> new IllegalArgumentException(roleToAssign + " not found"));
 
         Member operator = Member.builder()
                 .username(dto.getUsername())
@@ -77,6 +78,12 @@ public class OperatorService {
             operator.updatePassword(passwordEncoder.encode(dto.getPassword()));
         }
 
+        if (dto.getRoleId() != null && !dto.getRoleId().isEmpty()) {
+            Role newRole = roleRepository.findByRoleId(dto.getRoleId())
+                    .orElseThrow(() -> new IllegalArgumentException("Role not found: " + dto.getRoleId()));
+            operator.assignRoles(new HashSet<>(Collections.singletonList(newRole)));
+        }
+
         return convertToDTO(memberRepository.save(operator));
     }
 
@@ -90,10 +97,17 @@ public class OperatorService {
     }
 
     private OperatorDTO convertToDTO(Member member) {
+        String roleId = member.getRoles().stream()
+                .map(Role::getRoleId)
+                .filter(r -> r.equals("ROLE_ADMIN") || r.equals("ROLE_OPERATOR"))
+                .findFirst()
+                .orElse("ROLE_OPERATOR");
+
         return OperatorDTO.builder()
                 .memberId(member.getMemberId())
                 .username(member.getUsername())
                 .email(member.getEmail())
+                .roleId(roleId)
                 .tenantId(member.getTenant().getTenantId())
                 .tenantName(member.getTenant().getName())
                 .isActive(member.getIsActive())

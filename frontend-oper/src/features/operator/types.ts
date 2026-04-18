@@ -2,6 +2,7 @@ export interface Operator {
   memberId: number;
   username: string;
   email: string;
+  roleId: string;
   tenantId: string;
   tenantName: string;
   isActive: boolean;
@@ -13,5 +14,6 @@ export interface OperatorRequest {
   username?: string;
   email: string;
   password?: string;
+  roleId?: string;
   isActive: boolean;
 }

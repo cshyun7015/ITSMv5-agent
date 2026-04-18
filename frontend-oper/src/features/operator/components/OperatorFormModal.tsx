@@ -12,6 +12,7 @@ const OperatorFormModal: React.FC<OperatorFormModalProps> = ({ operator, onClose
   const isEdit = !!operator;
   const [username, setUsername] = useState(operator?.username || '');
   const [email, setEmail] = useState(operator?.email || '');
+  const [roleId, setRoleId] = useState(operator?.roleId || 'ROLE_OPERATOR');
   const [password, setPassword] = useState('');
   const [isActive, setIsActive] = useState(operator ? operator.isActive : true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -25,6 +26,7 @@ const OperatorFormModal: React.FC<OperatorFormModalProps> = ({ operator, onClose
         username: isEdit ? undefined : username,
         email,
         password: password || undefined,
+        roleId,
         isActive
       };
 
@@ -77,6 +79,38 @@ const OperatorFormModal: React.FC<OperatorFormModalProps> = ({ operator, onClose
           </div>
 
           <div className="form-section">
+            <label>Access Role <span className="required-star">*</span></label>
+            <div className="role-selector">
+              <label className={`role-option ${roleId === 'ROLE_OPERATOR' ? 'selected' : ''}`}>
+                <input 
+                  type="radio" 
+                  name="role" 
+                  value="ROLE_OPERATOR" 
+                  checked={roleId === 'ROLE_OPERATOR'} 
+                  onChange={e => setRoleId(e.target.value)} 
+                />
+                <div className="role-info">
+                  <span className="role-name">Standard Operator</span>
+                  <span className="role-desc">General operation & member tasks</span>
+                </div>
+              </label>
+              <label className={`role-option ${roleId === 'ROLE_ADMIN' ? 'selected' : ''}`}>
+                <input 
+                  type="radio" 
+                  name="role" 
+                  value="ROLE_ADMIN" 
+                  checked={roleId === 'ROLE_ADMIN'} 
+                  onChange={e => setRoleId(e.target.value)} 
+                />
+                <div className="role-info">
+                  <span className="role-name">System Admin</span>
+                  <span className="role-desc">Full system & security access</span>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <div className="form-section">
             <label>{isEdit ? 'Change Password' : 'Password'} {!isEdit && <span className="required-star">*</span>}</label>
             <input 
               type="password"
@@ -121,6 +155,18 @@ const OperatorFormModal: React.FC<OperatorFormModalProps> = ({ operator, onClose
         .modal-header { padding: 24px 32px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center; }
         .modal-header h2 { margin: 0; font-size: 20px; font-weight: 800; color: #fff; }
         .close-btn { background: none; border: none; color: #64748b; font-size: 32px; cursor: pointer; }
+
+        .role-selector { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .role-option { 
+          background: rgba(255,255,255,0.03); border: 1px solid #1e293b; border-radius: 12px; padding: 12px;
+          cursor: pointer; transition: all 0.2s; display: flex; align-items: flex-start; gap: 10px;
+        }
+        .role-option:hover { background: rgba(255,255,255,0.05); border-color: #334155; }
+        .role-option.selected { background: rgba(59, 130, 246, 0.1); border-color: #3b82f6; }
+        .role-option input { margin-top: 4px; }
+        .role-info { display: flex; flex-direction: column; }
+        .role-name { font-size: 14px; font-weight: 700; color: #fff; }
+        .role-desc { font-size: 11px; color: #64748b; margin-top: 2px; }
 
         .standard-form { padding: 32px; display: flex; flex-direction: column; gap: 24px; }
         .form-section { display: flex; flex-direction: column; gap: 8px; }

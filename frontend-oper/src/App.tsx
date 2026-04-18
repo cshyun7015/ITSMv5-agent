@@ -37,7 +37,8 @@ const AdminCommandCenter: React.FC = () => {
             { id: 'changes', label: 'Changes', icon: '🔄' },
             { id: 'incidents', label: 'Incidents', icon: '⚠️' },
             { id: 'fulfillment', label: 'Requests', icon: '📩' },
-            { id: 'codes', label: 'Codes', icon: '🏷️' }
+            { id: 'codes', label: 'Codes', icon: '🏷️' },
+            { id: 'opers', label: 'Opers', icon: '👥' }
           ].map(item => (
             <button 
               key={item.id}
