@@ -11,7 +11,7 @@ import DashboardPage from './features/dashboard/components/DashboardPage';
 import CatalogManagement from './features/catalog/components/CatalogManagement';
 import ChangeBoard from './features/change/components/ChangeBoard';
 import CIList from './features/cmdb/components/CIList';
-import OperatorList from './features/operator/components/OperatorList';
+import OperatorManagement from './features/operator/components/OperatorManagement';
 
 const AdminCommandCenter: React.FC = () => {
   const { user, logout } = useAuth();
@@ -90,7 +90,7 @@ const AdminCommandCenter: React.FC = () => {
           ) : activeTab === 'codes' ? (
             <CodeManagement />
           ) : activeTab === 'opers' ? (
-            <OperatorList />
+            <OperatorManagement />
           ) : activeTab === 'fulfillment' ? (
             <div className="fulfillment-section">
               {selectedRequestId ? (

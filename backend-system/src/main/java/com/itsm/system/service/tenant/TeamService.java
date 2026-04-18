@@ -35,6 +35,8 @@ public class TeamService {
     @Transactional(readOnly = true)
     public List<TeamDTO> listAllTeams() {
         return teamRepository.findAll().stream()
+                .filter(t -> t.getOrganization() != null && t.getOrganization().getTenant() != null 
+                          && !"CUSTOMER".equals(t.getOrganization().getTenant().getType()))
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
