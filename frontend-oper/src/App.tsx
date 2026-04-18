@@ -37,7 +37,7 @@ const AdminCommandCenter: React.FC = () => {
       <header className="header">
         <div className="header__logo">
           <div className="logo-icon">📊</div>
-          <span>MSP COMMAND CENTER</span>
+          <span>ITSM (운영사)</span>
         </div>
 
         <nav className="header__nav">
