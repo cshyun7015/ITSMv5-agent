@@ -7,7 +7,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import org.springframework.lang.NonNull;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -34,13 +36,14 @@ public class CodeServiceImpl implements CodeService {
     }
 
     @Override
-    public CodeDTO createCode(CodeDTO codeDTO) {
+    public CodeDTO createCode(@NonNull CodeDTO codeDTO) {
         Code code = convertToEntity(codeDTO);
-        return convertToDTO(codeRepository.save(code));
+        Code savedCode = codeRepository.save(code);
+        return convertToDTO(savedCode);
     }
 
     @Override
-    public CodeDTO updateCode(Long id, CodeDTO codeDTO) {
+    public CodeDTO updateCode(@NonNull Long id, @NonNull CodeDTO codeDTO) {
         Code code = codeRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Code not found"));
         
@@ -51,16 +54,17 @@ public class CodeServiceImpl implements CodeService {
         code.setSortOrder(codeDTO.getSortOrder());
         code.setIsActive(codeDTO.getIsActive());
         
-        return convertToDTO(codeRepository.save(code));
+        Code savedCode = codeRepository.save(code);
+        return convertToDTO(savedCode);
     }
 
     @Override
-    public void deleteCode(Long id) {
+    public void deleteCode(@NonNull Long id) {
         codeRepository.deleteById(id);
     }
 
     @Override
-    public void deleteCodesByGroup(String groupId) {
+    public void deleteCodesByGroup(@NonNull String groupId) {
         codeRepository.deleteByGroupId(groupId);
     }
 
@@ -70,8 +74,9 @@ public class CodeServiceImpl implements CodeService {
         return codeRepository.findDistinctGroupIds();
     }
 
-    private CodeDTO convertToDTO(Code code) {
-        return CodeDTO.builder()
+    @NonNull
+    private CodeDTO convertToDTO(@NonNull Code code) {
+        return Objects.requireNonNull(CodeDTO.builder()
                 .id(code.getId())
                 .groupId(code.getGroupId())
                 .codeId(code.getCodeId())
@@ -79,17 +84,18 @@ public class CodeServiceImpl implements CodeService {
                 .description(code.getDescription())
                 .sortOrder(code.getSortOrder())
                 .isActive(code.getIsActive())
-                .build();
+                .build());
     }
 
-    private Code convertToEntity(CodeDTO dto) {
-        return Code.builder()
+    @NonNull
+    private Code convertToEntity(@NonNull CodeDTO dto) {
+        return Objects.requireNonNull(Code.builder()
                 .groupId(dto.getGroupId())
                 .codeId(dto.getCodeId())
                 .codeName(dto.getCodeName())
                 .description(dto.getDescription())
                 .sortOrder(dto.getSortOrder())
                 .isActive(dto.getIsActive())
-                .build();
+                .build());
     }
 }

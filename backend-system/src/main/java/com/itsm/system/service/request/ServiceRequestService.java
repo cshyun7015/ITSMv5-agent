@@ -10,8 +10,10 @@ import com.itsm.system.domain.tenant.TenantRepository;
 import com.itsm.system.domain.tenant.TenantRelationRepository;
 import com.itsm.system.dto.request.ServiceRequestDTO;
 import lombok.RequiredArgsConstructor;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.util.Objects;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -34,7 +36,7 @@ public class ServiceRequestService {
     private final SlaService slaService;
 
     @Transactional
-    public ServiceRequest createDraft(Member currentMember, ServiceRequestDTO.Create dto, List<MultipartFile> files) {
+    public ServiceRequest createDraft(@NonNull Member currentMember, @NonNull ServiceRequestDTO.Create dto, List<MultipartFile> files) {
         Tenant tenant = currentMember.getTenant();
         Member requester = currentMember;
 
@@ -42,14 +44,16 @@ public class ServiceRequestService {
         if (dto.getTargetTenantId() != null && !dto.getTargetTenantId().equals(tenant.getTenantId())) {
             // 권한 체크: 현재 사용자가 대상 테넌트에 대한 관리 권한이 있는지 확인
             // (컨트롤러에서 해도 되지만 서비스에서 보수적으로 한 번 더 체크 가능)
-            tenant = tenantRepository.findById(dto.getTargetTenantId())
-                    .orElseThrow(() -> new IllegalArgumentException("Target tenant not found: " + dto.getTargetTenantId()));
+            String targetId = Objects.requireNonNull(dto.getTargetTenantId());
+            tenant = tenantRepository.findById(targetId)
+                    .orElseThrow(() -> new IllegalArgumentException("Target tenant not found: " + targetId));
         }
 
         // 2. 신청자를 별도로 지정하는 경우 (고객사 사용자 대행 등록)
         if (dto.getRequesterId() != null) {
-            requester = memberRepository.findById(dto.getRequesterId())
-                    .orElseThrow(() -> new IllegalArgumentException("Requester not found: " + dto.getRequesterId()));
+            Long reqId = Objects.requireNonNull(dto.getRequesterId());
+            requester = memberRepository.findById(reqId)
+                    .orElseThrow(() -> new IllegalArgumentException("Requester not found: " + reqId));
             
             // 신청자가 대상 테넌트 소속인지 검증
             if (!requester.getTenant().getTenantId().equals(tenant.getTenantId())) {
@@ -59,11 +63,12 @@ public class ServiceRequestService {
 
         ServiceCatalog catalog = null;
         if (dto.getCatalogId() != null) {
-            catalog = serviceCatalogRepository.findById(dto.getCatalogId())
-                    .orElseThrow(() -> new IllegalArgumentException("Catalog not found: " + dto.getCatalogId()));
+            Long catId = Objects.requireNonNull(dto.getCatalogId());
+            catalog = serviceCatalogRepository.findById(catId)
+                    .orElseThrow(() -> new IllegalArgumentException("Catalog not found: " + catId));
         }
 
-        ServiceRequest request = ServiceRequest.builder()
+        ServiceRequest request = Objects.requireNonNull(ServiceRequest.builder()
                 .tenant(tenant)
                 .requester(requester)
                 .title(dto.getTitle())
@@ -72,7 +77,7 @@ public class ServiceRequestService {
                 .catalog(catalog)
                 .dynamicFields(dto.getDynamicFields())
                 .status(ServiceRequestStatus.DRAFT)
-                .build();
+                .build());
         
         ServiceRequest savedRequest = requestRepository.save(request);
 
@@ -92,14 +97,16 @@ public class ServiceRequestService {
                         }
                     })
                     .toList();
-            attachmentRepository.saveAll(attachments);
+            if (attachments != null) {
+                attachmentRepository.saveAll(attachments);
+            }
         }
 
         return savedRequest;
     }
 
     @Transactional
-    public void submitRequest(Long requestId, List<Long> approverIds) {
+    public void submitRequest(@NonNull Long requestId, @NonNull List<Long> approverIds) {
         ServiceRequest request = requestRepository.findById(requestId)
                 .orElseThrow(() -> new IllegalArgumentException("Request not found"));
 
@@ -111,8 +118,9 @@ public class ServiceRequestService {
         
         List<ServiceRequestApproval> approvalSteps = IntStream.range(0, approverIds.size())
                 .mapToObj(i -> {
-                    Member approver = memberRepository.findById(approverIds.get(i))
-                            .orElseThrow(() -> new IllegalArgumentException("Approver not found: " + approverIds.get(i)));
+                    Long approverId = Objects.requireNonNull(approverIds.get(i));
+                    Member approver = memberRepository.findById(approverId)
+                            .orElseThrow(() -> new IllegalArgumentException("Approver not found: " + approverId));
                     
                     // 보안 검증: 결재자는 신청자와 동일한 테넌트여야 함
                     if (!approver.getTenant().getTenantId().equals(request.getTenant().getTenantId())) {
@@ -133,7 +141,7 @@ public class ServiceRequestService {
     }
 
     @Transactional
-    public void processApproval(Long approvalId, Long currentMemberId, boolean approved, String comment) {
+    public void processApproval(@NonNull Long approvalId, @NonNull Long currentMemberId, boolean approved, String comment) {
         ServiceRequestApproval currentApproval = approvalRepository.findById(approvalId)
                 .orElseThrow(() -> new IllegalArgumentException("Approval step not found"));
 
@@ -164,12 +172,12 @@ public class ServiceRequestService {
     }
 
     @Transactional(readOnly = true)
-    public List<ServiceRequest> listTenantRequests(String tenantId) {
+    public List<ServiceRequest> listTenantRequests(@NonNull String tenantId) {
         return requestRepository.findByTenantId(tenantId);
     }
 
     @Transactional(readOnly = true)
-    public ServiceRequest getRequest(Long requestId) {
+    public ServiceRequest getRequest(@NonNull Long requestId) {
         return requestRepository.findById(requestId)
                 .orElseThrow(() -> new IllegalArgumentException("Request not found"));
     }
@@ -179,7 +187,7 @@ public class ServiceRequestService {
     }
 
     @Transactional
-    public void assignRequest(Long requestId, Long operatorId) {
+    public void assignRequest(@NonNull Long requestId, @NonNull Long operatorId) {
         ServiceRequest request = getRequest(requestId);
         Member operator = memberRepository.findById(operatorId)
                 .orElseThrow(() -> new IllegalArgumentException("Operator not found"));
@@ -187,13 +195,13 @@ public class ServiceRequestService {
     }
 
     @Transactional
-    public void resolveRequest(Long requestId, String resolution) {
+    public void resolveRequest(@NonNull Long requestId, @NonNull String resolution) {
         ServiceRequest request = getRequest(requestId);
         request.resolve(resolution);
     }
 
     @Transactional
-    public void closeRequest(Long requestId) {
+    public void closeRequest(@NonNull Long requestId) {
         ServiceRequest request = getRequest(requestId);
         request.close();
     }
@@ -225,13 +233,13 @@ public class ServiceRequestService {
     }
 
     @Transactional(readOnly = true)
-    public ServiceRequestAttachment getAttachment(Long attachmentId) {
+    public ServiceRequestAttachment getAttachment(@NonNull Long attachmentId) {
         return attachmentRepository.findById(attachmentId)
                 .orElseThrow(() -> new IllegalArgumentException("Attachment not found"));
     }
 
     @Transactional
-    public void updateRequest(Long requestId, Member currentMember, ServiceRequestDTO.Update dto, List<MultipartFile> files) {
+    public void updateRequest(@NonNull Long requestId, @NonNull Member currentMember, @NonNull ServiceRequestDTO.Update dto, List<MultipartFile> files) {
         ServiceRequest request = getRequest(requestId);
 
         // 보안 검증: 운영자가 아닌 사용자는 OPEN 이후 상태의 요청을 수정할 수 없음
@@ -276,12 +284,12 @@ public class ServiceRequestService {
                         }
                     })
                     .toList();
-            attachmentRepository.saveAll(attachments);
+            attachmentRepository.saveAll(Objects.requireNonNull(attachments));
         }
     }
 
     @Transactional
-    public void deleteRequest(Long requestId, Member currentMember) {
+    public void deleteRequest(@NonNull Long requestId, @NonNull Member currentMember) {
         ServiceRequest request = getRequest(requestId);
 
         // 보안 검증: 운영자가 아닌 사용자는 OPEN 이후 상태의 요청을 삭제할 수 없음

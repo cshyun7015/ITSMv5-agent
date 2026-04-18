@@ -13,8 +13,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.lang.NonNull;
 
 import java.util.List;
+import java.util.Objects;
 
 @lombok.extern.slf4j.Slf4j
 @RestController
@@ -35,7 +37,7 @@ public class OperatorCatalogController {
         }
         
         String tenantId = member.getTenant().getTenantId();
-        return tenantRepository.findById(tenantId)
+        return tenantRepository.findById(Objects.requireNonNull(tenantId))
                 .map(t -> "CUSTOMER".equals(t.getType()))
                 .orElseGet(() -> {
                     log.error("Tenant not found in DB: {}", tenantId);
@@ -44,7 +46,7 @@ public class OperatorCatalogController {
     }
 
     @GetMapping("/templates")
-    public ResponseEntity<List<CatalogTemplateResponse>> getTemplates(@AuthenticationPrincipal Member currentMember) {
+    public ResponseEntity<List<CatalogTemplateResponse>> getTemplates(@AuthenticationPrincipal @NonNull Member currentMember) {
         if (isCustomerTenant(currentMember)) {
             log.warn("Access denied for customer tenant user: {}", currentMember.getUsername());
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
@@ -67,7 +69,7 @@ public class OperatorCatalogController {
 
     @PostMapping("/templates")
     public ResponseEntity<ServiceCatalog> createTemplate(
-            @AuthenticationPrincipal Member currentMember,
+            @AuthenticationPrincipal @NonNull Member currentMember,
             @RequestBody CatalogCreateRequest request) {
         
         if (isCustomerTenant(currentMember)) {
@@ -85,13 +87,13 @@ public class OperatorCatalogController {
                 .isTemplate(true)
                 .build();
 
-        return ResponseEntity.ok(serviceCatalogRepository.save(template));
+        return ResponseEntity.ok(serviceCatalogRepository.save(Objects.requireNonNull(template)));
     }
 
     @PutMapping("/templates/{id}")
     public ResponseEntity<ServiceCatalog> updateTemplate(
-            @AuthenticationPrincipal Member currentMember,
-            @PathVariable Long id,
+            @AuthenticationPrincipal @NonNull Member currentMember,
+            @PathVariable @NonNull Long id,
             @RequestBody CatalogCreateRequest request) {
 
         if (isCustomerTenant(currentMember)) {
@@ -112,8 +114,8 @@ public class OperatorCatalogController {
 
     @DeleteMapping("/templates/{id}")
     public ResponseEntity<Void> deleteTemplate(
-            @AuthenticationPrincipal Member currentMember,
-            @PathVariable Long id) {
+            @AuthenticationPrincipal @NonNull Member currentMember,
+            @PathVariable @NonNull Long id) {
 
         if (isCustomerTenant(currentMember)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
@@ -132,8 +134,8 @@ public class OperatorCatalogController {
 
     @GetMapping("/templates/{templateId}/deployments")
     public ResponseEntity<List<String>> getDeployments(
-            @AuthenticationPrincipal Member currentMember,
-            @PathVariable Long templateId) {
+            @AuthenticationPrincipal @NonNull Member currentMember,
+            @PathVariable @NonNull Long templateId) {
         
         if (isCustomerTenant(currentMember)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
@@ -149,25 +151,25 @@ public class OperatorCatalogController {
 
     @PostMapping("/deploy")
     public ResponseEntity<Void> deployToTenant(
-            @AuthenticationPrincipal Member currentMember,
+            @AuthenticationPrincipal @NonNull Member currentMember,
             @RequestBody CatalogDeployRequest request) {
         
         if (isCustomerTenant(currentMember)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
-        catalogDeploymentService.syncDeployments(request.getTemplateId(), request.getTargetTenantIds());
+        catalogDeploymentService.syncDeployments(Objects.requireNonNull(request.getTemplateId()), Objects.requireNonNull(request.getTargetTenantIds()));
         return ResponseEntity.ok().build();
     }
 
     @GetMapping("/categories")
-    public ResponseEntity<List<CatalogCategory>> getCategories(@AuthenticationPrincipal Member currentMember) {
+    public ResponseEntity<List<CatalogCategory>> getCategories(@AuthenticationPrincipal @NonNull Member currentMember) {
         return ResponseEntity.ok(catalogCategoryRepository.findAllByTenant(currentMember.getTenant()));
     }
 
     @PostMapping("/categories")
     public ResponseEntity<CatalogCategory> createCategory(
-            @AuthenticationPrincipal Member currentMember,
+            @AuthenticationPrincipal @NonNull Member currentMember,
             @RequestBody CategoryRequest request) {
         
         CatalogCategory category = CatalogCategory.builder()
@@ -178,13 +180,13 @@ public class OperatorCatalogController {
                 .isTemplate(!isCustomerTenant(currentMember))
                 .build();
 
-        return ResponseEntity.ok(catalogCategoryRepository.save(category));
+        return ResponseEntity.ok(catalogCategoryRepository.save(Objects.requireNonNull(category)));
     }
 
     @PutMapping("/categories/{id}")
     public ResponseEntity<CatalogCategory> updateCategory(
-            @AuthenticationPrincipal Member currentMember,
-            @PathVariable Long id,
+            @AuthenticationPrincipal @NonNull Member currentMember,
+            @PathVariable @NonNull Long id,
             @RequestBody CategoryRequest request) {
 
         CatalogCategory category = catalogCategoryRepository.findById(id)
@@ -201,8 +203,8 @@ public class OperatorCatalogController {
 
     @DeleteMapping("/categories/{id}")
     public ResponseEntity<Void> deleteCategory(
-            @AuthenticationPrincipal Member currentMember,
-            @PathVariable Long id) {
+            @AuthenticationPrincipal @NonNull Member currentMember,
+            @PathVariable @NonNull Long id) {
 
         CatalogCategory category = catalogCategoryRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Category not found"));

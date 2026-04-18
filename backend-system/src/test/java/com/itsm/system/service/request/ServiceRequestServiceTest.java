@@ -16,6 +16,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -53,6 +54,7 @@ class ServiceRequestServiceTest {
         // given
         ServiceRequest request = ServiceRequest.builder()
                 .requestId(100L)
+                .tenant(tenant)
                 .status(ServiceRequestStatus.DRAFT)
                 .priority(ServiceRequestPriority.EMERGENCY)
                 .approvals(new ArrayList<>())
@@ -63,12 +65,12 @@ class ServiceRequestServiceTest {
         given(slaService.calculateDeadline(ServiceRequestPriority.EMERGENCY)).willReturn(LocalDateTime.now().plusHours(4));
 
         // when
-        serviceRequestService.submitRequest(100L, List.of(2L));
+        serviceRequestService.submitRequest(100L, Objects.requireNonNull(List.of(2L)));
 
         // then
         assertThat(request.getStatus()).isEqualTo(ServiceRequestStatus.PENDING_APPROVAL);
         assertThat(request.getApprovals()).hasSize(1);
-        verify(requestRepository).save(any(ServiceRequest.class));
+        verify(requestRepository).save(Objects.requireNonNull(any(ServiceRequest.class)));
     }
 
     @Test
@@ -77,6 +79,7 @@ class ServiceRequestServiceTest {
         // given
         ServiceRequest request = ServiceRequest.builder()
                 .requestId(101L)
+                .tenant(tenant)
                 .status(ServiceRequestStatus.DRAFT)
                 .priority(ServiceRequestPriority.LOW)
                 .approvals(new ArrayList<>())
@@ -86,7 +89,7 @@ class ServiceRequestServiceTest {
         given(slaService.calculateDeadline(ServiceRequestPriority.LOW)).willReturn(LocalDateTime.now().plusDays(3));
 
         // when
-        serviceRequestService.submitRequest(101L, Collections.emptyList());
+        serviceRequestService.submitRequest(101L, Objects.requireNonNull(Collections.emptyList()));
 
         // then
         assertThat(request.getStatus()).isEqualTo(ServiceRequestStatus.OPEN);
@@ -117,6 +120,6 @@ class ServiceRequestServiceTest {
         // then
         assertThat(request.getStatus()).isEqualTo(ServiceRequestStatus.DRAFT);
         assertThat(approval.getStatus()).isEqualTo(ServiceRequestApproval.ApprovalStatus.REJECTED);
-        verify(approvalRepository).save(any(ServiceRequestApproval.class));
+        verify(approvalRepository).save(Objects.requireNonNull(any(ServiceRequestApproval.class)));
     }
 }

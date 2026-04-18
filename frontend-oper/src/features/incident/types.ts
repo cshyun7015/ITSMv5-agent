@@ -16,7 +16,10 @@ export interface Incident {
   source: 'USER' | 'SYSTEM';
   reporterName: string;
   assigneeName?: string;
+  assigneeId?: number;
   resolution?: string;
+  isMajor: boolean;
+  affectedService?: string;
   slaDeadline: string;
   createdAt: string;
 }
@@ -29,4 +32,9 @@ export interface IncidentReportRequest {
   urgency: IncidentUrgency;
   category: string;
   source?: string;
+  isMajor: boolean;
+  affectedService?: string;
+  status?: IncidentStatus;
+  assigneeId?: number;
+  resolution?: string;
 }

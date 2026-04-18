@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Objects;
 
 @RestController
 @RequestMapping("/api/v1/codes")
@@ -32,23 +33,23 @@ public class CodeController {
 
     @PostMapping
     public ResponseEntity<CodeDTO> createCode(@RequestBody CodeDTO codeDTO) {
-        return ResponseEntity.ok(codeService.createCode(codeDTO));
+        return ResponseEntity.ok(codeService.createCode(Objects.requireNonNull(codeDTO)));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<CodeDTO> updateCode(@PathVariable Long id, @RequestBody CodeDTO codeDTO) {
-        return ResponseEntity.ok(codeService.updateCode(id, codeDTO));
+        return ResponseEntity.ok(codeService.updateCode(Objects.requireNonNull(id), Objects.requireNonNull(codeDTO)));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteCode(@PathVariable Long id) {
-        codeService.deleteCode(id);
+        codeService.deleteCode(Objects.requireNonNull(id));
         return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/groups/{groupId}")
     public ResponseEntity<Void> deleteCodesByGroup(@PathVariable String groupId) {
-        codeService.deleteCodesByGroup(groupId);
+        codeService.deleteCodesByGroup(Objects.requireNonNull(groupId));
         return ResponseEntity.noContent().build();
     }
 }

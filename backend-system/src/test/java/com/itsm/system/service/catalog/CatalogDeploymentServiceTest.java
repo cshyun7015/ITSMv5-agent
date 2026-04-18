@@ -1,6 +1,5 @@
 package com.itsm.system.service.catalog;
 
-import com.itsm.system.domain.catalog.CatalogCategory;
 import com.itsm.system.domain.catalog.CatalogCategoryRepository;
 import com.itsm.system.domain.catalog.ServiceCatalog;
 import com.itsm.system.domain.catalog.ServiceCatalogRepository;
@@ -9,17 +8,17 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
@@ -36,25 +35,17 @@ class CatalogDeploymentServiceTest {
 
     private Tenant mspTenant;
     private Tenant customerTenant;
-    private CatalogCategory templateCategory;
     private ServiceCatalog templateService;
 
     @BeforeEach
     void setUp() {
-        mspTenant = Tenant.builder().tenantId("MSP_CORE").build();
-        customerTenant = Tenant.builder().tenantId("CUSTOMER_01").build();
-        
-        templateCategory = CatalogCategory.builder()
-                .id(1L)
-                .name("Cloud Services")
-                .tenant(mspTenant)
-                .isTemplate(true)
-                .build();
+        mspTenant = Tenant.builder().tenantId("MSP_CORE").name("MSP Core").type("MSP").build();
+        customerTenant = Tenant.builder().tenantId("CUSTOMER_01").name("Customer").type("CUSTOMER").build();
                 
         templateService = ServiceCatalog.builder()
                 .id(100L)
                 .name("VM Provisioning")
-                .category(templateCategory)
+                .categoryCode("CAT-001")
                 .tenant(mspTenant)
                 .isTemplate(true)
                 .jsonSchema("{}")
@@ -66,44 +57,37 @@ class CatalogDeploymentServiceTest {
     void deployTemplateSuccess() {
         // given
         given(serviceCatalogRepository.findById(100L)).willReturn(Optional.of(templateService));
-        given(catalogCategoryRepository.findAllByTenant(customerTenant)).willReturn(Collections.emptyList());
-        given(catalogCategoryRepository.save(any(CatalogCategory.class))).willAnswer(inv -> inv.getArgument(0));
 
         // when
-        catalogDeploymentService.deployTemplate(100L, customerTenant);
+        catalogDeploymentService.deployTemplate(100L, Objects.requireNonNull(customerTenant));
 
         // then
-        verify(serviceCatalogRepository).save(argThat(service -> {
-            assertThat(service.getName()).isEqualTo(templateService.getName());
-            assertThat(service.getTenant()).isEqualTo(customerTenant);
-            assertThat(service.isTemplate()).isFalse();
-            assertThat(service.getTemplateSourceId()).isEqualTo(100L);
-            return true;
-        }));
-        verify(catalogCategoryRepository).save(any(CatalogCategory.class));
+        ArgumentCaptor<ServiceCatalog> captor = ArgumentCaptor.forClass(ServiceCatalog.class);
+        verify(serviceCatalogRepository).save(Objects.requireNonNull(captor.capture()));
+        ServiceCatalog savedService = captor.getValue();
+
+        assertThat(savedService.getName()).isEqualTo(templateService.getName());
+        assertThat(savedService.getTenant()).isEqualTo(customerTenant);
+        assertThat(savedService.isTemplate()).isFalse();
+        assertThat(savedService.getTemplateSourceId()).isEqualTo(100L);
+        assertThat(savedService.getCategoryCode()).isEqualTo("CAT-001");
     }
 
     @Test
-    @DisplayName("이미 존재하는 카테고리가 있는 경우 새로 생성하지 않고 재사용해야 함")
-    void deployTemplateWithExistingCategory() {
+    @DisplayName("템플릿 배포 시 카테고리 코드가 정상적으로 복제되어야 함")
+    void deployTemplateCategoryCodeSync() {
         // given
-        CatalogCategory existingCategory = CatalogCategory.builder()
-                .name("Cloud Services")
-                .tenant(customerTenant)
-                .build();
-                
         given(serviceCatalogRepository.findById(100L)).willReturn(Optional.of(templateService));
-        given(catalogCategoryRepository.findAllByTenant(customerTenant)).willReturn(List.of(existingCategory));
-
+ 
         // when
-        catalogDeploymentService.deployTemplate(100L, customerTenant);
-
+        catalogDeploymentService.deployTemplate(100L, Objects.requireNonNull(customerTenant));
+ 
         // then
-        verify(catalogCategoryRepository, never()).save(any(CatalogCategory.class));
-        verify(serviceCatalogRepository).save(argThat(service -> {
-            assertThat(service.getCategory()).isEqualTo(existingCategory);
-            return true;
-        }));
+        ArgumentCaptor<ServiceCatalog> captor = ArgumentCaptor.forClass(ServiceCatalog.class);
+        verify(serviceCatalogRepository).save(Objects.requireNonNull(captor.capture()));
+        ServiceCatalog savedService = captor.getValue();
+
+        assertThat(savedService.getCategoryCode()).isEqualTo(templateService.getCategoryCode());
     }
 
     @Test
@@ -117,7 +101,7 @@ class CatalogDeploymentServiceTest {
         given(serviceCatalogRepository.findById(200L)).willReturn(Optional.of(nonTemplate));
 
         // when & then
-        assertThatThrownBy(() -> catalogDeploymentService.deployTemplate(200L, customerTenant))
+        assertThatThrownBy(() -> catalogDeploymentService.deployTemplate(200L, Objects.requireNonNull(customerTenant)))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Target is not a template");
     }

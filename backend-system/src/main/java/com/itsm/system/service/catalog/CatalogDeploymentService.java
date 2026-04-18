@@ -6,6 +6,7 @@ import com.itsm.system.domain.tenant.Tenant;
 import com.itsm.system.domain.tenant.TenantRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,7 +24,7 @@ public class CatalogDeploymentService {
      * 카테고리 정보는 공통 코드(categoryCode)를 그대로 복제합니다.
      */
     @Transactional
-    public void deployTemplate(Long templateId, Tenant targetTenant) {
+    public void deployTemplate(@NonNull Long templateId, @NonNull Tenant targetTenant) {
         if (serviceCatalogRepository.existsByTenant_TenantIdAndTemplateSourceId(targetTenant.getTenantId(), templateId)) {
             log.info("Template {} already deployed to tenant {}, skipping.", templateId, targetTenant.getTenantId());
             return;
@@ -49,6 +50,9 @@ public class CatalogDeploymentService {
                 .templateSourceId(template.getId())
                 .build();
 
+        if (deployedService == null) {
+            throw new IllegalStateException("Failed to build service catalog deployment object");
+        }
         serviceCatalogRepository.save(deployedService);
     }
 
@@ -59,7 +63,7 @@ public class CatalogDeploymentService {
      * 3. 요청 리스트에 있는데 기존에 없는 경우 -> 신규 배포
      */
     @Transactional
-    public void syncDeployments(Long templateId, List<String> targetTenantIds) {
+    public void syncDeployments(@NonNull Long templateId, @NonNull List<String> targetTenantIds) {
         // 기존 배포된 목록 조회
         List<ServiceCatalog> existingDeployments = serviceCatalogRepository.findAllByTemplateSourceId(templateId);
         
@@ -72,22 +76,29 @@ public class CatalogDeploymentService {
             if (!targetTenantIds.contains(tenantId)) {
                 // 대상 리스트에 없으면 모두 삭제
                 log.info("Removing all deployments for template {} from tenant {}", templateId, tenantId);
-                serviceCatalogRepository.deleteAll(deployments);
+                if (deployments != null) {
+                    serviceCatalogRepository.deleteAll(deployments);
+                }
             } else {
                 // 대상 리스트에 있으면 중복 제거 (하나만 남기고 나머지 삭제)
-                if (deployments.size() > 1) {
+                if (deployments != null && deployments.size() > 1) {
                     log.info("Found duplicate deployments for template {} in tenant {}, cleaning up.", templateId, tenantId);
-                    serviceCatalogRepository.deleteAll(deployments.subList(1, deployments.size()));
+                    List<ServiceCatalog> duplicates = deployments.subList(1, deployments.size());
+                    if (duplicates != null) {
+                        serviceCatalogRepository.deleteAll(duplicates);
+                    }
                 }
             }
         });
 
         // 2. 신규 배포 처리
         for (String tenantId : targetTenantIds) {
-            if (!tenantToDeployments.containsKey(tenantId)) {
+            if (tenantId != null && !tenantToDeployments.containsKey(tenantId)) {
                 Tenant tenant = tenantRepository.findById(tenantId)
                         .orElseThrow(() -> new IllegalArgumentException("Tenant not found: " + tenantId));
-                deployTemplate(templateId, tenant);
+                if (tenant != null) {
+                    deployTemplate(templateId, tenant);
+                }
             }
         }
         

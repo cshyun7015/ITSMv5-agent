@@ -14,6 +14,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
+import java.util.Objects;
 
 import static org.mockito.BDDMockito.given;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
@@ -64,9 +65,14 @@ class TenantCatalogControllerTest {
         given(catalogDeploymentService.getCatalogForTenant(customerTenant)).willReturn(List.of(catalogItem));
 
         // when & then
+        var userPostProcessor = user(customerUser);
+        if (userPostProcessor == null) {
+            throw new IllegalStateException("Failed to create user post processor");
+        }
+        
         mockMvc.perform(get("/api/v1/catalog")
-                        .with(user(customerUser))
-                        .contentType(MediaType.APPLICATION_JSON))
+                        .with(userPostProcessor)
+                        .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(500))
                 .andExpect(jsonPath("$[0].name").value("Laptop Repair"))

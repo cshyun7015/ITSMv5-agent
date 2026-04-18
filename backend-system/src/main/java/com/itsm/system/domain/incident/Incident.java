@@ -65,6 +65,13 @@ public class Incident extends BaseEntity {
     @Builder.Default
     private String source = "USER";
 
+    @Column(name = "is_major")
+    @Builder.Default
+    private boolean isMajor = false;
+
+    @Column(name = "affected_service", length = 100)
+    private String affectedService;
+
     @Column(name = "resolution", columnDefinition = "TEXT")
     private String resolution;
 
@@ -104,12 +111,18 @@ public class Incident extends BaseEntity {
     }
 
     public void update(String title, String description, IncidentImpact impact, 
-                       IncidentUrgency urgency, String category) {
+                       IncidentUrgency urgency, String category, boolean isMajor, 
+                       String affectedService, IncidentStatus status, Member assignee, String resolution) {
         this.title = title;
         this.description = description;
         this.impact = impact;
         this.urgency = urgency;
         this.category = category;
+        this.isMajor = isMajor;
+        this.affectedService = affectedService;
+        this.status = status;
+        this.assignee = assignee;
+        this.resolution = resolution;
         calculatePriority();
     }
 }

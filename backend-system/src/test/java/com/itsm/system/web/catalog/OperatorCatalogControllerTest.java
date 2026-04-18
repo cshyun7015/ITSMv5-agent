@@ -17,6 +17,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -57,7 +58,9 @@ class OperatorCatalogControllerTest {
 
     @BeforeEach
     void setUp() {
-        mspTenant = Tenant.builder().tenantId("MSP_CORE").build();
+        mspTenant = Tenant.builder().tenantId("MSP_CORE").name("MSP Core").type("MSP").build();
+        given(tenantRepository.findById("MSP_CORE")).willReturn(Optional.of(mspTenant));
+ 
         mspAdmin = Member.builder()
                 .memberId(1L)
                 .username("admin")
@@ -69,13 +72,13 @@ class OperatorCatalogControllerTest {
     @DisplayName("MSP 운영자는 모든 템플릿 목록을 조회할 수 있어야 함")
     void getTemplatesSuccess() throws Exception {
         // given
-        ServiceCatalog template = ServiceCatalog.builder().id(100L).name("Template 1").isTemplate(true).build();
+        ServiceCatalog template = ServiceCatalog.builder().id(100L).name("Template 1").isTemplate(true).categoryCode("CAT-01").build();
         given(serviceCatalogRepository.findAllByIsTemplateTrue()).willReturn(List.of(template));
 
         // when & then
         mockMvc.perform(get("/api/v1/operator/catalog/templates")
-                        .with(user(mspAdmin))
-                        .contentType(MediaType.APPLICATION_JSON))
+                        .with(Objects.requireNonNull(user(mspAdmin)))
+                        .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].name").value("Template 1"));
     }
@@ -84,13 +87,14 @@ class OperatorCatalogControllerTest {
     @DisplayName("MSP 소속이 아닌 경우 템플릿 조회가 거부되어야 함")
     void getTemplatesForbidden() throws Exception {
         // given
-        Tenant customerTenant = Tenant.builder().tenantId("CUSTOMER_01").build();
-        Member customerUser = Member.builder().username("user").tenant(customerTenant).build();
+        Tenant customerTenant = Tenant.builder().tenantId("CUSTOMER_01").name("Customer").type("CUSTOMER").build();
+        given(tenantRepository.findById("CUSTOMER_01")).willReturn(Optional.of(customerTenant));
+        Member customerUser = Member.builder().username("user").password("password").tenant(customerTenant).isActive(true).build();
 
         // when & then
         mockMvc.perform(get("/api/v1/operator/catalog/templates")
-                        .with(user(customerUser))
-                        .contentType(MediaType.APPLICATION_JSON))
+                        .with(Objects.requireNonNull(user(customerUser)))
+                        .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON)))
                 .andExpect(status().isForbidden());
     }
 
@@ -103,17 +107,18 @@ class OperatorCatalogControllerTest {
         request.setCategoryCode("CAT-01");
         request.setJsonSchema("{}");
 
-        given(serviceCatalogRepository.save(any(ServiceCatalog.class))).willAnswer(inv -> inv.getArgument(0));
+        given(serviceCatalogRepository.save(Objects.requireNonNull(any(ServiceCatalog.class)))).willAnswer(inv -> inv.getArgument(0));
 
         // when & then
         mockMvc.perform(post("/api/v1/operator/catalog/templates")
-                        .with(user(mspAdmin))
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .with(Objects.requireNonNull(user(mspAdmin)))
+                        .with(Objects.requireNonNull(csrf()))
+                        .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON))
+                        .content(Objects.requireNonNull(objectMapper.writeValueAsString(request))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("New Template"))
-                .andExpect(jsonPath("$.template").value(true));
+                .andExpect(jsonPath("$.template").value(true))
+                .andExpect(jsonPath("$.categoryCode").value("CAT-01"));
     }
 
     @Test
@@ -124,15 +129,15 @@ class OperatorCatalogControllerTest {
         request.setTemplateId(100L);
         request.setTargetTenantIds(List.of("CUST01"));
 
-        Tenant targetTenant = Tenant.builder().tenantId("CUST01").build();
+        Tenant targetTenant = Tenant.builder().tenantId("CUST01").name("Cust 1").type("CUSTOMER").build();
         given(tenantRepository.findById("CUST01")).willReturn(Optional.of(targetTenant));
 
         // when & then
         mockMvc.perform(post("/api/v1/operator/catalog/deploy")
-                        .with(user(mspAdmin))
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .with(Objects.requireNonNull(user(mspAdmin)))
+                        .with(Objects.requireNonNull(csrf()))
+                        .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON))
+                        .content(Objects.requireNonNull(objectMapper.writeValueAsString(request))))
                 .andExpect(status().isOk());
     }
 }

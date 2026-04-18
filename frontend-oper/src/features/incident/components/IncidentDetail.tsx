@@ -125,13 +125,23 @@ const IncidentDetail: React.FC<IncidentDetailProps> = ({ incidentId, onBack, onU
 
         <div className="incident-sidebar">
           <div className="info-card">
-            <h4>Telemetry Details</h4>
+            <h4>Incident Properties</h4>
             <div className="info-row">
               <span className="label">Status</span>
               <span className={`value-badge ${incident.status}`}>{incident.status}</span>
             </div>
+            {incident.isMajor && (
+              <div className="info-row major-alert">
+                <span className="label">Type</span>
+                <span className="value critical">🚨 MAJOR INCIDENT</span>
+              </div>
+            )}
             <div className="info-row">
-              <span className="label">Tenant</span>
+              <span className="label">Affected Service</span>
+              <span className="value">{incident.affectedService || 'N/A'}</span>
+            </div>
+            <div className="info-row">
+              <span className="label">Tenant Org</span>
               <span className="value">{incident.tenantId}</span>
             </div>
             <div className="info-row">
@@ -145,6 +155,10 @@ const IncidentDetail: React.FC<IncidentDetailProps> = ({ incidentId, onBack, onU
             <div className="info-row">
               <span className="label">Urgency</span>
               <span className="value">{incident.urgency}</span>
+            </div>
+            <div className="info-row">
+              <span className="label">Reporter</span>
+              <span className="value">{incident.reporterName}</span>
             </div>
             <div className="info-row">
               <span className="label">Assignee</span>
@@ -230,6 +244,10 @@ const IncidentDetail: React.FC<IncidentDetailProps> = ({ incidentId, onBack, onU
         .value-badge.RESOLVED { background: #10b981; color: white; }
         .info-row.sla { margin-top: 8px; background: rgba(255,255,255,0.02); padding: 12px; border-radius: 8px; border-bottom: none; flex-direction: column; align-items: flex-start; gap: 4px; }
         .info-row.sla .value.highlight { color: #f87171; font-weight: 800; font-family: monospace; }
+        
+        .major-alert { background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); padding: 12px; border-radius: 8px; border-bottom: none !important; margin-bottom: 20px !important; }
+        .major-alert .label { color: #f87171 !important; font-weight: 800 !important; }
+        .value.critical { color: #f87171; font-weight: 900; letter-spacing: 0.05em; }
 
         .action-buttons { margin-top: 24px; }
         .action-buttons button { width: 100%; padding: 14px; border-radius: 8px; font-weight: 700; font-size: 15px; border: none; cursor: pointer; transition: all 0.2s; }

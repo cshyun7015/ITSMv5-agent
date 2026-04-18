@@ -21,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 
 import java.util.List;
+import java.util.Objects;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -52,20 +53,31 @@ class ServiceRequestControllerTest {
 
     @BeforeEach
     void setUp() {
-        // 기존 데이터가 있을 수 있으므로 조회하거나 새로 생성
-        Tenant tenant = tenantRepository.findById("MSP_CORE")
-                .orElseGet(() -> tenantRepository.save(Tenant.builder().tenantId("MSP_CORE").name("MSP Core").build()));
+        // 1. 테넌트 조회 또는 생성
+        Tenant tenant = tenantRepository.findById("MSP_CORE").orElse(null);
+        if (tenant == null) {
+            Tenant newTenant = Tenant.builder().tenantId("MSP_CORE").name("MSP Core").type("MSP").build();
+            tenant = tenantRepository.save(Objects.requireNonNull(newTenant));
+        }
+        
+        final Tenant finalTenant = tenant;
 
-        memberRepository.findAll().stream()
+        // 2. 어드민 멤버 조회 또는 생성
+        Member admin = memberRepository.findAll().stream()
                 .filter(m -> m.getUsername().equals("admin"))
                 .findFirst()
-                .orElseGet(() -> memberRepository.save(Member.builder()
-                        .username("admin")
-                        .password("password")
-                        .tenant(tenant)
-                        .isActive(true)
-                        .build()));
-
+                .orElse(null);
+        
+        if (admin == null) {
+                    Member newAdmin = Member.builder()
+                            .username("admin")
+                            .password("password")
+                            .tenant(finalTenant)
+                            .isActive(true)
+                            .build();
+                    admin = memberRepository.save(Objects.requireNonNull(newAdmin));
+                }
+        
         token = "Bearer " + jwtTokenProvider.createToken("admin", "MSP_CORE", List.of("ROLE_ADMIN"));
     }
 
@@ -77,11 +89,13 @@ class ServiceRequestControllerTest {
                 .description("Internet is slow")
                 .priority(ServiceRequestPriority.NORMAL)
                 .build();
-
-        mockMvc.perform(post("/api/v1/requests")
-                        .header("Authorization", token)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(createDto)))
+ 
+        org.springframework.mock.web.MockMultipartFile requestPart = new org.springframework.mock.web.MockMultipartFile(
+                "request", "", "application/json", objectMapper.writeValueAsBytes(createDto));
+ 
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart("/api/v1/requests")
+                        .file(requestPart)
+                        .header("Authorization", token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.title").value("Network Issue"))
                 .andExpect(jsonPath("$.status").value("DRAFT"));
@@ -96,8 +110,8 @@ class ServiceRequestControllerTest {
                 .build();
 
         mockMvc.perform(post("/api/v1/requests")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(createDto)))
+                        .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON))
+                        .content(Objects.requireNonNull(objectMapper.writeValueAsString(createDto))))
                 .andExpect(status().isForbidden());
     }
 

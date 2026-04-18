@@ -7,10 +7,12 @@ import com.itsm.system.domain.member.MemberRepository;
 import com.itsm.system.domain.tenant.TenantRepository;
 import com.itsm.system.repository.incident.IncidentRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -21,9 +23,10 @@ public class IncidentService {
     private final MemberRepository memberRepository;
 
     @Transactional
-    public Incident reportIncident(String tenantId, String title, String description, 
-                                   IncidentImpact impact, IncidentUrgency urgency, 
-                                   String category, Long reporterId, String source) {
+    public Incident reportIncident(@NonNull String tenantId, @NonNull String title, @NonNull String description, 
+                                   @NonNull IncidentImpact impact, @NonNull IncidentUrgency urgency, 
+                                   @NonNull String category, @NonNull Long reporterId, @NonNull String source,
+                                   boolean isMajor, String affectedService) {
         
         Tenant tenant = tenantRepository.findById(tenantId)
                 .orElseThrow(() -> new IllegalArgumentException("Tenant not found"));
@@ -39,6 +42,8 @@ public class IncidentService {
                 .category(category)
                 .reporter(reporter)
                 .source(source)
+                .isMajor(isMajor)
+                .affectedService(affectedService)
                 .build();
 
         incident.calculatePriority();
@@ -46,7 +51,7 @@ public class IncidentService {
     }
 
     @Transactional
-    public void assignSpecialist(Long incidentId, Long specialistId) {
+    public void assignSpecialist(@NonNull Long incidentId, @NonNull Long specialistId) {
         Incident incident = incidentRepository.findById(incidentId)
                 .orElseThrow(() -> new IllegalArgumentException("Incident not found"));
         Member specialist = memberRepository.findById(specialistId)
@@ -56,7 +61,7 @@ public class IncidentService {
     }
 
     @Transactional
-    public void resolveIncident(Long incidentId, String resolution) {
+    public void resolveIncident(@NonNull Long incidentId, @NonNull String resolution) {
         Incident incident = incidentRepository.findById(incidentId)
                 .orElseThrow(() -> new IllegalArgumentException("Incident not found"));
         incident.resolve(resolution);
@@ -68,22 +73,39 @@ public class IncidentService {
     }
 
     @Transactional(readOnly = true)
-    public Incident getIncident(Long id) {
-        return incidentRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Incident not found"));
+    @NonNull
+    public Incident getIncident(@NonNull Long id) {
+        return Objects.requireNonNull(incidentRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Incident not found")));
     }
 
     @Transactional
-    public Incident updateIncident(Long id, String title, String description, 
-                                   IncidentImpact impact, IncidentUrgency urgency, 
-                                   String category) {
+    public Incident updateIncident(@NonNull Long id, @NonNull String title, @NonNull String description, 
+                                   @NonNull IncidentImpact impact, @NonNull IncidentUrgency urgency, 
+                                   @NonNull String category, boolean isMajor, String affectedService,
+                                   @NonNull IncidentStatus status, Long assigneeId, String resolution) {
         Incident incident = getIncident(id);
-        incident.update(title, description, impact, urgency, category);
+        
+        Member assignee = null;
+        if (assigneeId != null) {
+            assignee = memberRepository.findById(assigneeId)
+                    .orElseThrow(() -> new IllegalArgumentException("Assignee not found"));
+        } else if (status != IncidentStatus.NEW) {
+            // ASSIGNED, IN_PROGRESS, RESOLVED, CLOSED statuses require an assignee
+            throw new IllegalArgumentException("Assignee is required for status: " + status);
+        }
+
+        if ((status == IncidentStatus.RESOLVED || status == IncidentStatus.CLOSED) && 
+            (resolution == null || resolution.trim().isEmpty())) {
+            throw new IllegalArgumentException("Resolution is required when resolving or closing an incident");
+        }
+        
+        incident.update(title, description, impact, urgency, category, isMajor, affectedService, status, assignee, resolution);
         return incidentRepository.save(incident);
     }
 
     @Transactional
-    public void deleteIncident(Long id) {
+    public void deleteIncident(@NonNull Long id) {
         Incident incident = getIncident(id);
         incidentRepository.delete(incident);
     }

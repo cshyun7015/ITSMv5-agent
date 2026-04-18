@@ -10,6 +10,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import org.springframework.lang.NonNull;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import com.itsm.system.domain.auth.TokenBlacklistRepository;
 import java.io.IOException;
@@ -22,7 +23,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final TokenBlacklistRepository tokenBlacklistRepository;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+    protected void doFilterInternal(@NonNull HttpServletRequest request, 
+                                    @NonNull HttpServletResponse response, 
+                                    @NonNull FilterChain filterChain)
             throws ServletException, IOException {
         String token = resolveToken(request);
 

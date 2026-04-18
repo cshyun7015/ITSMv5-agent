@@ -45,5 +45,11 @@ export const incidentApi = {
   // 인시던트 삭제
   deleteIncident: async (id: number): Promise<void> => {
     await apiClient.delete(`/incidents/${id}`);
+  },
+  
+  // 운영자 목록 조회 (배정용)
+  getOperators: async (): Promise<any[]> => {
+    const response = await apiClient.get<any[]>('/members/operators');
+    return response.data;
   }
 };

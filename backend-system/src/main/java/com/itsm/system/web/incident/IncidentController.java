@@ -4,12 +4,15 @@ import com.itsm.system.domain.incident.Incident;
 import com.itsm.system.domain.member.Member;
 import com.itsm.system.dto.incident.IncidentDTO;
 import com.itsm.system.service.incident.IncidentService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.lang.NonNull;
 
 import java.util.List;
+import java.util.Objects;
 
 @RestController
 @RequestMapping("/api/v1/incidents")
@@ -20,13 +23,18 @@ public class IncidentController {
 
     @PostMapping
     public ResponseEntity<IncidentDTO.Response> reportIncident(
-            @AuthenticationPrincipal Member currentMember,
-            @RequestBody IncidentDTO.Request dto) {
+            @AuthenticationPrincipal @NonNull Member currentMember,
+            @Valid @RequestBody IncidentDTO.Request dto) {
         
         Incident incident = incidentService.reportIncident(
-                dto.getTenantId(), dto.getTitle(), dto.getDescription(),
-                dto.getImpact(), dto.getUrgency(), dto.getCategory(),
-                currentMember.getMemberId(), "USER"
+                Objects.requireNonNull(dto.getTenantId()), 
+                Objects.requireNonNull(dto.getTitle()), 
+                Objects.requireNonNull(dto.getDescription()),
+                Objects.requireNonNull(dto.getImpact()), 
+                Objects.requireNonNull(dto.getUrgency()), 
+                Objects.requireNonNull(dto.getCategory()),
+                Objects.requireNonNull(currentMember.getMemberId()), "USER",
+                dto.isMajor(), dto.getAffectedService()
         );
         return ResponseEntity.ok(convertToResponse(incident));
     }
@@ -34,15 +42,20 @@ public class IncidentController {
     @PostMapping("/alerts")
     public ResponseEntity<IncidentDTO.Response> reportAlert(
             @AuthenticationPrincipal Member currentMember,
-            @RequestBody IncidentDTO.Request dto) {
+            @Valid @RequestBody IncidentDTO.Request dto) {
         
         // 시스템 알람 수신 (외부 모니터링 시스템용). 인증 정보가 없으면 관리자(ID: 1)로 기록.
         Long reporterId = (currentMember != null) ? currentMember.getMemberId() : 1L;
         
         Incident incident = incidentService.reportIncident(
-                dto.getTenantId(), dto.getTitle(), dto.getDescription(),
-                dto.getImpact(), dto.getUrgency(), dto.getCategory(),
-                reporterId, "SYSTEM"
+                Objects.requireNonNull(dto.getTenantId()), 
+                Objects.requireNonNull(dto.getTitle()), 
+                Objects.requireNonNull(dto.getDescription()),
+                Objects.requireNonNull(dto.getImpact()), 
+                Objects.requireNonNull(dto.getUrgency()), 
+                Objects.requireNonNull(dto.getCategory()),
+                Objects.requireNonNull(reporterId), "SYSTEM",
+                dto.isMajor(), dto.getAffectedService()
         );
         return ResponseEntity.ok(convertToResponse(incident));
     }
@@ -55,39 +68,47 @@ public class IncidentController {
 
     @GetMapping("/{id}")
     public ResponseEntity<IncidentDTO.Response> getIncident(@PathVariable Long id) {
-        Incident incident = incidentService.getIncident(id);
+        Incident incident = incidentService.getIncident(Objects.requireNonNull(id));
         return ResponseEntity.ok(convertToResponse(incident));
     }
 
     @PostMapping("/{id}/assign")
     public ResponseEntity<Void> assign(
-            @AuthenticationPrincipal Member currentMember,
-            @PathVariable Long id) {
-        incidentService.assignSpecialist(id, currentMember.getMemberId());
+            @AuthenticationPrincipal @NonNull Member currentMember,
+            @PathVariable @NonNull Long id) {
+        incidentService.assignSpecialist(Objects.requireNonNull(id), Objects.requireNonNull(currentMember.getMemberId()));
         return ResponseEntity.ok().build();
     }
+
     @PostMapping("/{id}/resolve")
     public ResponseEntity<Void> resolve(
-            @PathVariable Long id,
+            @PathVariable @NonNull Long id,
             @RequestBody IncidentDTO.Resolve dto) {
-        incidentService.resolveIncident(id, dto.getResolution());
+        incidentService.resolveIncident(Objects.requireNonNull(id), Objects.requireNonNull(dto.getResolution()));
         return ResponseEntity.ok().build();
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<IncidentDTO.Response> updateIncident(
-            @PathVariable Long id,
-            @RequestBody IncidentDTO.Request dto) {
+            @PathVariable @NonNull Long id,
+            @Valid @RequestBody IncidentDTO.Request dto) {
         Incident incident = incidentService.updateIncident(
-                id, dto.getTitle(), dto.getDescription(),
-                dto.getImpact(), dto.getUrgency(), dto.getCategory()
+                Objects.requireNonNull(id), 
+                Objects.requireNonNull(dto.getTitle()), 
+                Objects.requireNonNull(dto.getDescription()),
+                Objects.requireNonNull(dto.getImpact()), 
+                Objects.requireNonNull(dto.getUrgency()), 
+                Objects.requireNonNull(dto.getCategory()),
+                dto.isMajor(), dto.getAffectedService(),
+                Objects.requireNonNull(dto.getStatus()), 
+                dto.getAssigneeId(), dto.getResolution()
         );
         return ResponseEntity.ok(convertToResponse(incident));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteIncident(@PathVariable Long id) {
-        incidentService.deleteIncident(id);
+    public ResponseEntity<Void> deleteIncident(@PathVariable @NonNull Long id) {
+        incidentService.deleteIncident(Objects.requireNonNull(id));
         return ResponseEntity.noContent().build();
     }
 
@@ -99,10 +120,15 @@ public class IncidentController {
                 .description(incident.getDescription())
                 .status(incident.getStatus())
                 .priority(incident.getPriority())
+                .impact(incident.getImpact())
+                .urgency(incident.getUrgency())
                 .category(incident.getCategory())
                 .source(incident.getSource())
                 .reporterName(incident.getReporter().getUsername())
                 .assigneeName(incident.getAssignee() != null ? incident.getAssignee().getUsername() : null)
+                .assigneeId(incident.getAssignee() != null ? incident.getAssignee().getMemberId() : null)
+                .isMajor(incident.isMajor())
+                .affectedService(incident.getAffectedService())
                 .resolution(incident.getResolution())
                 .slaDeadline(incident.getSlaDeadline())
                 .createdAt(incident.getCreatedAt())

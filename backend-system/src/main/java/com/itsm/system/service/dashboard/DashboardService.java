@@ -9,6 +9,7 @@ import com.itsm.system.dto.dashboard.DashboardDTO;
 import com.itsm.system.repository.incident.IncidentRepository;
 import com.itsm.system.domain.request.ServiceRequestRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,7 +24,7 @@ public class DashboardService {
     private final TenantRepository tenantRepository;
 
     @Transactional(readOnly = true)
-    public DashboardDTO getDashboardSummary(String tenantId) {
+    public DashboardDTO getDashboardSummary(@NonNull String tenantId) {
         Tenant tenant = tenantRepository.findById(tenantId)
                 .orElseThrow(() -> new IllegalArgumentException("Tenant not found"));
 

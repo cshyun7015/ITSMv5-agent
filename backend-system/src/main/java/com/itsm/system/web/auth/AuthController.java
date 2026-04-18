@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.lang.NonNull;
 
 import org.springframework.transaction.annotation.Transactional;
 import com.itsm.system.domain.auth.TokenBlacklist;
@@ -23,6 +24,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Date;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -75,7 +77,7 @@ public class AuthController {
     
     @Transactional
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout(HttpServletRequest request) {
+    public ResponseEntity<Void> logout(@NonNull HttpServletRequest request) {
         String bearerToken = request.getHeader("Authorization");
         if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
             String token = bearerToken.substring(7);
@@ -86,10 +88,10 @@ public class AuthController {
                         .atZone(ZoneId.systemDefault())
                         .toLocalDateTime();
                 
-                tokenBlacklistRepository.save(TokenBlacklist.builder()
+                tokenBlacklistRepository.save(Objects.requireNonNull(TokenBlacklist.builder()
                         .token(token)
                         .expiresAt(expiresAt)
-                        .build());
+                        .build()));
                 
                 log.info("Token successfully blacklisted");
             } catch (Exception e) {

@@ -14,11 +14,13 @@ import com.itsm.system.domain.tenant.TenantRelation;
 import com.itsm.system.dto.dashboard.OperatorDashboardDTO;
 import com.itsm.system.repository.incident.IncidentRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -31,8 +33,11 @@ public class OperatorDashboardService {
     private final TenantRelationRepository tenantRelationRepository;
 
     @Transactional(readOnly = true)
-    public OperatorDashboardDTO getOperatorDashboardSummary(Member currentMember) {
-        String tenantId = currentMember.getTenant().getTenantId();
+    public OperatorDashboardDTO getOperatorDashboardSummary(@NonNull Member currentMember) {
+        if (currentMember.getTenant() == null) {
+            throw new IllegalArgumentException("Tenant information missing for member");
+        }
+        String tenantId = Objects.requireNonNull(currentMember.getTenant().getTenantId(), "Tenant ID must not be null");
         Tenant currentTenant = tenantRepository.findById(tenantId)
                 .orElseThrow(() -> new RuntimeException("Tenant not found: " + tenantId));
 

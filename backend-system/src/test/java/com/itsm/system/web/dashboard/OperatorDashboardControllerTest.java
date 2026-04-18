@@ -10,6 +10,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.util.ArrayList;
+import java.util.Objects;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
@@ -38,7 +39,7 @@ class OperatorDashboardControllerTest {
 
         // Standalone Setup에서는 Authentication을 수동으로 넣어주거나 ArgumentResolver를 모킹해야 함
         // 여기서는 가장 간단하게 서비스 호출 결과만 검증하는 방향으로 수행 (실제 필터링 로직은 서비스 테스트에서 검증 권장)
-        when(operatorDashboardService.getOperatorDashboardSummary(any())).thenReturn(mockDTO);
+        when(operatorDashboardService.getOperatorDashboardSummary(Objects.requireNonNull(any()))).thenReturn(mockDTO);
 
         // When & Then (standaloneSetup에서는 @AuthenticationPrincipal이 수동 주입이 어려우므로 필터링 체크 로직 보강 필요)
         // 실제 통합 테스트 환경(@SpringBootTest)에서 수행하는 것이 더 정확하지만, 여기서는 로직 흐름만 확인

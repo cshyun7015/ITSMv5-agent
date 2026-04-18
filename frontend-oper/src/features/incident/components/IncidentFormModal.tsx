@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { incidentApi } from '../api/incidentApi';
 import { fulfillmentApi } from '../../fulfillment/api/fulfillmentApi';
+import { codeApi } from '../../code/api/codeApi';
 import { Incident, IncidentReportRequest } from '../types';
+import { CodeDTO } from '../../fulfillment/types';
+import ToastNotification from '../../../components/common/ToastNotification';
 
 interface IncidentFormModalProps {
   incident?: Incident; // 존재하면 수정 모드, 없으면 생성 모드
@@ -13,37 +16,91 @@ const IncidentFormModal: React.FC<IncidentFormModalProps> = ({ incident, onClose
   const isEdit = !!incident;
   
   const [tenants, setTenants] = useState<any[]>([]);
-  const [targetTenantId, setTargetTenantId] = useState(incident?.tenantId || '');
+  const [categories, setCategories] = useState<CodeDTO[]>([]);
+  const [impacts, setImpacts] = useState<CodeDTO[]>([]);
+  const [urgencies, setUrgencies] = useState<CodeDTO[]>([]);
+  const [statuses, setStatuses] = useState<CodeDTO[]>([]);
+  const [operators, setOperators] = useState<any[]>([]);
   
+  const [targetTenantId, setTargetTenantId] = useState(incident?.tenantId || '');
   const [title, setTitle] = useState(incident?.title || '');
   const [description, setDescription] = useState(incident?.description || '');
   const [impact, setImpact] = useState(incident?.impact || 'MEDIUM');
   const [urgency, setUrgency] = useState(incident?.urgency || 'MEDIUM');
-  const [category, setCategory] = useState(incident?.category || 'General');
+  const [category, setCategory] = useState(incident?.category || '');
+  const [isMajor, setIsMajor] = useState(incident?.isMajor || false);
+  const [affectedService, setAffectedService] = useState(incident?.affectedService || '');
+  const [status, setStatus] = useState(incident?.status || 'NEW');
+  const [assigneeId, setAssigneeId] = useState<number | undefined>(incident?.assigneeId);
+  const [resolution, setResolution] = useState(incident?.resolution || '');
   
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [toast, setToast] = useState<{ message: string, type: 'success' | 'error' | 'info' | null }>({ message: '', type: null });
 
   useEffect(() => {
-    if (!isEdit) {
-      loadTenants();
-    }
+    loadInitialData();
   }, []);
 
-  const loadTenants = async () => {
+  const loadInitialData = async () => {
     try {
-      const data = await fulfillmentApi.getTenants();
-      setTenants(data);
-      if (data.length > 0 && !targetTenantId) {
-        setTargetTenantId(data[0].tenantId);
+      const [tenantData, categoryData, impactData, urgencyData, statusData, operatorData] = await Promise.all([
+        !isEdit ? fulfillmentApi.getTenants() : Promise.resolve([]),
+        codeApi.getCodesByGroup('IN_CATEGORY'),
+        codeApi.getCodesByGroup('IN_IMPACT'),
+        codeApi.getCodesByGroup('IN_URGENCY'),
+        codeApi.getCodesByGroup('IN_STATUS'),
+        incidentApi.getOperators()
+      ]);
+      
+      if (!isEdit) {
+        setTenants(tenantData);
+        if (tenantData.length > 0 && !targetTenantId) {
+          setTargetTenantId(tenantData[0].tenantId);
+        }
+      }
+      
+      setCategories(categoryData);
+      setImpacts(impactData);
+      setUrgencies(urgencyData);
+      setStatuses(statusData);
+      setOperators(operatorData);
+
+      if (!category && categoryData.length > 0) {
+        setCategory(categoryData[0].codeId);
       }
     } catch (error) {
-      console.error('Failed to load tenants', error);
+      console.error('Failed to load initial form data', error);
+      setToast({ message: 'Failed to synchronize metadata', type: 'error' });
     }
+  };
+
+  const validateForm = () => {
+    if (!title.trim()) return 'Incident title is mandatory.';
+    if (!description.trim()) return 'Description is mandatory.';
+    if (!category) return 'Category is mandatory.';
+    if (!impact) return 'Impact level is mandatory.';
+    if (!urgency) return 'Urgency level is mandatory.';
+
+    if (isEdit) {
+      if (status !== 'NEW' && !assigneeId) {
+        return 'An assignee is required for the current status.';
+      }
+      if ((status === 'RESOLVED' || status === 'CLOSED') && !resolution.trim()) {
+        return 'Resolution detail is required when resolving/closing.';
+      }
+    }
+    return null;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isSubmitting) return;
+
+    const error = validateForm();
+    if (error) {
+      setToast({ message: error, type: 'error' });
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -54,6 +111,11 @@ const IncidentFormModal: React.FC<IncidentFormModalProps> = ({ incident, onClose
         impact,
         urgency,
         category,
+        isMajor,
+        affectedService,
+        status: isEdit ? status : undefined,
+        assigneeId: isEdit ? assigneeId : undefined,
+        resolution: isEdit ? resolution : undefined,
         source: isEdit ? incident!.source : 'USER'
       };
 
@@ -64,8 +126,9 @@ const IncidentFormModal: React.FC<IncidentFormModalProps> = ({ incident, onClose
       }
       onSuccess();
       onClose();
-    } catch (error) {
-      alert(isEdit ? 'Failed to update incident' : 'Failed to register incident');
+    } catch (error: any) {
+      const msg = error.response?.data?.message || (isEdit ? 'Update sequence failed' : 'Deployment failed');
+      setToast({ message: msg, type: 'error' });
     } finally {
       setIsSubmitting(false);
     }
@@ -80,25 +143,48 @@ const IncidentFormModal: React.FC<IncidentFormModalProps> = ({ incident, onClose
         </header>
 
         <form onSubmit={handleSubmit} className="incident-form">
-          {!isEdit && (
-            <div className="form-group">
-              <label>Target Organization</label>
-              <select 
-                value={targetTenantId} 
-                onChange={(e) => setTargetTenantId(e.target.value)}
+          <div className="form-row">
+            {!isEdit && (
+              <div className="form-group half">
+                <label>Target Org <span className="required-star">*</span></label>
+                <select 
+                  value={targetTenantId} 
+                  onChange={(e) => setTargetTenantId(e.target.value)}
+                  className="modern-input"
+                  required
+                >
+                  <option value="" disabled>Select Org</option>
+                  {tenants.map(t => (
+                    <option key={t.tenantId} value={t.tenantId}>{t.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+            <div className={`form-group ${isEdit ? '' : 'half'}`}>
+              <label>Affected Service</label>
+              <input 
+                type="text" 
+                value={affectedService} 
+                onChange={(e) => setAffectedService(e.target.value)}
                 className="modern-input"
-                required
-              >
-                <option value="" disabled>Select Organization</option>
-                {tenants.map(t => (
-                  <option key={t.tenantId} value={t.tenantId}>{t.name}</option>
-                ))}
-              </select>
+                placeholder="e.g. ERP, VPN, DB"
+              />
             </div>
-          )}
+          </div>
+
+          <div className="form-group checkbox-container">
+            <label className="checkbox-label">
+              <input 
+                type="checkbox" 
+                checked={isMajor} 
+                onChange={(e) => setIsMajor(e.target.checked)}
+              />
+              <span className="checkbox-text">🚨 Mark as Major Incident</span>
+            </label>
+          </div>
 
           <div className="form-group">
-            <label>Incident Global Title</label>
+            <label>Incident Global Title <span className="required-star">*</span></label>
             <input 
               type="text" 
               value={title} 
@@ -110,7 +196,7 @@ const IncidentFormModal: React.FC<IncidentFormModalProps> = ({ incident, onClose
           </div>
 
           <div className="form-group">
-            <label>Symptoms & Observations</label>
+            <label>Symptoms & Observations <span className="required-star">*</span></label>
             <textarea 
               value={description} 
               onChange={(e) => setDescription(e.target.value)} 
@@ -123,43 +209,93 @@ const IncidentFormModal: React.FC<IncidentFormModalProps> = ({ incident, onClose
 
           <div className="form-row">
             <div className="form-group half">
-              <label>Impact on Service</label>
+              <label>Impact on Service <span className="required-star">*</span></label>
               <select 
                 value={impact} 
                 onChange={(e) => setImpact(e.target.value as any)}
                 className="modern-input"
               >
-                <option value="HIGH">HIGH - Critical Loss</option>
-                <option value="MEDIUM">MEDIUM - Partial Degradation</option>
-                <option value="LOW">LOW - Minor / Workaround exists</option>
+                <option value="" disabled>Select Impact</option>
+                {impacts.map(imp => (
+                  <option key={imp.codeId} value={imp.codeId}>{imp.codeName}</option>
+                ))}
               </select>
             </div>
 
             <div className="form-group half">
-              <label>Urgency for Resolution</label>
+              <label>Urgency for Resolution <span className="required-star">*</span></label>
               <select 
                 value={urgency} 
                 onChange={(e) => setUrgency(e.target.value as any)}
                 className="modern-input"
               >
-                <option value="HIGH">HIGH - Immediate attention</option>
-                <option value="MEDIUM">MEDIUM - Resolved in SLA</option>
-                <option value="LOW">LOW - Non-blocking</option>
+                <option value="" disabled>Select Urgency</option>
+                {urgencies.map(urg => (
+                  <option key={urg.codeId} value={urg.codeId}>{urg.codeName}</option>
+                ))}
               </select>
             </div>
           </div>
 
           <div className="form-group">
-            <label>Category Code</label>
-            <input 
-              type="text" 
+            <label>Category Code <span className="required-star">*</span></label>
+            <select 
               value={category} 
               onChange={(e) => setCategory(e.target.value)} 
               className="modern-input" 
-              placeholder="e.g. INFRA, SOFTWARE, ACCESS"
-              required 
-            />
+              required
+            >
+              <option value="" disabled>Select Category</option>
+              {categories.map(cat => (
+                <option key={cat.codeId} value={cat.codeId}>
+                  {cat.codeName} ({cat.codeId})
+                </option>
+              ))}
+            </select>
           </div>
+
+          <div className="form-row">
+            <div className="form-group half">
+              <label>Incident Status <span className="required-star">*</span></label>
+              <select 
+                value={status} 
+                onChange={(e) => setStatus(e.target.value as any)}
+                className="modern-input"
+              >
+                {statuses.map(st => (
+                  <option key={st.codeId} value={st.codeId}>{st.codeName}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-group half">
+              <label>Assignee (Specialist) {status !== 'NEW' && <span className="required-star">*</span>}</label>
+              <select 
+                value={assigneeId || ''} 
+                onChange={(e) => setAssigneeId(e.target.value ? Number(e.target.value) : undefined)}
+                className="modern-input"
+              >
+                <option value="">Unassigned</option>
+                {operators.map(op => (
+                  <option key={op.memberId} value={op.memberId}>{op.username}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {(status === 'RESOLVED' || status === 'CLOSED') && (
+            <div className="form-group animate-in">
+              <label>Resolution Summary <span className="required-star">*</span></label>
+              <textarea 
+                value={resolution} 
+                onChange={(e) => setResolution(e.target.value)} 
+                className="modern-input textarea resolution-box" 
+                placeholder="Diagnostic steps, root cause, and final solution..."
+                rows={3}
+                required 
+              />
+            </div>
+          )}
 
           <div className="form-actions">
             <button type="button" className="btn-cancel" onClick={onClose} disabled={isSubmitting}>Cancel</button>
@@ -168,6 +304,11 @@ const IncidentFormModal: React.FC<IncidentFormModalProps> = ({ incident, onClose
             </button>
           </div>
         </form>
+        <ToastNotification 
+          message={toast.message} 
+          type={toast.type} 
+          onClose={() => setToast({ message: '', type: null })} 
+        />
       </div>
 
       <style>{`

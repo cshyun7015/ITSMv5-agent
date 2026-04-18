@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @RestController
@@ -31,7 +32,7 @@ public class TenantOperatorController {
     @GetMapping
     public ResponseEntity<?> getAllTenants(@AuthenticationPrincipal Member currentMember) {
         String tenantId = currentMember.getTenant().getTenantId();
-        Tenant currentTenant = tenantRepository.findById(tenantId)
+        Tenant currentTenant = tenantRepository.findById(Objects.requireNonNull(tenantId))
                 .orElseThrow(() -> new RuntimeException("Tenant not found: " + tenantId));
 
         String type = currentTenant.getType();
@@ -69,7 +70,7 @@ public class TenantOperatorController {
         
         // 보안 검증: 현재 사용자가 대상 테넌트에 대한 관리 권한이 있는지 확인
         String currentTenantId = currentMember.getTenant().getTenantId();
-        Tenant currentTenant = tenantRepository.findById(currentTenantId).orElseThrow();
+        Tenant currentTenant = tenantRepository.findById(Objects.requireNonNull(currentTenantId)).orElseThrow();
         
         boolean hasAccess = false;
         if ("MSP".equals(currentTenant.getType())) {

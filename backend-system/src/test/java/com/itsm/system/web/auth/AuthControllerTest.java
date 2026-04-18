@@ -23,6 +23,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import java.util.Objects;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -56,7 +57,7 @@ public class AuthControllerTest {
                 .name("Test Tenant")
                 .type("CUSTOMER")
                 .build();
-        tenantRepository.save(tenant);
+        tenantRepository.save(Objects.requireNonNull(tenant));
 
         // 사용자 생성
         String encodedPassword = passwordEncoder.encode("pwd");
@@ -67,7 +68,7 @@ public class AuthControllerTest {
                 .password(encodedPassword)
                 .email("user1@test.com")
                 .build();
-        memberRepository.save(member);
+        memberRepository.save(Objects.requireNonNull(member));
     }
 
     @Test
@@ -78,8 +79,8 @@ public class AuthControllerTest {
         loginRequest.setPassword("pwd");
 
         mockMvc.perform(post("/api/v1/auth/login")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(loginRequest)))
+                .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON))
+                .content(Objects.requireNonNull(objectMapper.writeValueAsString(loginRequest))))
                 .andExpect(status().isOk());
     }
 
@@ -91,8 +92,8 @@ public class AuthControllerTest {
         loginRequest.setPassword("wrong-password");
 
         mockMvc.perform(post("/api/v1/auth/login")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(loginRequest)))
+                .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON))
+                .content(Objects.requireNonNull(objectMapper.writeValueAsString(loginRequest))))
                 .andExpect(status().isUnauthorized());
     }
 
@@ -105,8 +106,8 @@ public class AuthControllerTest {
         loginRequest.setPassword("pwd");
 
         MvcResult loginResult = mockMvc.perform(post("/api/v1/auth/login")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(loginRequest)))
+                .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON))
+                .content(Objects.requireNonNull(objectMapper.writeValueAsString(loginRequest))))
                 .andReturn();
 
         String responseBody = loginResult.getResponse().getContentAsString();

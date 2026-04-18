@@ -27,8 +27,19 @@ CREATE TABLE IF NOT EXISTS incidents (
 -- 인시던트 카테고리 기초 정보 추가
 INSERT INTO codes (group_id, code_id, code_name, is_active, sort_order)
 VALUES 
-('INCIDENT_CATEGORY', 'NETWORK', '네트워크 장애', 1, 1),
-('INCIDENT_CATEGORY', 'SERVER', '서버 장애', 1, 2),
-('INCIDENT_CATEGORY', 'APP', '애플리케이션 오류', 1, 3),
-('INCIDENT_CATEGORY', 'DB', '데이터서비스 장애', 1, 4)
+('IN_CATEGORY', 'NETWORK', '네트워크 장애', 1, 1),
+('IN_CATEGORY', 'SERVER', '서버 장애', 1, 2),
+('IN_CATEGORY', 'APP', '애플리케이션 오류', 1, 3),
+('IN_CATEGORY', 'DB', '데이터서비스 장애', 1, 4)
+ON DUPLICATE KEY UPDATE code_name = VALUES(code_name);
+
+-- 인시던트 영향도 및 긴급도 기초 정보 추가
+INSERT INTO codes (group_id, code_id, code_name, is_active, sort_order)
+VALUES 
+('IN_IMPACT', 'HIGH', 'HIGH - Critical Loss', 1, 1),
+('IN_IMPACT', 'MEDIUM', 'MEDIUM - Partial Degradation', 1, 2),
+('IN_IMPACT', 'LOW', 'LOW - Minor / Workaround exists', 1, 3),
+('IN_URGENCY', 'HIGH', 'HIGH - Immediate attention', 1, 1),
+('IN_URGENCY', 'MEDIUM', 'MEDIUM - Resolved in SLA', 1, 2),
+('IN_URGENCY', 'LOW', 'LOW - Non-blocking', 1, 3)
 ON DUPLICATE KEY UPDATE code_name = VALUES(code_name);
