@@ -12,6 +12,7 @@ import java.util.List;
 public class AuthResponseDTO {
     private String accessToken;
     private String username;
+    private Long memberId;
     private String tenantId;
     private List<String> roles;
 }

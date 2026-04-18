@@ -58,6 +58,7 @@ public class AuthController {
                     return ResponseEntity.ok(AuthResponseDTO.builder()
                             .accessToken(token)
                             .username(member.getUsername())
+                            .memberId(member.getMemberId())
                             .tenantId(member.getTenant().getTenantId())
                             .roles(member.getRoles().stream().map(Role::getRoleId).collect(Collectors.toList()))
                             .build());

@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 interface User {
   username: string;
+  memberId: number;
   tenantId: string;
   roles: string[];
 }

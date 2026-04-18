@@ -9,12 +9,13 @@ import IncidentBoard from './features/incident/components/IncidentBoard';
 import IncidentDetail from './features/incident/components/IncidentDetail';
 import DashboardPage from './features/dashboard/components/DashboardPage';
 import CatalogManagement from './features/catalog/components/CatalogManagement';
+import ChangeBoard from './features/change/components/ChangeBoard';
 import { codeApi } from './features/code/api/codeApi';
 import { CodeDTO } from './features/fulfillment/types';
 
 const AdminCommandCenter: React.FC = () => {
   const { user, logout } = useAuth();
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'catalog' | 'codes' | 'fulfillment' | 'incidents'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'catalog' | 'changes' | 'codes' | 'fulfillment' | 'incidents'>('dashboard');
   const [selectedRequestId, setSelectedRequestId] = useState<number | null>(null);
   const [selectedIncidentId, setSelectedIncidentId] = useState<number | null>(null);
 
@@ -30,6 +31,7 @@ const AdminCommandCenter: React.FC = () => {
           {[
             { id: 'dashboard', label: 'Dashboard', icon: '📈' },
             { id: 'catalog', label: 'Service Catalog', icon: '📋' },
+            { id: 'changes', label: 'Changes', icon: '🔄' },
             { id: 'incidents', label: 'Incidents', icon: '⚠️' },
             { id: 'fulfillment', label: 'Requests', icon: '📩' },
             { id: 'codes', label: 'Codes', icon: '🏷️' }
@@ -61,6 +63,8 @@ const AdminCommandCenter: React.FC = () => {
             <DashboardPage />
           ) : activeTab === 'catalog' ? (
             <CatalogManagement />
+          ) : activeTab === 'changes' ? (
+            <ChangeBoard />
           ) : activeTab === 'codes' ? (
             <CodeManagement />
           ) : activeTab === 'fulfillment' ? (

@@ -7,7 +7,7 @@ const DashboardPage: React.FC = () => {
 
   React.useEffect(() => {
     loadDashboard();
-    const interval = setInterval(loadDashboard, 30000); // Poll every 30s
+    const interval = setInterval(loadDashboard, 10000); // Poll every 10s
     return () => clearInterval(interval);
   }, []);
 

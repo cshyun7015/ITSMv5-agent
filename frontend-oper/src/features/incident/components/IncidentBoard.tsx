@@ -29,9 +29,10 @@ const IncidentBoard: React.FC<IncidentBoardProps> = ({ onSelectIncident }) => {
     }
   };
 
-  const getPriorityClass = (priority: string) => {
+  const getPriorityClass = (priority: string, status: string) => {
+    const isActive = !['RESOLVED', 'CLOSED'].includes(status);
     switch (priority) {
-      case 'P1': return 'priority-p1 blinking';
+      case 'P1': return `priority-p1 ${isActive ? 'blinking' : ''}`;
       case 'P2': return 'priority-p2';
       case 'P3': return 'priority-p3';
       default: return 'priority-p4';
@@ -64,7 +65,7 @@ const IncidentBoard: React.FC<IncidentBoardProps> = ({ onSelectIncident }) => {
         {activeIncidents.map(incident => (
           <div 
             key={incident.incidentId} 
-            className={`incident-item ${getPriorityClass(incident.priority)}`}
+            className={`incident-item ${getPriorityClass(incident.priority, incident.status)}`}
             onClick={() => onSelectIncident(incident.incidentId)}
           >
             <div className="item-main">
@@ -124,6 +125,7 @@ const IncidentBoard: React.FC<IncidentBoardProps> = ({ onSelectIncident }) => {
         .status-pill { font-size: 11px; padding: 2px 8px; border-radius: 4px; font-weight: 700; }
         .status-pill.NEW { background: #3b82f6; color: white; }
         .status-pill.IN_PROGRESS { background: #f59e0b; color: white; }
+        .status-pill.RESOLVED { background: #10b981; color: white; }
 
         .meta-row { display: flex; gap: 16px; font-size: 12px; color: #94a3b8; }
         
