@@ -22,5 +22,10 @@ export const dashboardApi = {
   getSummary: async (): Promise<OperatorDashboardSummary> => {
     const response = await apiClient.get<OperatorDashboardSummary>('/operator/dashboard/summary');
     return response.data;
+  },
+
+  async getRecentLogs(): Promise<string[]> {
+    const response = await apiClient.get<string[]>('/operator/logs');
+    return response.data;
   }
 };

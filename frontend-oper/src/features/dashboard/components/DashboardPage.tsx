@@ -3,13 +3,27 @@ import { dashboardApi, OperatorDashboardSummary } from '../api/dashboardApi';
 
 const DashboardPage: React.FC = () => {
   const [summary, setSummary] = React.useState<OperatorDashboardSummary | null>(null);
+  const [logs, setLogs] = React.useState<string[]>([]);
   const [loading, setLoading] = React.useState(true);
+  const logViewportRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
     loadDashboard();
-    const interval = setInterval(loadDashboard, 10000); // Poll every 10s
-    return () => clearInterval(interval);
+    fetchLogs();
+    const dashboardInterval = setInterval(loadDashboard, 10000);
+    const logInterval = setInterval(fetchLogs, 5000); // Fetch logs every 5s
+    return () => {
+      clearInterval(dashboardInterval);
+      clearInterval(logInterval);
+    };
   }, []);
+
+  React.useEffect(() => {
+    // Auto-scroll logs to bottom
+    if (logViewportRef.current) {
+      logViewportRef.current.scrollTop = logViewportRef.current.scrollHeight;
+    }
+  }, [logs]);
 
   const loadDashboard = async () => {
     try {
@@ -19,6 +33,15 @@ const DashboardPage: React.FC = () => {
       console.error('Failed to load operator dashboard');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchLogs = async () => {
+    try {
+      const recentLogs = await dashboardApi.getRecentLogs();
+      setLogs(recentLogs);
+    } catch (error) {
+      console.error('Failed to stream logs');
     }
   };
 
@@ -122,8 +145,17 @@ const DashboardPage: React.FC = () => {
         <div className="grid-right">
             <section className="log-monitor">
                 <h3>Centralized Service Logs</h3>
-                <div className="log-viewport">
-                    <div className="empty-logs">Waiting for log stream connection...</div>
+                <div className="log-viewport" ref={logViewportRef}>
+                    {logs.length > 0 ? (
+                      logs.map((log, index) => (
+                        <div key={index} className="log-line">
+                          <span className="timestamp">{new Date().toLocaleTimeString()}</span>
+                          <span className="content">{log}</span>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="empty-logs">Waiting for log stream connection...</div>
+                    )}
                 </div>
             </section>
         </div>
@@ -266,20 +298,49 @@ const DashboardPage: React.FC = () => {
         .iframe-container { display: flex; flex-direction: column; gap: 12px; }
         .iframe-container iframe { border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.05); }
         
+        .log-monitor {
+          background: rgba(15, 23, 42, 0.4);
+          backdrop-filter: blur(10px);
+          border: 1px solid rgba(255, 255, 255, 0.05);
+          border-radius: 16px;
+          padding: 24px;
+          display: flex;
+          flex-direction: column;
+          /* Match height with left widgets (tenant-status + resource-monitor + gap) */
+          height: 100%;
+        }
+        
         .log-viewport {
           background: #020617;
           border-radius: 12px;
           padding: 16px;
-          height: 380px;
+          flex-grow: 1; /* Match remaining height */
+          height: 600px; /* Fixed height for large log capacity */
           font-family: 'JetBrains Mono', monospace;
-          font-size: 12px;
+          font-size: 11px;
           overflow-y: auto;
+          border: 1px solid rgba(255, 255, 255, 0.05);
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+        .log-line {
+          display: flex;
+          gap: 12px;
+          line-height: 1.5;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+          padding-bottom: 2px;
+        }
+        .log-line .timestamp { color: #475569; white-space: nowrap; }
+        .log-line .content { color: #cbd5e1; word-break: break-all; }
+        .empty-logs { 
+          height: 100%;
           display: flex;
           align-items: center;
           justify-content: center;
-          border: 1px solid rgba(255, 255, 255, 0.05);
+          color: #334155; 
+          font-style: italic; 
         }
-        .empty-logs { color: #334155; font-style: italic; }
         .loading { padding: 40px; text-align: center; color: #64748b; }
       `}</style>
     </div>
