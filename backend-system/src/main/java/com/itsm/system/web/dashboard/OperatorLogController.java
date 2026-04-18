@@ -31,12 +31,13 @@ public class OperatorLogController {
             @RequestParam(defaultValue = "50") int limit) {
         
         try {
-            String url = UriComponentsBuilder.fromHttpUrl(LOKI_URL)
+            java.net.URI uri = UriComponentsBuilder.fromHttpUrl(LOKI_URL)
                     .queryParam("query", query)
                     .queryParam("limit", limit)
-                    .toUriString();
+                    .build()
+                    .toUri();
 
-            Map<String, Object> response = restTemplate.getForObject(url, Map.class);
+            Map<String, Object> response = restTemplate.getForObject(uri, Map.class);
             List<String> logs = parseLokiResponse(response);
             
             return ResponseEntity.ok(logs);
