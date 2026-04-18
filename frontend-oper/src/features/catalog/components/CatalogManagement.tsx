@@ -5,6 +5,7 @@ import { CodeDTO } from '../../fulfillment/types';
 import FormBuilder from './FormBuilder';
 import ToastNotification from '../../../components/common/ToastNotification';
 import ConfirmDialog from '../../../components/common/ConfirmDialog';
+import { useAuth } from '../../auth/context/AuthContext';
  
 interface Tenant {
   tenantId: string;
@@ -12,6 +13,9 @@ interface Tenant {
 }
 
 const CatalogManagement: React.FC = () => {
+  const { user } = useAuth();
+  const isAdmin = user?.roles?.includes('ROLE_ADMIN') ?? false;
+
   const [templates, setTemplates] = useState<ServiceCatalog[]>([]);
   const [categories, setCategories] = useState<CodeDTO[]>([]);
   const [tenants, setTenants] = useState<Tenant[]>([]);
@@ -241,11 +245,13 @@ const CatalogManagement: React.FC = () => {
         )}
 
         <div className="template-grid">
-            <div className="add-card action-card" onClick={handleCreateTemplate} data-testid="add-template-card">
-              <div className="icon">+</div>
-              <h3>Define New Service</h3>
-              <p>Create a global template with dynamic form logic</p>
-            </div>
+            {isAdmin && (
+              <div className="add-card action-card" onClick={handleCreateTemplate} data-testid="add-template-card">
+                <div className="icon">+</div>
+                <h3>Define New Service</h3>
+                <p>Create a global template with dynamic form logic</p>
+              </div>
+            )}
             
             {templates.map((tpl: ServiceCatalog) => (
               <div key={tpl.id} className="template-card glass-panel">
@@ -257,8 +263,12 @@ const CatalogManagement: React.FC = () => {
                 <p>{tpl.description}</p>
                 <div className="card-footer">
                   <div className="left-actions">
-                    <button className="icon-action" title="Edit" onClick={() => handleEditTemplate(tpl)}>✏️</button>
-                    <button className="icon-action delete" title="Delete" onClick={() => handleDeleteTemplate(tpl.id)}>🗑️</button>
+                    {isAdmin && (
+                      <>
+                        <button className="icon-action" title="Edit" onClick={() => handleEditTemplate(tpl)}>✏️</button>
+                        <button className="icon-action delete" title="Delete" onClick={() => handleDeleteTemplate(tpl.id)}>🗑️</button>
+                      </>
+                    )}
                   </div>
                   <button className="deploy-btn" onClick={() => setIsDeploying(tpl.id)}>
                     Deploy to Tenant

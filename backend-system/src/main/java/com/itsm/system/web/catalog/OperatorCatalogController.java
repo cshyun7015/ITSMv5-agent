@@ -10,6 +10,7 @@ import com.itsm.system.service.catalog.CatalogDeploymentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
@@ -68,6 +69,7 @@ public class OperatorCatalogController {
     }
 
     @PostMapping("/templates")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ServiceCatalog> createTemplate(
             @AuthenticationPrincipal @NonNull Member currentMember,
             @RequestBody CatalogCreateRequest request) {
@@ -91,6 +93,7 @@ public class OperatorCatalogController {
     }
 
     @PutMapping("/templates/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ServiceCatalog> updateTemplate(
             @AuthenticationPrincipal @NonNull Member currentMember,
             @PathVariable @NonNull Long id,
@@ -113,6 +116,7 @@ public class OperatorCatalogController {
     }
 
     @DeleteMapping("/templates/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteTemplate(
             @AuthenticationPrincipal @NonNull Member currentMember,
             @PathVariable @NonNull Long id) {
