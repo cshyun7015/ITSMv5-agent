@@ -38,8 +38,8 @@ public class ConfigurationItemController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteCI(@PathVariable Long id) {
-        configurationItemService.deleteCI(id);
+    public ResponseEntity<Void> deleteCI(@PathVariable Long id, @RequestParam(defaultValue = "false") boolean hard) {
+        configurationItemService.deleteCI(id, hard);
         return ResponseEntity.ok().build();
     }
 }

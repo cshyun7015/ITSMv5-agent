@@ -59,7 +59,7 @@ public class ConfigurationItemService {
             memberRepository.findById(Objects.requireNonNull(dto.getOwnerId())).ifPresent(ci::setOwner);
         }
 
-        return convertToDTO(configurationItemRepository.save(ci));
+        return convertToDTO(configurationItemRepository.save(Objects.requireNonNull(ci)));
     }
 
     @Transactional(readOnly = true)
@@ -77,8 +77,19 @@ public class ConfigurationItemService {
     }
 
     @Transactional
-    public void deleteCI(Long id) {
-        configurationItemRepository.deleteById(Objects.requireNonNull(id));
+    public void deleteCI(Long id, boolean hard) {
+        ConfigurationItem ci = configurationItemRepository.findById(Objects.requireNonNull(id))
+                .orElseThrow(() -> new IllegalArgumentException("CI not found"));
+        
+        if (hard) {
+            // Physical Delete (Hard Delete)
+            // Note: In a real system, we might need to delete CI-CI relationships or logs first.
+            configurationItemRepository.delete(Objects.requireNonNull(ci));
+        } else {
+            // Logical Delete (Soft Delete)
+            ci.setIsDeleted(true);
+            configurationItemRepository.save(Objects.requireNonNull(ci));
+        }
     }
 
     private ConfigurationItemDTO convertToDTO(ConfigurationItem ci) {

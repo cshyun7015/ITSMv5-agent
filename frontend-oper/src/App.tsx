@@ -21,6 +21,17 @@ const AdminCommandCenter: React.FC = () => {
   const [selectedRequestId, setSelectedRequestId] = useState<number | null>(null);
   const [selectedIncidentId, setSelectedIncidentId] = useState<number | null>(null);
 
+  const navLinks = [
+    { id: 'dashboard', label: 'Dashboard', icon: '📈' },
+    { id: 'cis', label: 'CIs', icon: '📦' },
+    { id: 'catalog', label: 'Service Catalog', icon: '📋' },
+    { id: 'changes', label: 'Changes', icon: '🔄' },
+    { id: 'incidents', label: 'Incidents', icon: '⚠️' },
+    { id: 'fulfillment', label: 'Requests', icon: '📩' },
+    { id: 'codes', label: 'Codes', icon: '🏷️' },
+    { id: 'opers', label: 'Opers', icon: '👥' }
+  ];
+
   return (
     <div className="app-container">
       <header className="header">
@@ -30,18 +41,10 @@ const AdminCommandCenter: React.FC = () => {
         </div>
 
         <nav className="header__nav">
-          {[
-            { id: 'dashboard', label: 'Dashboard', icon: '📈' },
-            { id: 'cis', label: 'CIs', icon: '📦' },
-            { id: 'catalog', label: 'Service Catalog', icon: '📋' },
-            { id: 'changes', label: 'Changes', icon: '🔄' },
-            { id: 'incidents', label: 'Incidents', icon: '⚠️' },
-            { id: 'fulfillment', label: 'Requests', icon: '📩' },
-            { id: 'codes', label: 'Codes', icon: '🏷️' },
-            { id: 'opers', label: 'Opers', icon: '👥' }
-          ].map(item => (
+          {navLinks.map(item => (
             <button 
               key={item.id}
+              id={item.id}
               className={`nav-link ${activeTab === item.id ? 'active' : ''}`}
               onClick={() => { setActiveTab(item.id as any); setSelectedIncidentId(null); setSelectedRequestId(null); }}
             >

@@ -59,6 +59,19 @@ const CIFormModal: React.FC<CIFormModalProps> = ({ ci, onClose, onSuccess }) => 
     }
   };
 
+  const handleDelete = async () => {
+    if (!ci || !window.confirm('Are you sure you want to retire this asset from CMDB?')) return;
+    setIsSubmitting(true);
+    try {
+      await ciApi.deleteCI(ci.ciId);
+      onSuccess();
+    } catch (error) {
+      console.error('Failed to delete CI');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!targetTenantId) {
@@ -169,6 +182,17 @@ const CIFormModal: React.FC<CIFormModalProps> = ({ ci, onClose, onSuccess }) => 
           </div>
 
           <div className="form-actions">
+            {isEdit && (
+              <button 
+                type="button" 
+                className="btn-delete" 
+                onClick={handleDelete} 
+                disabled={isSubmitting}
+                style={{ marginRight: 'auto' }}
+              >
+                Delete Asset
+              </button>
+            )}
             <button type="button" className="btn-secondary" onClick={onClose}>Cancel</button>
             <button type="submit" className="btn-primary" disabled={isSubmitting}>
               {isSubmitting ? 'Saving...' : (isEdit ? 'Update Asset' : 'Register Asset')}
@@ -215,8 +239,15 @@ const CIFormModal: React.FC<CIFormModalProps> = ({ ci, onClose, onSuccess }) => 
           background: #3b82f6; color: #fff; border: none; padding: 12px 24px; border-radius: 12px; font-weight: 800;
           cursor: pointer; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4); transition: all 0.2s;
         }
-        .btn-primary:hover:not(:disabled) { transform: translateY(-2px); background: #2563eb; }
+        .btn-primary:active { transform: translateY(0); }
         .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .btn-delete {
+          background: rgba(244, 63, 94, 0.1); color: #fb7185; border: 1px solid rgba(244, 63, 94, 0.2);
+          padding: 12px 20px; border-radius: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s;
+        }
+        .btn-delete:hover:not(:disabled) { background: #f43f5e; color: #fff; box-shadow: 0 4px 15px rgba(244, 63, 94, 0.3); }
+        .btn-delete:disabled { opacity: 0.5; cursor: not-allowed; }
       `}</style>
     </div>
   );

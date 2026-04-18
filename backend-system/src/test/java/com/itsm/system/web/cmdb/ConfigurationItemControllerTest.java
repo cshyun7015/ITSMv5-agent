@@ -99,10 +99,22 @@ class ConfigurationItemControllerTest {
 
     @Test
     @WithMockUser(roles = "OPERATOR")
-    @DisplayName("CI 삭제 API 테스트")
-    void deleteCI_ShouldReturnOk() throws Exception {
+    @DisplayName("CI 논리 삭제 API 테스트")
+    void deleteCI_Soft_ShouldReturnOk() throws Exception {
         // when & then
         mockMvc.perform(delete("/api/v1/cis/1")
+                        .param("hard", "false")
+                        .with(Objects.requireNonNull(csrf())))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    @DisplayName("CI 물리 삭제 API 테스트")
+    void deleteCI_Hard_ShouldReturnOk() throws Exception {
+        // when & then
+        mockMvc.perform(delete("/api/v1/cis/1")
+                        .param("hard", "true")
                         .with(Objects.requireNonNull(csrf())))
                 .andExpect(status().isOk());
     }

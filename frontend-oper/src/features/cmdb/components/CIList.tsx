@@ -1,25 +1,46 @@
 import React, { useEffect, useState } from 'react';
 import { ciApi } from '../api/ciApi';
+import { fulfillmentApi } from '../../fulfillment/api/fulfillmentApi';
 import { ConfigurationItem } from '../types';
 import CIFormModal from './CIFormModal';
 import { useAuth } from '../../auth/context/AuthContext';
 
 const CIList: React.FC = () => {
   const { user } = useAuth();
-  const [cis, setCis] = useState<ConfigurationItem[]>([]);
+  const [cis, setCIs] = useState<ConfigurationItem[]>([]);
+  const [tenants, setTenants] = useState<any[]>([]);
+  const [selectedTenantId, setSelectedTenantId] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedCI, setSelectedCI] = useState<ConfigurationItem | undefined>(undefined);
+  const [selectedCI, setSelectedCI] = useState<ConfigurationItem | undefined>();
 
   useEffect(() => {
-    loadCIs();
+    if (user?.tenantId) {
+      setSelectedTenantId(user.tenantId);
+      fetchTenants();
+    }
   }, [user]);
 
-  const loadCIs = async () => {
-    if (!user?.tenantId) return;
+  useEffect(() => {
+    if (selectedTenantId) {
+      loadCIs();
+    }
+  }, [selectedTenantId]);
+
+  const fetchTenants = async () => {
     try {
-      const data = await ciApi.getCIs(user.tenantId);
-      setCis(data);
+      const data = await fulfillmentApi.getTenants();
+      setTenants(data);
+    } catch (error) {
+      console.error('Failed to fetch tenants');
+    }
+  };
+
+  const loadCIs = async () => {
+    setIsLoading(true);
+    try {
+      const data = await ciApi.getCIs(selectedTenantId);
+      setCIs(data);
     } catch (error) {
       console.error('Failed to load CIs');
     } finally {
@@ -43,14 +64,27 @@ const CIList: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  if (isLoading) return <div className="loading">Initializing CMDB...</div>;
+  if (isLoading && tenants.length === 0) return <div className="loading">Initializing CMDB...</div>;
 
   return (
-    <div className="ci-container">
-      <div className="board-header">
-        <div className="title-area">
+    <div className="ci-container focus-in">
+      <div className="ci-header">
+        <div className="header-left">
           <h2>Configuration Items (CIs)</h2>
-          <span className="count-badge">{cis.length} Assets</span>
+          <div className="tenant-filter">
+            <span className="filter-label">Viewing Tenant:</span>
+            <select 
+              className="filter-select" 
+              value={selectedTenantId} 
+              onChange={(e) => setSelectedTenantId(e.target.value)}
+            >
+              <option value={user?.tenantId}>{user?.username}'s Home</option>
+              {tenants.map(t => (
+                <option key={t.tenantId} value={t.tenantId}>{t.name}</option>
+              ))}
+            </select>
+          </div>
+          <span className="ci-count">{cis.length} Assets</span>
         </div>
         <div className="board-actions">
           <div className="stats-box">
@@ -102,9 +136,23 @@ const CIList: React.FC = () => {
         .ci-container { width: 100%; animation: fadeIn 0.4s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        .board-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; }
-        .title-area h2 { margin: 0; font-size: 24px; font-weight: 800; color: #fff; letter-spacing: -0.5px; }
-        .count-badge { background: rgba(255,255,255,0.08); padding: 4px 12px; border-radius: 20px; font-size: 13px; color: #94a3b8; margin-left: 12px; }
+        .ci-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; }
+        .header-left { display: flex; align-items: center; gap: 24px; }
+        .header-left h2 { margin: 0; font-size: 24px; font-weight: 800; color: #fff; letter-spacing: -0.5px; }
+
+        .tenant-filter {
+          display: flex; align-items: center; gap: 12px;
+          background: rgba(255, 255, 255, 0.05); padding: 8px 16px; border-radius: 12px;
+          border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .filter-label { font-size: 13px; color: #94a3b8; font-weight: 600; }
+        .filter-select {
+          background: transparent; border: none; color: #3b82f6; font-weight: 700;
+          font-size: 14px; outline: none; cursor: pointer;
+        }
+        .filter-select option { background: #1e293b; color: #fff; }
+
+        .ci-count { font-size: 14px; color: #94a3b8; background: rgba(255, 255, 255, 0.05); padding: 4px 12px; border-radius: 20px; }
 
         .board-actions { display: flex; align-items: center; gap: 24px; }
         .stats-box { display: flex; gap: 12px; }

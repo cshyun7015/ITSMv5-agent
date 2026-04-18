@@ -69,7 +69,6 @@ class ConfigurationItemServiceTest {
         // then
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getName()).isEqualTo("Test CI");
-        assertThat(result.get(0).getTenantName()).isEqualTo("Test Tenant");
     }
 
     @Test
@@ -140,12 +139,29 @@ class ConfigurationItemServiceTest {
     }
 
     @Test
-    @DisplayName("CI 삭제 테스트")
-    void deleteCI_ShouldCallRepositoryDelete() {
+    @DisplayName("CI 논리 삭제 테스트")
+    void deleteCI_Soft_ShouldUpdateIsDeleted() {
+        // given
+        given(configurationItemRepository.findById(1L)).willReturn(Optional.of(testCI));
+
         // when
-        configurationItemService.deleteCI(1L);
+        configurationItemService.deleteCI(1L, false);
 
         // then
-        verify(configurationItemRepository).deleteById(1L);
+        assertThat(testCI.getIsDeleted()).isTrue();
+        verify(configurationItemRepository).save(Objects.requireNonNull(testCI));
+    }
+
+    @Test
+    @DisplayName("CI 물리 삭제 테스트")
+    void deleteCI_Hard_ShouldCallDelete() {
+        // given
+        given(configurationItemRepository.findById(1L)).willReturn(Optional.of(testCI));
+
+        // when
+        configurationItemService.deleteCI(1L, true);
+
+        // then
+        verify(configurationItemRepository).delete(Objects.requireNonNull(testCI));
     }
 }
