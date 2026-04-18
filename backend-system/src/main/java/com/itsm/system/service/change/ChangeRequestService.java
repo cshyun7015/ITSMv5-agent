@@ -30,9 +30,9 @@ public class ChangeRequestService {
 
     @Transactional
     public ChangeRequestDTO createDraft(@NonNull ChangeRequestDTO dto) {
-        Tenant tenant = tenantRepository.findById(dto.getTenantId())
+        Tenant tenant = tenantRepository.findById(Objects.requireNonNull(dto.getTenantId()))
                 .orElseThrow(() -> new IllegalArgumentException("Tenant not found"));
-        Member requester = memberRepository.findById(dto.getRequesterId())
+        Member requester = memberRepository.findById(Objects.requireNonNull(dto.getRequesterId()))
                 .orElseThrow(() -> new IllegalArgumentException("Requester not found"));
 
         if (dto.getTypeCode() == null) dto.setTypeCode("NORMAL");
@@ -65,7 +65,7 @@ public class ChangeRequestService {
         
         if (dto.getRelatedIncidentIds() != null) {
             for (Long incId : dto.getRelatedIncidentIds()) {
-                incidentRepository.findById(incId).ifPresent(changeRequest::addRelatedIncident);
+                incidentRepository.findById(Objects.requireNonNull(incId)).ifPresent(changeRequest::addRelatedIncident);
             }
         }
 
@@ -74,7 +74,7 @@ public class ChangeRequestService {
 
     @Transactional
     public ChangeRequestDTO updateChange(@NonNull Long changeId, @NonNull ChangeRequestDTO dto) {
-        ChangeRequest change = changeRequestRepository.findById(changeId)
+        ChangeRequest change = changeRequestRepository.findById(Objects.requireNonNull(changeId))
                 .orElseThrow(() -> new IllegalArgumentException("Change request not found"));
 
         String status = change.getStatusCode();
@@ -105,7 +105,7 @@ public class ChangeRequestService {
             
             // 담당자 변경 반영
             if (dto.getAssigneeId() != null) {
-                Member assignee = memberRepository.findById(dto.getAssigneeId())
+                Member assignee = memberRepository.findById(Objects.requireNonNull(dto.getAssigneeId()))
                         .orElseThrow(() -> new IllegalArgumentException("Assignee not found: " + dto.getAssigneeId()));
                 change.setAssignee(assignee);
             }
@@ -116,7 +116,7 @@ public class ChangeRequestService {
 
     @Transactional
     public ChangeRequestDTO submitRFC(@NonNull Long changeId, List<Long> approverIds) {
-        ChangeRequest change = changeRequestRepository.findById(changeId)
+        ChangeRequest change = changeRequestRepository.findById(Objects.requireNonNull(changeId))
                 .orElseThrow(() -> new IllegalArgumentException("Change request not found"));
         
         if (!"DRAFT".equals(change.getStatusCode()) && !"REJECTED".equals(change.getStatusCode())) {
@@ -129,7 +129,7 @@ public class ChangeRequestService {
             change.updateStatus("CAB_APPROVAL");
             int order = 1;
             for (Long approverId : approverIds) {
-                Member approver = memberRepository.findById(approverId)
+                Member approver = memberRepository.findById(Objects.requireNonNull(approverId))
                         .orElseThrow(() -> new IllegalArgumentException("Approver not found: " + approverId));
                 change.getApprovals().add(ChangeApproval.builder()
                         .changeRequest(change)

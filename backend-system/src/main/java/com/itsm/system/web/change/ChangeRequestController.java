@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Objects;
 
 @RestController
 @RequestMapping("/api/v1/changes")
@@ -22,16 +23,16 @@ public class ChangeRequestController {
 
     @PostMapping("/draft")
     public ResponseEntity<ChangeRequestDTO> createDraft(@RequestBody ChangeRequestDTO dto) {
-        return ResponseEntity.ok(changeRequestService.createDraft(dto));
+        return ResponseEntity.ok(changeRequestService.createDraft(Objects.requireNonNull(dto)));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<ChangeRequestDTO> updateChange(@PathVariable Long id, @RequestBody ChangeRequestDTO dto) {
-        return ResponseEntity.ok(changeRequestService.updateChange(id, dto));
+        return ResponseEntity.ok(changeRequestService.updateChange(Objects.requireNonNull(id), Objects.requireNonNull(dto)));
     }
 
     @PostMapping("/{id}/submit")
     public ResponseEntity<ChangeRequestDTO> submitRFC(@PathVariable Long id, @RequestBody List<Long> approverIds) {
-        return ResponseEntity.ok(changeRequestService.submitRFC(id, approverIds));
+        return ResponseEntity.ok(changeRequestService.submitRFC(Objects.requireNonNull(id), approverIds));
     }
 }
