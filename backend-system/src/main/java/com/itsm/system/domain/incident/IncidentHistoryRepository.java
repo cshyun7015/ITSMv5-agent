@@ -8,7 +8,10 @@ import java.util.List;
 
 @Repository
 public interface IncidentHistoryRepository extends JpaRepository<IncidentHistory, Long> {
-    @EntityGraph(attributePaths = {"author"})
+    @EntityGraph(attributePaths = {"author", "incident", "incident.tenant"})
     List<IncidentHistory> findByIncidentOrderByCreatedAtDesc(Incident incident);
     List<IncidentHistory> findByIncidentOrderByCreatedAtAsc(Incident incident);
+    
+    @EntityGraph(attributePaths = {"author", "incident", "incident.tenant"})
+    List<IncidentHistory> findTop15ByIncidentInOrderByCreatedAtDesc(List<Incident> incidents);
 }

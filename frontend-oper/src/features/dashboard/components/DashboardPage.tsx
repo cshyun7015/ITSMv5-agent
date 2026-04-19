@@ -1,5 +1,5 @@
 import React from 'react';
-import { dashboardApi, OperatorDashboardSummary } from '../api/dashboardApi';
+import { dashboardApi, OperatorDashboardSummary, RecentActivity } from '../api/dashboardApi';
 
 interface DashboardPageProps {
   onNavigate?: (tab: string) => void;
@@ -7,355 +7,242 @@ interface DashboardPageProps {
 
 const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
   const [summary, setSummary] = React.useState<OperatorDashboardSummary | null>(null);
-  const [logs, setLogs] = React.useState<string[]>([]);
   const [loading, setLoading] = React.useState(true);
-  const logViewportRef = React.useRef<HTMLDivElement>(null);
+  const activityListRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
     loadDashboard();
-    fetchLogs();
-    const dashboardInterval = setInterval(loadDashboard, 10000);
-    const logInterval = setInterval(fetchLogs, 5000); // Fetch logs every 5s
-    return () => {
-      clearInterval(dashboardInterval);
-      clearInterval(logInterval);
-    };
+    const interval = setInterval(loadDashboard, 10000);
+    return () => clearInterval(interval);
   }, []);
 
   React.useEffect(() => {
-    // Auto-scroll logs to bottom
-    if (logViewportRef.current) {
-      logViewportRef.current.scrollTop = logViewportRef.current.scrollHeight;
+    if (activityListRef.current) {
+      activityListRef.current.scrollTop = 0; // Newest on top, or scroll to bottom if needed
     }
-  }, [logs]);
+  }, [summary?.recentActivities]);
 
   const loadDashboard = async () => {
     try {
       const data = await dashboardApi.getSummary();
       setSummary(data);
     } catch (error) {
-      console.error('Failed to load operator dashboard');
+      console.error('Failed to load GOC dashboard');
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchLogs = async () => {
-    try {
-      const recentLogs = await dashboardApi.getRecentLogs();
-      setLogs(recentLogs);
-    } catch (error) {
-      console.error('Failed to stream logs');
+  const getActivityIcon = (type: string) => {
+    switch (type) {
+      case 'INCIDENT_NEW': return '⚠️';
+      case 'STATUS_CHANGE': return '🔄';
+      case 'SLA_WARNING': return '🚨';
+      default: return '📜';
     }
   };
 
-  if (loading) return <div className="loading">Loading Operational Data...</div>;
-  if (!summary) return <div className="error">Access Denied or System Offline.</div>;
+  if (loading) return (
+    <div className="loading-state">
+      <div className="spinner"></div>
+      <p>Syncing with Global Operations Center...</p>
+    </div>
+  );
+  
+  if (!summary) return <div className="error">Satellite Link Offline.</div>;
+
+  const hasP1Record = summary.priorityP1Count > 0;
 
   return (
-    <div className="op-dashboard">
+    <div className={`op-dashboard ${hasP1Record ? 'emergency' : ''}`}>
       <header className="op-header">
-        <h1>Global Operations Center</h1>
-        <div className="refresh-status">Live Updates Active</div>
+        <div className="title-block">
+          <h1>Global Operations Center</h1>
+          <div className="pulse-indicator"></div>
+          <span className="live-tag">Live Stream Active</span>
+        </div>
+        <div className="sys-time">
+          {new Date().toLocaleTimeString()} (UTC+9)
+        </div>
       </header>
 
-      <section className="stats-section">
-        <div className="stat-card tenants clickable" onClick={() => onNavigate?.('opers')}>
-          <div className="stat-header">
-            <span className="icon">🏢</span>
-            <span className="label">Managed Tenants</span>
-          </div>
-          <span className="value">{summary.totalTenants}</span>
+      <section className="kpi-grid">
+        <div className="kpi-card tenants" onClick={() => onNavigate?.('opers')}>
+          <div className="kpi-label">Tenants</div>
+          <div className="kpi-value">{summary.totalTenants}</div>
+          <div className="kpi-meta">Managed Entities</div>
         </div>
-        <div className="stat-card catalogs clickable" onClick={() => onNavigate?.('catalog')}>
-          <div className="stat-header">
-            <span className="icon">📋</span>
-            <span className="label">Service Catalogs</span>
+        <div className="kpi-card priority-radar">
+          <div className="radar-header">Priority Distribution</div>
+          <div className="radar-bars">
+            <div className="bar-item p1" title="P1 - Critical">
+                <span className="b-label">P1</span>
+                <div className="b-track"><div className="b-fill" style={{ width: `${Math.min(100, (summary.priorityP1Count / (summary.totalActiveIncidents || 1)) * 100)}%` }}></div></div>
+                <span className="b-val">{summary.priorityP1Count}</span>
+            </div>
+            <div className="bar-item p2" title="P2 - High">
+                <span className="b-label">P2</span>
+                <div className="b-track"><div className="b-fill" style={{ width: `${Math.min(100, (summary.priorityP2Count / (summary.totalActiveIncidents || 1)) * 100)}%` }}></div></div>
+                <span className="b-val">{summary.priorityP2Count}</span>
+            </div>
           </div>
-          <span className="value">{summary.totalCatalogs}</span>
         </div>
-        <div 
-          className={`stat-card requests ${summary.totalActiveRequests > 0 ? 'active' : ''} clickable`}
-          onClick={() => onNavigate?.('fulfillment')}
-        >
-          <div className="stat-header">
-            <span className="icon">📩</span>
-            <span className="label">Active Requests</span>
+        <div className={`kpi-card incidents ${hasP1Record ? 'pulse-red' : ''}`} onClick={() => onNavigate?.('incidents')}>
+          <div className="kpi-label">Active Incidents</div>
+          <div className="kpi-value">{summary.totalActiveIncidents}</div>
+          <div className="kpi-meta">
+            {summary.priorityP1Count > 0 ? (
+               <span className="urgent-flash">⚠️ {summary.priorityP1Count} CRITICAL</span>
+            ) : "All Systems Green"}
           </div>
-          <span className="value">{summary.totalActiveRequests}</span>
         </div>
-        <div 
-          className={`stat-card incidents ${summary.totalActiveIncidents > 0 ? 'risk' : ''} clickable`}
-          onClick={() => onNavigate?.('incidents')}
-        >
-          <div className="stat-header">
-            <span className="icon">⚠️</span>
-            <span className="label">Active Incidents</span>
-          </div>
-          <span className="value">{summary.totalActiveIncidents}</span>
-        </div>
-        <div 
-          className={`stat-card changes ${summary.totalActiveChanges > 0 ? 'process' : ''} clickable`}
-          onClick={() => onNavigate?.('changes')}
-        >
-          <div className="stat-header">
-            <span className="icon">🔄</span>
-            <span className="label">Active Changes</span>
-          </div>
-          <span className="value">{summary.totalActiveChanges}</span>
-        </div>
-        <div className="stat-card cis clickable" onClick={() => onNavigate?.('cis')}>
-          <div className="stat-header">
-            <span className="icon">📦</span>
-            <span className="label">Active CI (Assets)</span>
-          </div>
-          <span className="value">{summary.totalActiveCIs}</span>
+        <div className={`kpi-card sla ${summary.slaRiskCount > 0 ? 'risk' : ''}`}>
+          <div className="kpi-label">SLA Breach Risk</div>
+          <div className="kpi-value">{summary.slaRiskCount}</div>
+          <div className="kpi-meta">Due within 1 hour</div>
         </div>
       </section>
 
-      <div className="dashboard-grid">
-        <div className="grid-left">
-          <section className="tenant-status">
-            <h3>Tenant Health Monitor</h3>
-            <div className="tenant-list">
-              {summary.tenantSummaries.map(tenant => (
-                <div key={tenant.tenantId.toString()} className="tenant-item">
-                  <div className="tenant-info">
-                    <span className="tenant-color" style={{ background: tenant.brandColor }}></span>
-                    <span className="tenant-name">{tenant.tenantName}</span>
-                  </div>
-                  <div className="tenant-metrics">
-                    <span className="inc-count">{tenant.incidentCount} active</span>
-                    <span className={`status-pill ${tenant.serviceStatus.toLowerCase()}`}>
-                      {tenant.serviceStatus}
-                    </span>
+      <div className="dashboard-layout">
+        <div className="layout-left">
+          <section className="tenant-health">
+            <h3>Tenant Operational Status</h3>
+            <div className="tenant-scroller">
+              {summary.tenantSummaries.map(t => (
+                <div key={t.tenantId} className={`t-row ${t.serviceStatus}`}>
+                  <div className="t-brand" style={{ background: t.brandColor }}></div>
+                  <div className="t-name">{t.tenantName}</div>
+                  <div className="t-metrics">
+                    <span className="t-inc">{t.incidentCount} active</span>
+                    <span className={`t-pill ${t.serviceStatus}`}>{t.serviceStatus}</span>
                   </div>
                 </div>
               ))}
             </div>
           </section>
 
-          <section className="resource-monitor">
-            <h3>System Resource (Grafana)</h3>
-            <div className="iframe-container">
-                {/* Embed System Overview Dashboard */}
-                <iframe 
-                    src="http://localhost:3001/d-solo/system_overview/system-overview?orgId=1&panelId=2" 
-                    width="100%" 
-                    height="200" 
-                    frameBorder="0"
-                ></iframe>
-                <iframe 
-                    src="http://localhost:3001/d-solo/system_overview/system-overview?orgId=1&panelId=4" 
-                    width="100%" 
-                    height="200" 
-                    frameBorder="0"
-                ></iframe>
+          <section className="infra-monitor">
+            <h3>Infrastructure Observability (M4 Node)</h3>
+            <div className="monitor-grid">
+              <iframe 
+                src="http://localhost:3001/d-solo/system_overview/system-overview?orgId=1&panelId=2&refresh=5s" 
+                width="100%" height="160" frameBorder="0"
+              ></iframe>
+              <iframe 
+                src="http://localhost:3001/d-solo/system_overview/system-overview?orgId=1&panelId=4&refresh=5s" 
+                width="100%" height="160" frameBorder="0"
+              ></iframe>
             </div>
           </section>
         </div>
 
-        <div className="grid-right">
-            <section className="log-monitor">
-                <h3>Centralized Service Logs</h3>
-                <div className="log-viewport" ref={logViewportRef}>
-                    {logs.length > 0 ? (
-                      logs.map((log, index) => (
-                        <div key={index} className="log-line">
-                          <span className="timestamp">{new Date().toLocaleTimeString()}</span>
-                          <span className="content">{log}</span>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="empty-logs">Waiting for log stream connection...</div>
-                    )}
+        <div className="layout-right">
+          <section className="activity-center">
+            <h3>Situational Activity Feed</h3>
+            <div className="activity-list" ref={activityListRef}>
+              {summary.recentActivities.map((act, i) => (
+                <div key={i} className={`act-item ${act.type}`}>
+                  <div className="act-icon">{getActivityIcon(act.type)}</div>
+                  <div className="act-content">
+                    <div className="act-header">
+                      <span className="act-tenant">{act.tenantId}</span>
+                      <span className="act-time">{new Date(act.timestamp).toLocaleTimeString()}</span>
+                    </div>
+                    <div className="act-msg">{act.message}</div>
+                  </div>
                 </div>
-            </section>
+              ))}
+              {summary.recentActivities.length === 0 && (
+                <div className="empty-feed">No recent activity detected.</div>
+              )}
+            </div>
+          </section>
         </div>
       </div>
 
       <style>{`
-        .op-dashboard {
-          color: #f1f5f9;
-          width: 100%;
-        }
-        .op-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 24px;
-        }
-        .op-header h1 { font-size: 24px; font-weight: 800; color: #fff; letter-spacing: -0.5px; }
-        .refresh-status { 
-          font-size: 11px; 
-          color: #10b981; 
-          background: rgba(16, 185, 129, 0.1);
-          padding: 4px 10px;
-          border-radius: 20px;
-          border: 1px solid rgba(16, 185, 129, 0.2);
-          text-transform: uppercase;
-          font-weight: 700;
-        }
-
-        .stats-section {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          grid-template-rows: repeat(2, auto);
-          gap: 16px;
-          margin-bottom: 32px;
-        }
-
-        .stat-card {
-          background: rgba(30, 41, 59, 0.7);
-          backdrop-filter: blur(12px);
-          border: 1px solid rgba(255, 255, 255, 0.05);
-          padding: 24px;
-          border-radius: 16px;
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-          transition: transform 0.2s, box-shadow 0.2s;
-        }
-        .stat-card:hover {
-          transform: translateY(-4px);
-          background: rgba(30, 41, 59, 0.9);
-          box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
-        }
-        .stat-card.clickable { cursor: pointer; }
-
-        .stat-header {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-        }
-        .stat-header .icon {
-          font-size: 20px;
-          background: rgba(255, 255, 255, 0.03);
-          width: 36px;
-          height: 36px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border-radius: 10px;
-        }
-
-        .stat-card .label { font-size: 13px; color: #94a3b8; font-weight: 600; }
-        .stat-card .value { font-size: 32px; font-weight: 800; color: #fff; }
-
-        /* KPI Specific Accents */
-        .stat-card.tenants .icon { background: rgba(59, 130, 246, 0.1); }
-        .stat-card.catalogs .icon { background: rgba(139, 92, 246, 0.1); }
-        .stat-card.requests.active { border-color: rgba(16, 185, 129, 0.3); }
-        .stat-card.requests.active .icon { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+        .op-dashboard { color: #e2e8f0; width: 100%; animation: fadeIn 0.5s ease-out; }
         
-        .stat-card.incidents.risk {
-          border-color: rgba(239, 68, 68, 0.3);
-          box-shadow: 0 0 15px rgba(239, 68, 68, 0.1);
-        }
-        .stat-card.incidents .icon { background: rgba(239, 68, 68, 0.1); }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .op-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 32px; padding-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .title-block { display: flex; align-items: center; gap: 16px; }
+        .op-header h1 { font-size: 28px; font-weight: 900; background: linear-gradient(to right, #fff, #94a3b8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         
-        .stat-card.changes.process { border-color: rgba(245, 158, 11, 0.3); }
-        .stat-card.changes .icon { background: rgba(245, 158, 11, 0.1); }
+        .pulse-indicator { width: 10px; height: 10px; background: #10b981; border-radius: 50%; box-shadow: 0 0 10px #10b981; animation: pulse-green 2s infinite; }
+        @keyframes pulse-green { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(2.5); opacity: 0; } }
         
-        .stat-card.cis .icon { background: rgba(148, 163, 184, 0.1); }
+        .live-tag { font-size: 10px; font-weight: 800; color: #10b981; text-transform: uppercase; letter-spacing: 1px; }
+        .sys-time { font-family: monospace; color: #64748b; font-size: 14px; }
 
-        .dashboard-grid {
-          display: grid;
-          grid-template-columns: 1.5fr 1fr;
-          gap: 24px;
-        }
-
-        .grid-left { display: flex; flex-direction: column; gap: 24px; }
-
-        .tenant-status, .resource-monitor, .log-monitor {
-          background: rgba(30, 41, 59, 0.4);
-          backdrop-filter: blur(10px);
-          border: 1px solid rgba(255, 255, 255, 0.05);
-          border-radius: 16px;
-          padding: 24px;
-        }
-        .tenant-status h3, .resource-monitor h3, .log-monitor h3 {
-          font-size: 16px;
-          margin-bottom: 20px;
-          color: #94a3b8;
-          font-weight: 700;
-        }
-
-        .tenant-list { display: flex; flex-direction: column; gap: 12px; }
-        .tenant-item {
-          display: flex;
-          justify-content: space-between;
-          padding: 14px;
-          background: rgba(15, 23, 42, 0.3);
-          border-radius: 10px;
-          border: 1px solid rgba(255, 255, 255, 0.02);
-        }
-        .tenant-info { display: flex; align-items: center; gap: 12px; }
-        .tenant-color { width: 4px; height: 16px; border-radius: 2px; }
-        .tenant-name { font-weight: 600; font-size: 14px; color: #e2e8f0; }
-
-        .tenant-metrics { display: flex; align-items: center; gap: 16px; }
-        .inc-count { font-size: 12px; color: #64748b; }
-
-        .status-pill {
-          padding: 4px 10px;
-          border-radius: 6px;
-          font-size: 10px;
-          font-weight: 800;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-        }
-        .status-pill.green { background: rgba(6, 78, 59, 0.4); color: #34d399; border: 1px solid rgba(52, 211, 153, 0.2); }
-        .status-pill.yellow { background: rgba(69, 26, 3, 0.4); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.2); }
-        .status-pill.red { background: rgba(69, 10, 10, 0.4); color: #f87171; border: 1px solid rgba(248, 113, 113, 0.2); }
-
-        .iframe-container { display: flex; flex-direction: column; gap: 12px; }
-        .iframe-container iframe { border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.05); }
+        /* KPI Grid */
+        .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 32px; }
+        .kpi-card { background: rgba(30, 41, 59, 0.4); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.05); border-radius: 20px; padding: 24px; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; position: relative; overflow: hidden; }
+        .kpi-card:hover { transform: translateY(-5px); background: rgba(30, 41, 59, 0.6); border-color: rgba(255,255,255,0.1); box-shadow: 0 12px 30px rgba(0,0,0,0.3); }
         
-        .log-monitor {
-          background: rgba(15, 23, 42, 0.4);
-          backdrop-filter: blur(10px);
-          border: 1px solid rgba(255, 255, 255, 0.05);
-          border-radius: 16px;
-          padding: 24px;
-          display: flex;
-          flex-direction: column;
-          /* Match height with left widgets (tenant-status + resource-monitor + gap) */
-          height: 100%;
-        }
+        .kpi-label { font-size: 12px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 8px; }
+        .kpi-value { font-size: 36px; font-weight: 900; color: #fff; margin-bottom: 4px; }
+        .kpi-meta { font-size: 12px; color: #64748b; }
+
+        .pulse-red { border-color: rgba(239, 68, 68, 0.5); animation: red-glow 1.5s infinite alternate; }
+        @keyframes red-glow { 0% { box-shadow: 0 0 5px rgba(239, 68, 68, 0.2); } 100% { box-shadow: 0 0 20px rgba(239, 68, 68, 0.4); } }
+        .urgent-flash { color: #f87171; font-weight: 800; animation: flash 1s infinite alternate; }
+        @keyframes flash { from { opacity: 0.5; } to { opacity: 1; } }
+
+        .risk { border-color: rgba(245, 158, 11, 0.5); }
+
+        /* Priority Radar */
+        .radar-bars { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+        .bar-item { display: flex; align-items: center; gap: 8px; }
+        .b-label { font-size: 10px; font-weight: 800; width: 20px; }
+        .b-track { flex: 1; height: 6px; background: rgba(255,255,255,0.05); border-radius: 3px; overflow: hidden; }
+        .b-fill { height: 100%; border-radius: 3px; transition: width 1s ease-out; }
+        .p1 .b-fill { background: #ef4444; }
+        .p2 .b-fill { background: #f59e0b; }
+        .b-val { font-size: 10px; font-weight: 700; width: 15px; text-align: right; }
+
+        /* Layout */
+        .dashboard-layout { display: grid; grid-template-columns: 1fr 400px; gap: 24px; }
+        .layout-left { display: flex; flex-direction: column; gap: 24px; }
         
-        .log-viewport {
-          background: #020617;
-          border-radius: 12px;
-          padding: 16px;
-          flex-grow: 1; /* Match remaining height */
-          height: 600px; /* Fixed height for large log capacity */
-          font-family: 'JetBrains Mono', monospace;
-          font-size: 11px;
-          overflow-y: auto;
-          border: 1px solid rgba(255, 255, 255, 0.05);
-          display: flex;
-          flex-direction: column;
-          gap: 4px;
-        }
-        .log-line {
-          display: flex;
-          gap: 12px;
-          line-height: 1.5;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.02);
-          padding-bottom: 2px;
-        }
-        .log-line .timestamp { color: #475569; white-space: nowrap; }
-        .log-line .content { color: #cbd5e1; word-break: break-all; }
-        .empty-logs { 
-          height: 100%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: #334155; 
-          font-style: italic; 
-        }
-        .loading { padding: 40px; text-align: center; color: #64748b; }
+        .tenant-health, .infra-monitor, .activity-center { background: rgba(15, 23, 42, 0.3); border-radius: 20px; padding: 24px; border: 1px solid rgba(255,255,255,0.03); }
+        .tenant-health h3, .infra-monitor h3, .activity-center h3 { font-size: 14px; font-weight: 800; color: #94a3b8; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+        .tenant-scroller { display: flex; flex-direction: column; gap: 10px; max-height: 380px; overflow-y: auto; padding-right: 8px; }
+        .t-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: rgba(255,255,255,0.02); border-radius: 12px; transition: background 0.2s; }
+        .t-row:hover { background: rgba(255,255,255,0.05); }
+        .t-brand { width: 4px; height: 18px; border-radius: 2px; }
+        .t-name { flex: 1; margin-left:12px; font-weight: 600; font-size: 14px; }
+        .t-metrics { display: flex; align-items: center; gap: 15px; }
+        .t-inc { font-size: 12px; color: #64748b; }
+        .t-pill { padding: 3px 8px; border-radius: 5px; font-size: 10px; font-weight: 800; }
+        .t-pill.GREEN { color: #34d399; background: rgba(52, 211, 153, 0.1); }
+        .t-pill.YELLOW { color: #fbbf24; background: rgba(251, 191, 36, 0.1); }
+        .t-pill.RED { color: #f87171; background: rgba(248, 113, 113, 0.1); animation: urgent-blink 1s infinite; }
+        @keyframes urgent-blink { 100% { opacity: 0.5; } }
+
+        .monitor-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+        /* Activity Feed */
+        .activity-center { display: flex; flex-direction: column; height: 750px; }
+        .activity-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding-right: 5px; }
+        .act-item { display: flex; gap: 12px; padding: 12px; background: rgba(255,255,255,0.02); border-radius: 12px; border-left: 2px solid transparent; }
+        .act-item.INCIDENT_NEW { border-left-color: #ef4444; background: rgba(239, 68, 68, 0.05); }
+        .act-item.STATUS_CHANGE { border-left-color: #3b82f6; }
+        .act-item.SLA_WARNING { border-left-color: #f59e0b; background: rgba(245, 158, 11, 0.05); }
+        
+        .act-icon { font-size: 18px; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; }
+        .act-content { flex: 1; }
+        .act-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+        .act-tenant { font-size: 11px; font-weight: 800; color: #3b82f6; text-transform: uppercase; }
+        .act-time { font-size: 10px; color: #64748b; }
+        .act-msg { font-size: 12px; color: #cbd5e1; line-height: 1.4; }
+
+        .loading-state { height: 60vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; color: #64748b; }
+        .spinner { width: 40px; height: 40px; border: 3px solid rgba(59, 130, 246, 0.2); border-top-color: #3b82f6; border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .loading-state p { font-size: 14px; font-weight: 600; letter-spacing: 0.5px; }
       `}</style>
     </div>
   );

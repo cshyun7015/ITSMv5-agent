@@ -15,7 +15,17 @@ public class OperatorDashboardDTO {
     private long totalActiveChanges;
     private long totalActiveCIs;
     
+    // Priority Breakdown
+    private long priorityP1Count;
+    private long priorityP2Count;
+    private long priorityP3Count;
+    private long priorityP4Count;
+    
+    // SLA Risk (e.g., within 1 hour of breach)
+    private long slaRiskCount;
+    
     private List<TenantSummary> tenantSummaries;
+    private List<RecentActivity> recentActivities;
 
     @Getter
     @Builder
@@ -25,5 +35,14 @@ public class OperatorDashboardDTO {
         private String serviceStatus; // GREEN, YELLOW, RED
         private long incidentCount;
         private String brandColor;
+    }
+
+    @Getter
+    @Builder
+    public static class RecentActivity {
+        private String timestamp;
+        private String type; // INCIDENT_NEW, STATUS_CHANGE, SLA_WARNING
+        private String message;
+        private String tenantId;
     }
 }

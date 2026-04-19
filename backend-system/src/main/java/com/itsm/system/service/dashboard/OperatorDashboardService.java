@@ -14,6 +14,8 @@ import com.itsm.system.domain.tenant.TenantRelation;
 import com.itsm.system.domain.catalog.ServiceCatalogRepository;
 import com.itsm.system.domain.change.ChangeRequestRepository;
 import com.itsm.system.domain.cmdb.ConfigurationItemRepository;
+import com.itsm.system.domain.incident.IncidentHistoryRepository;
+import com.itsm.system.domain.incident.IncidentHistory;
 import com.itsm.system.dto.dashboard.OperatorDashboardDTO;
 import com.itsm.system.repository.incident.IncidentRepository;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +23,7 @@ import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -30,6 +33,7 @@ import java.util.stream.Collectors;
 public class OperatorDashboardService {
 
     private final IncidentRepository incidentRepository;
+    private final IncidentHistoryRepository incidentHistoryRepository;
     private final ServiceRequestRepository serviceRequestRepository;
     private final TenantRepository tenantRepository;
     private final TenantRelationRepository tenantRelationRepository;
@@ -74,6 +78,10 @@ public class OperatorDashboardService {
         List<Incident> allIncidents = incidentRepository.findAll().stream()
                 .filter(i -> managedTenantIds.contains(i.getTenant().getTenantId()))
                 .collect(Collectors.toList());
+        
+        List<Incident> activeIncidentsList = allIncidents.stream()
+                .filter(i -> i.getStatus() != IncidentStatus.RESOLVED && i.getStatus() != IncidentStatus.CLOSED)
+                .collect(Collectors.toList());
                 
         List<ServiceRequest> allRequests = serviceRequestRepository.findAll().stream()
                 .filter(sr -> managedTenantIds.contains(sr.getTenant().getTenantId()))
@@ -82,10 +90,7 @@ public class OperatorDashboardService {
         // 1. Core Metrics Aggregation
         long totalTenants = managedTenants.size();
         long totalCatalogs = serviceCatalogRepository.countByIsTemplateTrue();
-
-        long activeIncidents = allIncidents.stream()
-                .filter(i -> i.getStatus() != IncidentStatus.RESOLVED && i.getStatus() != IncidentStatus.CLOSED)
-                .count();
+        long activeIncidents = activeIncidentsList.size();
 
         long activeRequests = allRequests.stream()
                 .filter(sr -> sr.getStatus() != ServiceRequestStatus.RESOLVED && sr.getStatus() != ServiceRequestStatus.CLOSED)
@@ -102,12 +107,22 @@ public class OperatorDashboardService {
                 .filter(ci -> "ACTIVE".equals(ci.getStatusCode()))
                 .count();
 
-        // 2. Tenant Summaries
+        // 2. Priority Breakdown & SLA Risk
+        long p1Count = activeIncidentsList.stream().filter(i -> i.getPriority() == IncidentPriority.P1).count();
+        long p2Count = activeIncidentsList.stream().filter(i -> i.getPriority() == IncidentPriority.P2).count();
+        long p3Count = activeIncidentsList.stream().filter(i -> i.getPriority() == IncidentPriority.P3).count();
+        long p4Count = activeIncidentsList.stream().filter(i -> i.getPriority() == IncidentPriority.P4).count();
+
+        LocalDateTime slaThreshold = LocalDateTime.now().plusHours(1);
+        long slaRiskCount = activeIncidentsList.stream()
+                .filter(i -> i.getSlaDeadline() != null && i.getSlaDeadline().isBefore(slaThreshold))
+                .count();
+
+        // 3. Tenant Summaries
         List<OperatorDashboardDTO.TenantSummary> tenantSummaries = managedTenants.stream()
                 .map(tenant -> {
-                    List<Incident> tenantIncidents = allIncidents.stream()
+                    List<Incident> tenantIncidents = activeIncidentsList.stream()
                             .filter(i -> i.getTenant().getTenantId().equals(tenant.getTenantId()))
-                            .filter(i -> i.getStatus() != IncidentStatus.RESOLVED && i.getStatus() != IncidentStatus.CLOSED)
                             .collect(Collectors.toList());
 
                     String status = "GREEN";
@@ -127,6 +142,26 @@ public class OperatorDashboardService {
                 })
                 .collect(Collectors.toList());
 
+        // 4. Activity Feed Aggregate
+        List<OperatorDashboardDTO.RecentActivity> recentActivities = incidentHistoryRepository.findTop15ByIncidentInOrderByCreatedAtDesc(allIncidents).stream()
+                .map(h -> {
+                    String type = "ACTIVITY";
+                    String message = String.format("[%s] %s: %s", h.getIncident().getTitle(), h.getType(), h.getNote());
+                    
+                    if (h.getType() == IncidentHistory.HistoryType.STATUS_CHANGE) {
+                        type = "STATUS_CHANGE";
+                        message = String.format("[%s] Status change: %s -> %s", h.getIncident().getTitle(), h.getOldValue(), h.getNewValue());
+                    }
+
+                    return OperatorDashboardDTO.RecentActivity.builder()
+                        .timestamp(h.getCreatedAt().toString())
+                        .type(type)
+                        .message(message)
+                        .tenantId(h.getIncident().getTenant().getTenantId())
+                        .build();
+                })
+                .collect(Collectors.toList());
+
         return OperatorDashboardDTO.builder()
                 .totalTenants(totalTenants)
                 .totalCatalogs(totalCatalogs)
@@ -134,7 +169,13 @@ public class OperatorDashboardService {
                 .totalActiveRequests(activeRequests)
                 .totalActiveChanges(activeChanges)
                 .totalActiveCIs(activeCIs)
+                .priorityP1Count(p1Count)
+                .priorityP2Count(p2Count)
+                .priorityP3Count(p3Count)
+                .priorityP4Count(p4Count)
+                .slaRiskCount(slaRiskCount)
                 .tenantSummaries(tenantSummaries)
+                .recentActivities(recentActivities)
                 .build();
     }
 }
