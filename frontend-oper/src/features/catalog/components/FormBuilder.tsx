@@ -7,6 +7,9 @@ export interface FormField {
   required: boolean;
   options?: string[];
   codeGroupId?: string;
+  // Conditional Logic
+  dependsOnId?: string;
+  dependsOnValue?: string;
 }
 
 interface FormBuilderProps {
@@ -104,6 +107,37 @@ const FormBuilder: React.FC<FormBuilderProps> = ({ onSave, onCancel, initialSche
                 <button className="delete-btn" onClick={() => removeField(field.id)}>Remove</button>
               </div>
               
+              <div className="logic-editor">
+                <div className="logic-header">
+                  <label>Visibility Logic (Optional)</label>
+                  <span className="logic-badge">Conditional Display</span>
+                </div>
+                <div className="logic-inputs">
+                  <select 
+                    value={field.dependsOnId || ''} 
+                    onChange={e => updateField(field.id, { dependsOnId: e.target.value || undefined })}
+                    className="logic-select"
+                  >
+                    <option value="">No Dependency (Always Visible)</option>
+                    {fields.filter(f => f.id !== field.id).map(f => (
+                      <option key={f.id} value={f.id}>Visible if [{f.label}]</option>
+                    ))}
+                  </select>
+                  {field.dependsOnId && (
+                    <>
+                      <span className="logic-connector">is equals to</span>
+                      <input 
+                        type="text" 
+                        placeholder="Condition Value (e.g. Yes)"
+                        value={field.dependsOnValue || ''}
+                        onChange={e => updateField(field.id, { dependsOnValue: e.target.value })}
+                        className="logic-val-input"
+                      />
+                    </>
+                  )}
+                </div>
+              </div>
+
               {field.type === 'select' && (
                 <div className="options-editor">
                   <div className="options-header">
@@ -199,10 +233,24 @@ const FormBuilder: React.FC<FormBuilderProps> = ({ onSave, onCancel, initialSche
         .input-group label { font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 800; }
         .input-group input, .input-group select { background: #0f172a; border: 1px solid #334155; color: #fff; padding: 10px; border-radius: 6px; }
 
-        .checkbox-group { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+        .checkbox-group { display: flex; align-items: center; gap: 8px; margin-bottom: 0px; }
         .delete-btn { background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); padding: 8px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; }
 
-        .options-editor { margin-top: 16px; display: flex; flex-direction: column; gap: 8px; border-top: 1px solid rgba(255,255,255,0.05); pt: 12px; }
+        .logic-editor { 
+          margin-top: 20px; padding: 16px; background: rgba(59, 130, 246, 0.05); 
+          border-radius: 10px; border: 1px dashed rgba(59, 130, 246, 0.2);
+          display: flex; flex-direction: column; gap: 12px;
+        }
+        .logic-header { display: flex; justify-content: space-between; align-items: center; }
+        .logic-header label { font-size: 11px; font-weight: 800; color: #60a5fa; text-transform: uppercase; }
+        .logic-badge { font-size: 9px; font-weight: 900; background: #3b82f6; color: #fff; padding: 1px 6px; border-radius: 10px; }
+        
+        .logic-inputs { display: flex; align-items: center; gap: 12px; }
+        .logic-select { flex: 1; background: #0f172a; border: 1px solid rgba(59, 130, 246, 0.3); color: #fff; padding: 8px; border-radius: 6px; font-size: 12px; }
+        .logic-connector { font-size: 11px; color: #475569; font-weight: 600; font-style: italic; }
+        .logic-val-input { flex: 1; background: #0f172a; border: 1px solid rgba(59, 130, 246, 0.3); color: #fff; padding: 8px; border-radius: 6px; font-size: 12px; }
+
+        .options-editor { margin-top: 16px; display: flex; flex-direction: column; gap: 8px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 12px; }
         .options-header { display: flex; justify-content: space-between; align-items: center; }
         .options-header label { font-size: 11px; color: #64748b; }
         

@@ -9,6 +9,9 @@ interface FormField {
   required: boolean;
   options?: string[];
   codeGroupId?: string;
+  // Conditional Logic
+  dependsOnId?: string;
+  dependsOnValue?: string;
 }
 
 interface DynamicFormRendererProps {
@@ -51,7 +54,7 @@ const CodeSelect: React.FC<{
   );
 };
 
-const DynamicFormRenderer: React.FC<DynamicFormRendererProps> = ({ schema, values, onChange, disabled }) => {
+const DynamicFormRenderer: React.FC<DynamicFormRendererProps> = ({ schema, values = {}, onChange, disabled }) => {
   let fields: FormField[] = [];
   try {
     fields = JSON.parse(schema);
@@ -67,9 +70,23 @@ const DynamicFormRenderer: React.FC<DynamicFormRendererProps> = ({ schema, value
     }
   };
 
+  const isFieldVisible = (field: FormField) => {
+    if (!field.dependsOnId) return true;
+    
+    const dependencyValue = values[field.dependsOnId];
+    if (dependencyValue === undefined || dependencyValue === null || dependencyValue === '') {
+      return false;
+    }
+    
+    // Strict comparison after safe string conversion
+    return String(dependencyValue).toLowerCase() === String(field.dependsOnValue).toLowerCase();
+  };
+
+  const visibleFields = fields.filter(isFieldVisible);
+
   return (
     <div className="dynamic-form">
-      {fields.map(field => (
+      {visibleFields.map(field => (
         <div key={field.id} className="form-group">
           <label>
             {field.label}
