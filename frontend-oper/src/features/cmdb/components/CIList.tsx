@@ -159,18 +159,18 @@ const CIList: React.FC = () => {
 
 
 
-      <div className="filter-bar">
-        <div className="search-wrapper">
-          <span className="search-icon">🔍</span>
+      <div className="ci-filter-bar">
+        <div className="ci-search-wrapper">
+          <span className="ci-search-icon">🔍</span>
           <input 
             type="text" 
             placeholder="Search by name or serial number..." 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="search-input"
+            className="ci-search-input"
           />
         </div>
-        <div className="quick-filters">
+        <div className="ci-quick-filters">
           <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className="q-filter-select">
             <option value="ALL">All Types</option>
             <option value="SERVER">Servers</option>
@@ -239,20 +239,21 @@ const CIList: React.FC = () => {
         .header-left { display: flex; align-items: center; gap: 24px; }
         .header-left h2 { margin: 0; font-size: 24px; font-weight: 800; color: #fff; letter-spacing: -0.5px; }
 
-        .filter-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; gap: 20px; }
-        .search-wrapper { flex: 1; position: relative; }
-        .search-icon { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #64748b; font-size: 14px; }
-        .search-input { 
+        .ci-filter-bar { display: flex; align-items: center; margin-bottom: 24px; gap: 16px; width: 100%; }
+        .ci-search-wrapper { flex: 1; min-width: 0; position: relative; }
+        .ci-search-icon { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #64748b; font-size: 14px; pointer-events: none; }
+        .ci-search-input { 
           width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.1); 
           border-radius: 12px; padding: 12px 12px 12px 44px; color: #fff; font-size: 14px; outline: none; transition: all 0.2s;
+          box-sizing: border-box;
         }
-        .search-input:focus { border-color: #3b82f6; background: rgba(15, 23, 42, 0.8); box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1); }
+        .ci-search-input:focus { border-color: #3b82f6; background: rgba(15, 23, 42, 0.8); box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1); }
         
-        .quick-filters { display: flex; gap: 12px; }
+        .ci-quick-filters { display: flex; gap: 12px; flex-shrink: 0; }
         .q-filter-select { 
           background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.1); 
           color: #94a3b8; padding: 0 16px; border-radius: 12px; font-size: 13px; font-weight: 600; outline: none; cursor: pointer;
-          min-width: 140px; height: 44px;
+          min-width: 150px; height: 44px; flex-shrink: 0;
         }
         .q-filter-select:hover { border-color: rgba(255,255,255,0.2); color: #fff; }
 
@@ -292,7 +293,7 @@ const CIList: React.FC = () => {
         .btn-bulk-delete:hover { background: #f43f5e; }
         .btn-bulk-close { background: none; border: none; color: #fff; font-size: 20px; cursor: pointer; margin-left: 8px; }
 
-        .btn-export { background: transparent; border: 1px solid rgba(255,255,255,0.1); color: #94a3b8; padding: 8px 16px; border-radius: 12px; font-size: 13px; font-weight: 700; cursor: pointer; }
+        .btn-export { background: transparent; border: 1px solid rgba(255,255,255,0.1); color: #94a3b8; padding: 8px 16px; border-radius: 12px; font-size: 13px; font-weight: 700; cursor: pointer; flex-shrink: 0; }
         .btn-export:hover { border-color: #3b82f6; color: #fff; }
 
         .standard-list { display: flex; flex-direction: column; gap: 12px; }
