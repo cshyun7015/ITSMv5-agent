@@ -35,3 +35,9 @@ export interface OperatorRequest {
   teamId: number | null;
   isActive: boolean;
 }
+
+export interface Tenant {
+  tenantId: string;
+  name: string;
+  brandColor: string;
+}

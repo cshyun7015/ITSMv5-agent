@@ -52,5 +52,17 @@ export const operatorApi = {
   // 운영자 삭제
   deleteOperator: async (id: number): Promise<void> => {
     await apiClient.delete(`/operator/operators/${id}`);
+  },
+
+  // 테넌트(운영사) 목록 조회
+  getTenants: async (): Promise<Operator[]> => {
+    const response = await apiClient.get<Operator[]>('/operator/tenants');
+    return response.data;
+  },
+
+  // 테넌트(운영사) 생성
+  createTenant: async (data: { tenantId: string, name: string, brandColor?: string }): Promise<Operator> => {
+    const response = await apiClient.post<Operator>('/operator/tenants', data);
+    return response.data;
   }
 };

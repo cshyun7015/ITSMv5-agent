@@ -4,8 +4,10 @@ import { Operator, Team, TeamRequest } from '../types';
 import TeamSidebar from './TeamSidebar';
 import OperatorTable from './OperatorTable';
 import OperatorDrawer from './OperatorDrawer';
+import TenantFormModal from './TenantFormModal';
 import ConfirmDialog from '../../../components/common/ConfirmDialog';
 import { useAuth } from '../../auth/context/AuthContext';
+import { Tenant } from '../types';
 
 interface Organization {
   orgId: number;
@@ -17,11 +19,19 @@ const OperatorManagement: React.FC = () => {
   const canManage = user?.roles?.some(role => ['ROLE_ADMIN', 'ROLE_OPERATOR'].includes(role)) ?? false;
 
   const [operators, setOperators] = useState<Operator[]>([]);
+  const [tenants, setTenants] = useState<Tenant[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<'tenants' | 'operators'>(
+    user?.roles?.includes('ROLE_ADMIN') ? 'tenants' : 'operators'
+  );
   
   const [selectedTeamId, setSelectedTeamId] = useState<number | null>(null);
+  const [filterTenantId, setFilterTenantId] = useState<string | null>(null);
+
+  // Tenant Modal State
+  const [isTenantModalOpen, setIsTenantModalOpen] = useState(false);
   
   // Operator Modal State
   const [isOperatorModalOpen, setIsOperatorModalOpen] = useState(false);
@@ -48,16 +58,26 @@ const OperatorManagement: React.FC = () => {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const [opData, teamData] = await Promise.all([
+      const promises: any[] = [
         operatorApi.getOperators(),
         operatorApi.getTeams()
-      ]);
-      setOperators(opData);
-      setTeams(teamData);
+      ];
+      
+      if (user?.roles?.includes('ROLE_ADMIN')) {
+        promises.push(operatorApi.getTenants());
+      }
+
+      const results = await Promise.all(promises);
+      setOperators(results[0]);
+      setTeams(results[1]);
+      
+      if (user?.roles?.includes('ROLE_ADMIN')) {
+        setTenants(results[2]);
+      }
 
       // Extract unique organizations (for ADMIN create team)
       const orgsMap = new Map<number, Organization>();
-      teamData.forEach((t: Team) => {
+      results[1].forEach((t: Team) => {
           if (t.orgId) orgsMap.set(t.orgId, { orgId: t.orgId, name: t.orgName || 'Unknown Org' });
       });
       setOrganizations(Array.from(orgsMap.values()));
@@ -100,6 +120,22 @@ const OperatorManagement: React.FC = () => {
         }
       }
     });
+  };
+
+  const handleCreateTenant = async (data: { tenantId: string, name: string, brandColor: string }) => {
+    try {
+      await operatorApi.createTenant(data);
+      setIsTenantModalOpen(false);
+      loadData();
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const handleSelectTenant = (tenantId: string) => {
+    setFilterTenantId(tenantId);
+    setSelectedTeamId(null);
+    setViewMode('operators');
   };
 
   // Team Actions
@@ -148,9 +184,11 @@ const OperatorManagement: React.FC = () => {
     }
   };
 
-  const filteredOperators = selectedTeamId 
-    ? operators.filter(op => op.teamId === selectedTeamId)
-    : operators;
+  const filteredOperators = operators.filter(op => {
+    if (selectedTeamId && op.teamId !== selectedTeamId) return false;
+    if (filterTenantId && op.tenantId !== filterTenantId) return false;
+    return true;
+  });
 
   return (
     <div className="management-page">
@@ -182,20 +220,60 @@ const OperatorManagement: React.FC = () => {
             </div>
             <div className="header-actions">
               <button className="btn-secondary" onClick={handleRefresh}>🔄 Refresh</button>
+              {user?.roles?.includes('ROLE_ADMIN') && (
+                <div className="view-mode-toggle">
+                  <button 
+                    className={`toggle-btn ${viewMode === 'tenants' ? 'active' : ''}`}
+                    onClick={() => { setViewMode('tenants'); setFilterTenantId(null); }}
+                  >
+                    🏢 Companies
+                  </button>
+                  <button 
+                    className={`toggle-btn ${viewMode === 'operators' ? 'active' : ''}`}
+                    onClick={() => setViewMode('operators')}
+                  >
+                    👥 Operators
+                  </button>
+                </div>
+              )}
               {canManage && (
-                <button className="btn-primary" onClick={handleCreateOperator}>+ Add Operator</button>
+                viewMode === 'tenants' ? (
+                  <button className="btn-primary" onClick={() => setIsTenantModalOpen(true)}>+ Add Company</button>
+                ) : (
+                  <button className="btn-primary" onClick={handleCreateOperator}>+ Add Operator</button>
+                )
               )}
             </div>
           </header>
 
           <div className="management-content">
-            <OperatorTable 
-              operators={filteredOperators}
-              onEdit={handleEditOperator}
-              onDelete={handleDeleteOperator}
-              isLoading={isLoading}
-              canManage={canManage}
-            />
+            {viewMode === 'tenants' ? (
+              <div className="tenant-list-grid">
+                {tenants.map(tenant => (
+                  <div key={tenant.tenantId} className="tenant-card" onClick={() => handleSelectTenant(tenant.tenantId)}>
+                    <div className="tenant-accent" style={{ background: tenant.brandColor }}></div>
+                    <div className="tenant-info">
+                      <div className="tenant-id">{tenant.tenantId}</div>
+                      <div className="tenant-name">{tenant.name}</div>
+                    </div>
+                    <div className="tenant-stats">
+                      <div className="stat-item">
+                        <span className="stat-value">{operators.filter(op => op.tenantId === tenant.tenantId).length}</span>
+                        <span className="stat-label">Operators</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <OperatorTable 
+                operators={filteredOperators}
+                onEdit={handleEditOperator}
+                onDelete={handleDeleteOperator}
+                isLoading={isLoading}
+                canManage={canManage}
+              />
+            )}
           </div>
         </div>
       </div>
@@ -261,6 +339,14 @@ const OperatorManagement: React.FC = () => {
             setIsOperatorModalOpen(false);
             loadData();
           }}
+        />
+      )}
+
+      {isTenantModalOpen && (
+        <TenantFormModal 
+          isOpen={isTenantModalOpen}
+          onClose={() => setIsTenantModalOpen(false)}
+          onSubmit={handleCreateTenant}
         />
       )}
 
@@ -406,6 +492,93 @@ const OperatorManagement: React.FC = () => {
         .form-actions button { flex: 1; }
 
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .view-mode-toggle {
+          display: flex;
+          background: rgba(255, 255, 255, 0.05);
+          padding: 4px;
+          border-radius: 12px;
+          border: 1px solid var(--glass-border);
+          margin: 0 8px;
+        }
+        .toggle-btn {
+          padding: 6px 16px;
+          border: none;
+          background: transparent;
+          color: #94a3b8;
+          border-radius: 8px;
+          font-size: 0.85rem;
+          font-weight: 700;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        .toggle-btn.active {
+          background: #3b82f6;
+          color: white;
+          box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        .tenant-list-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+          gap: 24px;
+        }
+        .tenant-card {
+          background: rgba(255, 255, 255, 0.03);
+          border: 1px solid var(--glass-border);
+          border-radius: 16px;
+          padding: 24px;
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+          cursor: pointer;
+          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+          position: relative;
+          overflow: hidden;
+        }
+        .tenant-card:hover {
+          transform: translateY(-4px);
+          background: rgba(255, 255, 255, 0.06);
+          border-color: rgba(255, 255, 255, 0.2);
+          box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5);
+        }
+        .tenant-accent {
+          position: absolute;
+          top: 0; left: 0; right: 0; height: 4px;
+        }
+        .tenant-id {
+          font-family: monospace;
+          font-size: 0.75rem;
+          color: #3b82f6;
+          font-weight: 700;
+          letter-spacing: 1px;
+        }
+        .tenant-name {
+          font-size: 1.15rem;
+          font-weight: 800;
+          color: white;
+        }
+        .tenant-stats {
+          border-top: 1px solid var(--glass-border);
+          padding-top: 16px;
+          display: flex;
+          gap: 20px;
+        }
+        .stat-item {
+          display: flex;
+          flex-direction: column;
+        }
+        .stat-value {
+          font-size: 1.25rem;
+          font-weight: 800;
+          color: white;
+        }
+        .stat-label {
+          font-size: 0.7rem;
+          color: #64748b;
+          text-transform: uppercase;
+          font-weight: 700;
+        }
       `}</style>
     </div>
   );

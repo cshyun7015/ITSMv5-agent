@@ -45,7 +45,7 @@ public class TenantOperatorController {
                     .collect(Collectors.toList());
         } else if ("OPERATOR".equals(type)) {
             // 개별 운영사는 본인이 관리하는 테넌트만 조회
-            managedTenants = tenantRelationRepository.findByOperator_TenantId(tenantId).stream()
+            managedTenants = tenantRelationRepository.findByOperator_TenantId(Objects.requireNonNull(tenantId)).stream()
                     .map(com.itsm.system.domain.tenant.TenantRelation::getCustomer)
                     .collect(Collectors.toList());
         } else {
@@ -76,7 +76,7 @@ public class TenantOperatorController {
         if ("MSP".equals(currentTenant.getType())) {
             hasAccess = true;
         } else if ("OPERATOR".equals(currentTenant.getType())) {
-            hasAccess = tenantRelationRepository.findByOperator_TenantId(currentTenantId).stream()
+            hasAccess = tenantRelationRepository.findByOperator_TenantId(Objects.requireNonNull(currentTenantId)).stream()
                     .anyMatch(rel -> rel.getCustomer().getTenantId().equals(targetTenantId));
         }
 
@@ -90,5 +90,39 @@ public class TenantOperatorController {
                 .collect(Collectors.toList());
 
         return ResponseEntity.ok(users);
+    }
+
+    @org.springframework.web.bind.annotation.PostMapping
+    public ResponseEntity<?> createTenant(
+            @AuthenticationPrincipal Member currentMember,
+            @org.springframework.web.bind.annotation.RequestBody TenantDTO tenantDTO) {
+        
+        // MSP 관리자만 테넌트를 생성할 수 있음
+        String currentTenantId = currentMember.getTenant().getTenantId();
+        Tenant currentTenant = tenantRepository.findById(Objects.requireNonNull(currentTenantId)).orElseThrow();
+        
+        if (!"MSP".equals(currentTenant.getType())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Only MSP admins can create new tenants");
+        }
+
+        if (tenantRepository.existsById(Objects.requireNonNull(tenantDTO.getTenantId()))) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Tenant ID already exists");
+        }
+
+        Tenant newTenant = Tenant.builder()
+                .tenantId(tenantDTO.getTenantId())
+                .name(tenantDTO.getName())
+                .type("OPERATOR") // 운영사 추가 기능이므로 기본값 OPERATOR
+                .brandColor(tenantDTO.getBrandColor() != null ? tenantDTO.getBrandColor() : "#3b82f6")
+                .isActive(true)
+                .build();
+
+        tenantRepository.save(Objects.requireNonNull(newTenant));
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(TenantDTO.builder()
+                .tenantId(newTenant.getTenantId())
+                .name(newTenant.getName())
+                .brandColor(newTenant.getBrandColor())
+                .build());
     }
 }
