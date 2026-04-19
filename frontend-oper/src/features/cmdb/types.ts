@@ -10,6 +10,7 @@ export interface ConfigurationItem {
   ownerName?: string;
   location?: string;
   description?: string;
+  configJson?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -23,4 +24,5 @@ export interface CIRequest {
   ownerId?: number;
   location?: string;
   description?: string;
+  configJson?: string;
 }

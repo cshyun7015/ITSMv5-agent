@@ -44,12 +44,16 @@ public class ConfigurationItem extends BaseEntity {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    public void updateInfo(String name, String typeCode, String serialNumber, String location, String description) {
+    @Column(name = "config_json", columnDefinition = "TEXT")
+    private String configJson;
+
+    public void updateInfo(String name, String typeCode, String serialNumber, String location, String description, String configJson) {
         this.name = name;
         this.typeCode = typeCode;
         this.serialNumber = serialNumber;
         this.location = location;
         this.description = description;
+        this.configJson = configJson;
     }
 
     public void updateStatus(String status) {

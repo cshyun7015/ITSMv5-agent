@@ -2,6 +2,8 @@ package com.itsm.system.service.cmdb;
 
 import com.itsm.system.domain.cmdb.ConfigurationItem;
 import com.itsm.system.domain.cmdb.ConfigurationItemRepository;
+import com.itsm.system.domain.cmdb.CIRelationship;
+import com.itsm.system.domain.cmdb.CIRelationshipRepository;
 import com.itsm.system.domain.member.MemberRepository;
 import com.itsm.system.domain.tenant.Tenant;
 import com.itsm.system.domain.tenant.TenantRepository;
@@ -19,6 +21,7 @@ import java.util.stream.Collectors;
 public class ConfigurationItemService {
 
     private final ConfigurationItemRepository configurationItemRepository;
+    private final CIRelationshipRepository ciRelationshipRepository;
     private final TenantRepository tenantRepository;
     private final MemberRepository memberRepository;
 
@@ -35,6 +38,7 @@ public class ConfigurationItemService {
                 .serialNumber(dto.getSerialNumber())
                 .location(dto.getLocation())
                 .description(dto.getDescription())
+                .configJson(dto.getConfigJson())
                 .build();
 
         if (dto.getOwnerId() != null) {
@@ -49,7 +53,7 @@ public class ConfigurationItemService {
         ConfigurationItem ci = configurationItemRepository.findById(Objects.requireNonNull(id))
                 .orElseThrow(() -> new IllegalArgumentException("CI not found"));
         
-        ci.updateInfo(dto.getName(), dto.getTypeCode(), dto.getSerialNumber(), dto.getLocation(), dto.getDescription());
+        ci.updateInfo(dto.getName(), dto.getTypeCode(), dto.getSerialNumber(), dto.getLocation(), dto.getDescription(), dto.getConfigJson());
         
         if (dto.getStatusCode() != null) {
             ci.updateStatus(dto.getStatusCode());
@@ -96,7 +100,13 @@ public class ConfigurationItemService {
         }
     }
 
+    @Transactional(readOnly = true)
+    public List<CIRelationship> getRelationships(Long ciId) {
+        return ciRelationshipRepository.findBySourceCiId(ciId);
+    }
+
     private ConfigurationItemDTO convertToDTO(ConfigurationItem ci) {
+
         return ConfigurationItemDTO.builder()
                 .ciId(ci.getCiId())
                 .tenantId(ci.getTenant() != null ? ci.getTenant().getTenantId() : null)
@@ -107,6 +117,7 @@ public class ConfigurationItemService {
                 .serialNumber(ci.getSerialNumber())
                 .location(ci.getLocation())
                 .description(ci.getDescription())
+                .configJson(ci.getConfigJson())
                 .ownerId(ci.getOwner() != null ? ci.getOwner().getMemberId() : null)
                 .ownerName(ci.getOwner() != null ? ci.getOwner().getUsername() : null)
                 .createdAt(ci.getCreatedAt())

@@ -27,7 +27,7 @@ const AdminCommandCenter: React.FC = () => {
     { id: 'fulfillment', label: 'Requests', icon: '📩' },
     { id: 'incidents', label: 'Incidents', icon: '⚠️' },
     { id: 'changes', label: 'Changes', icon: '🔄' },
-    { id: 'cis', label: 'CI', icon: '📦' },
+    { id: 'cis', label: 'CIs', icon: '📦' },
     { id: 'codes', label: 'Codes', icon: '🏷️' },
     { id: 'opers', label: 'Opers', icon: '👥' },
     { id: 'users', label: 'Users', icon: '👤' }

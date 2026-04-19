@@ -20,6 +20,7 @@ public class ConfigurationItemDTO {
     private String ownerName;
     private String location;
     private String description;
+    private String configJson;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private boolean isDeleted;

@@ -3,7 +3,9 @@ import { ciApi } from '../api/ciApi';
 import { fulfillmentApi } from '../../fulfillment/api/fulfillmentApi';
 import { ConfigurationItem } from '../types';
 import CIFormModal from './CIFormModal';
+import CIQuickStats from './CIQuickStats';
 import { useAuth } from '../../auth/context/AuthContext';
+
 
 const CIList: React.FC = () => {
   const { user } = useAuth();
@@ -13,12 +15,17 @@ const CIList: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCI, setSelectedCI] = useState<ConfigurationItem | undefined>();
+  
+  // Search and Filter State
+  const [searchQuery, setSearchQuery] = useState('');
+  const [typeFilter, setTypeFilter] = useState('ALL');
+  const [statusFilter, setStatusFilter] = useState('ALL');
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+
+
 
   useEffect(() => {
-    if (user?.tenantId) {
-      setSelectedTenantId(user.tenantId);
-      fetchTenants();
-    }
+    fetchTenants();
   }, [user]);
 
   useEffect(() => {
@@ -31,6 +38,9 @@ const CIList: React.FC = () => {
     try {
       const data = await fulfillmentApi.getTenants();
       setTenants(data);
+      if (data.length > 0 && (!selectedTenantId || data.every(t => t.tenantId !== selectedTenantId))) {
+        setSelectedTenantId(data[0].tenantId);
+      }
     } catch (error) {
       console.error('Failed to fetch tenants');
     }
@@ -64,6 +74,48 @@ const CIList: React.FC = () => {
     setIsModalOpen(true);
   };
 
+  const filteredCIs = cis.filter(ci => {
+    const matchesSearch = ci.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          ci.serialNumber?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesType = typeFilter === 'ALL' || ci.typeCode === typeFilter;
+    const matchesStatus = statusFilter === 'ALL' || ci.statusCode === statusFilter;
+    return matchesSearch && matchesType && matchesStatus;
+  });
+
+  const toggleSelect = (id: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+  };
+
+  const handleBulkDelete = async () => {
+    if (!window.confirm(`Delete ${selectedIds.length} assets?`)) return;
+    try {
+      await Promise.all(selectedIds.map(id => ciApi.deleteCI(id, false)));
+      loadCIs();
+      setSelectedIds([]);
+    } catch (error) {
+      console.error('Bulk delete failed');
+    }
+  };
+
+  const exportToCSV = () => {
+    const headers = ['ID', 'Name', 'Type', 'Status', 'S/N', 'Location', 'Owner'];
+    const rows = filteredCIs.map(ci => [
+      ci.ciId, ci.name, ci.typeCode, ci.statusCode, ci.serialNumber || '', ci.location || '', ci.ownerName || ''
+    ]);
+    const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.setAttribute('download', 'cmdb_export.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+   
+
+
+
   if (isLoading && tenants.length === 0) return <div className="loading">Initializing CMDB...</div>;
 
   return (
@@ -78,29 +130,76 @@ const CIList: React.FC = () => {
               value={selectedTenantId} 
               onChange={(e) => setSelectedTenantId(e.target.value)}
             >
-              <option value={user?.tenantId}>{user?.username}'s Home</option>
               {tenants.map(t => (
                 <option key={t.tenantId} value={t.tenantId}>{t.name}</option>
               ))}
             </select>
           </div>
-          <span className="ci-count">{cis.length} Assets</span>
+          <span className="ci-count">{filteredCIs.length} of {cis.length} Assets</span>
         </div>
         <div className="board-actions">
-          <div className="stats-box">
-            <div className="stat active">Active: {cis.filter(c => c.statusCode === 'ACTIVE').length}</div>
-            <div className="stat maintenance">Maintenance: {cis.filter(c => c.statusCode === 'MAINTENANCE').length}</div>
-          </div>
           <button className="btn-register" onClick={() => handleOpenModal()}>
             + Register CI
           </button>
         </div>
       </div>
 
+      <CIQuickStats cis={cis} />
+
+      {selectedIds.length > 0 && (
+        <div className="bulk-action-bar focus-in">
+          <span className="selection-count">{selectedIds.length} assets selected</span>
+          <div className="bulk-btns">
+            <button className="btn-bulk btn-bulk-status">Change Status</button>
+            <button className="btn-bulk btn-bulk-delete" onClick={handleBulkDelete}>Delete Selected</button>
+            <button className="btn-bulk-close" onClick={() => setSelectedIds([])}>&times;</button>
+          </div>
+        </div>
+      )}
+
+
+
+      <div className="filter-bar">
+        <div className="search-wrapper">
+          <span className="search-icon">🔍</span>
+          <input 
+            type="text" 
+            placeholder="Search by name or serial number..." 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="search-input"
+          />
+        </div>
+        <div className="quick-filters">
+          <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className="q-filter-select">
+            <option value="ALL">All Types</option>
+            <option value="SERVER">Servers</option>
+            <option value="DATABASE">Databases</option>
+            <option value="NETWORK">Network</option>
+            <option value="APPLICATION">Applications</option>
+            <option value="TERMINAL">Terminals</option>
+          </select>
+          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="q-filter-select">
+            <option value="ALL">All Statuses</option>
+            <option value="PROVISIONING">Provisioning</option>
+            <option value="ACTIVE">Active</option>
+            <option value="MAINTENANCE">Maintenance</option>
+            <option value="RETIRED">Retired</option>
+          </select>
+        </div>
+        <button className="btn-export" onClick={exportToCSV}>📥 Export CSV</button>
+      </div>
+
+
+
       <div className="standard-list">
-        {cis.map(ci => (
-          <div key={ci.ciId} className="list-item ci-item" onClick={() => handleOpenModal(ci)}>
+        {filteredCIs.map(ci => (
+          <div key={ci.ciId} className={`list-item ci-item ${selectedIds.includes(ci.ciId) ? 'selected' : ''}`} onClick={() => handleOpenModal(ci)}>
+            <div className="item-selector" onClick={(e) => toggleSelect(ci.ciId, e)}>
+              <div className={`checkbox ${selectedIds.includes(ci.ciId) ? 'checked' : ''}`}></div>
+            </div>
             <div className="item-icon-side">
+
               <span className="type-icon">{getTypeIcon(ci.typeCode)}</span>
             </div>
             <div className="item-main">
@@ -136,9 +235,27 @@ const CIList: React.FC = () => {
         .ci-container { width: 100%; animation: fadeIn 0.4s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        .ci-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; }
+        .ci-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
         .header-left { display: flex; align-items: center; gap: 24px; }
         .header-left h2 { margin: 0; font-size: 24px; font-weight: 800; color: #fff; letter-spacing: -0.5px; }
+
+        .filter-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; gap: 20px; }
+        .search-wrapper { flex: 1; position: relative; }
+        .search-icon { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #64748b; font-size: 14px; }
+        .search-input { 
+          width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.1); 
+          border-radius: 12px; padding: 12px 12px 12px 44px; color: #fff; font-size: 14px; outline: none; transition: all 0.2s;
+        }
+        .search-input:focus { border-color: #3b82f6; background: rgba(15, 23, 42, 0.8); box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1); }
+        
+        .quick-filters { display: flex; gap: 12px; }
+        .q-filter-select { 
+          background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.1); 
+          color: #94a3b8; padding: 0 16px; border-radius: 12px; font-size: 13px; font-weight: 600; outline: none; cursor: pointer;
+          min-width: 140px; height: 44px;
+        }
+        .q-filter-select:hover { border-color: rgba(255,255,255,0.2); color: #fff; }
+
 
         .tenant-filter {
           display: flex; align-items: center; gap: 12px;
@@ -155,10 +272,6 @@ const CIList: React.FC = () => {
         .ci-count { font-size: 14px; color: #94a3b8; background: rgba(255, 255, 255, 0.05); padding: 4px 12px; border-radius: 20px; }
 
         .board-actions { display: flex; align-items: center; gap: 24px; }
-        .stats-box { display: flex; gap: 12px; }
-        .stat { padding: 4px 14px; border-radius: 8px; font-size: 12px; font-weight: 700; border: 1px solid rgba(255,255,255,0.05); }
-        .stat.active { background: rgba(16, 185, 129, 0.1); color: #34d399; }
-        .stat.maintenance { background: rgba(245, 158, 11, 0.1); color: #fbbf24; }
 
         .btn-register {
           background: linear-gradient(135deg, #3b82f6, #2563eb); color: #fff; border: none;
@@ -167,13 +280,34 @@ const CIList: React.FC = () => {
         }
         .btn-register:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(37, 99, 235, 0.3); }
 
+        .bulk-action-bar { 
+          background: #3b82f6; border-radius: 12px; padding: 12px 24px; margin-bottom: 24px; 
+          display: flex; justify-content: space-between; align-items: center; color: #fff;
+          box-shadow: 0 10px 30px rgba(59, 130, 246, 0.4);
+        }
+        .selection-count { font-weight: 800; font-size: 14px; }
+        .bulk-btns { display: flex; align-items: center; gap: 12px; }
+        .btn-bulk { background: rgba(255,255,255,0.2); border: none; color: #fff; padding: 6px 14px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; }
+        .btn-bulk:hover { background: rgba(255,255,255,0.3); }
+        .btn-bulk-delete:hover { background: #f43f5e; }
+        .btn-bulk-close { background: none; border: none; color: #fff; font-size: 20px; cursor: pointer; margin-left: 8px; }
+
+        .btn-export { background: transparent; border: 1px solid rgba(255,255,255,0.1); color: #94a3b8; padding: 8px 16px; border-radius: 12px; font-size: 13px; font-weight: 700; cursor: pointer; }
+        .btn-export:hover { border-color: #3b82f6; color: #fff; }
+
         .standard-list { display: flex; flex-direction: column; gap: 12px; }
         .list-item {
           display: flex; align-items: center; background: rgba(255,255,255,0.03);
           border: 1px solid rgba(255,255,255,0.05); border-radius: 16px; transition: all 0.2s; cursor: pointer;
           padding: 16px 24px;
         }
+        .list-item.selected { border-color: #3b82f6; background: rgba(59, 130, 246, 0.05); }
         .list-item:hover { background: rgba(255,255,255,0.06); transform: translateX(4px); border-color: rgba(59, 130, 246, 0.3); }
+
+        .item-selector { padding-right: 20px; }
+        .checkbox { width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.1); border-radius: 6px; transition: all 0.2s; }
+        .checkbox.checked { background: #3b82f6; border-color: #3b82f6; position: relative; }
+        .checkbox.checked::after { content: '✓'; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #fff; font-size: 12px; font-weight: 900; }
 
         .item-icon-side { width: 48px; height: 48px; border-radius: 12px; background: rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center; margin-right: 20px; }
         .type-icon { font-size: 24px; }
