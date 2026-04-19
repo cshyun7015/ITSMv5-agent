@@ -31,6 +31,7 @@ const OperatorManagement: React.FC = () => {
   );
   
   const [selectedTeamId, setSelectedTeamId] = useState<number | null>(null);
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [filterTenantId, setFilterTenantId] = useState<string | null>(null);
 
   // Tenant Modal State
@@ -106,6 +107,45 @@ const OperatorManagement: React.FC = () => {
   const handleEditOperator = (op: Operator) => {
     setSelectedOperator(op);
     setIsOperatorModalOpen(true);
+  };
+
+  const handleSelectToggle = (id: number) => {
+    setSelectedIds(prev => 
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
+
+  const handleBulkDelete = () => {
+    setConfirmConfig({
+      isOpen: true,
+      title: `Delete ${selectedIds.length} Operators`,
+      message: `Are you sure you want to delete ${selectedIds.length} selected operators? This action cannot be undone.`,
+      onConfirm: async () => {
+        try {
+          await Promise.all(selectedIds.map(id => operatorApi.deleteOperator(id)));
+          setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+          setSelectedIds([]);
+          toast.success('Selected operators deleted successfully.');
+          loadData();
+        } catch (error) {
+          toast.error('Failed to delete some operators.');
+        }
+      }
+    });
+  };
+
+  const handleBulkTeamChange = async (targetTeamId: number) => {
+    try {
+      // Mocking bulk update via parallel requests for now as per plan
+      await Promise.all(selectedIds.map(id => 
+        operatorApi.updateOperator(id, { teamId: targetTeamId })
+      ));
+      setSelectedIds([]);
+      toast.success('Operators moved to new team successfully.');
+      loadData();
+    } catch (error) {
+      toast.error('Failed to move some operators.');
+    }
   };
 
   const handleDeleteOperator = (id: number) => {
@@ -198,11 +238,38 @@ const OperatorManagement: React.FC = () => {
     return true;
   });
 
-  // 현재 선택된 테넌트 (브랜드 색상 추출용)
   const activeTenant = filterTenantId
     ? tenants.find(t => t.tenantId === filterTenantId)
     : null;
   const brandColor = activeTenant?.brandColor || 'var(--primary, #3b82f6)';
+
+  const handleContextChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const val = e.target.value;
+    if (val === 'ALL_ORGS') {
+      setViewMode('tenants');
+      setFilterTenantId(null);
+      setSelectedTeamId(null);
+    } else if (val.startsWith('ORG_')) {
+      const tenantId = val.replace('ORG_', '');
+      setViewMode('operators');
+      setFilterTenantId(tenantId);
+      setSelectedTeamId(null);
+    } else if (val.startsWith('TEAM_')) {
+      const teamId = Number(val.replace('TEAM_', ''));
+      const team = teams.find(t => t.teamId === teamId);
+      if (team) {
+        setViewMode('operators');
+        setFilterTenantId(team.tenantId);
+        setSelectedTeamId(teamId);
+      }
+    }
+  };
+
+  const currentContextValue = selectedTeamId 
+    ? `TEAM_${selectedTeamId}` 
+    : filterTenantId 
+    ? `ORG_${filterTenantId}` 
+    : 'ALL_ORGS';
 
   return (
     <div
@@ -224,6 +291,26 @@ const OperatorManagement: React.FC = () => {
         />
 
         <div className="management-main">
+          {selectedIds.length > 0 && (
+            <div className="bulk-action-bar">
+              <div className="bulk-info">
+                <span className="bulk-count">{selectedIds.length} selected</span>
+              </div>
+              <div className="bulk-actions">
+                <select 
+                  className="bulk-select"
+                  onChange={(e) => e.target.value && handleBulkTeamChange(Number(e.target.value))}
+                  value=""
+                >
+                  <option value="" disabled>Move to Team...</option>
+                  {teams.map(t => <option key={t.teamId} value={t.teamId}>{t.name}</option>)}
+                </select>
+                <button className="btn-bulk btn-bulk--delete" onClick={handleBulkDelete}>Delete Selected</button>
+                <button className="btn-bulk btn-bulk--cancel" onClick={() => setSelectedIds([])}>Cancel</button>
+              </div>
+            </div>
+          )}
+
           <header className="management-header">
             <div className="header-info">
               {/* ── Breadcrumb ── */}
@@ -231,7 +318,7 @@ const OperatorManagement: React.FC = () => {
                 <nav className="breadcrumb">
                   <button
                     className="breadcrumb-link"
-                    onClick={() => { setViewMode('tenants'); setFilterTenantId(null); }}
+                    onClick={() => { setViewMode('tenants'); setFilterTenantId(null); setSelectedTeamId(null); }}
                   >
                     🏢 Companies
                   </button>
@@ -250,16 +337,35 @@ const OperatorManagement: React.FC = () => {
                 </nav>
               )}
 
-              <h2 className="header-title">
-                {viewMode === 'tenants'
-                  ? 'Operating Companies'
-                  : activeTenant
-                  ? `${activeTenant.name} — Operators`
-                  : selectedTeamId
-                  ? teams.find(t => t.teamId === selectedTeamId)?.name
-                  : 'All Operators'
-                }
-              </h2>
+              <div className="header-title-row">
+                <h2 className="header-title">
+                  {viewMode === 'tenants'
+                    ? 'Operating Companies'
+                    : activeTenant
+                    ? `${activeTenant.name} — Operators`
+                    : selectedTeamId
+                    ? teams.find(t => t.teamId === selectedTeamId)?.name
+                    : 'All Operators'
+                  }
+                </h2>
+                
+                {/* ── Context Switcher ── */}
+                {user?.roles?.includes('ROLE_ADMIN') && (
+                  <select 
+                    className="context-switcher" 
+                    value={currentContextValue}
+                    onChange={handleContextChange}
+                  >
+                    <option value="ALL_ORGS">Global View (All Companies)</option>
+                    <optgroup label="Companies">
+                      {tenants.map(t => <option key={t.tenantId} value={`ORG_${t.tenantId}`}>🏢 {t.name}</option>)}
+                    </optgroup>
+                    <optgroup label="Teams">
+                      {teams.map(t => <option key={t.teamId} value={`TEAM_${t.teamId}`}>👥 {t.name}</option>)}
+                    </optgroup>
+                  </select>
+                )}
+              </div>
               <p className="header-subtitle">
                 {viewMode === 'tenants'
                   ? 'Select a company to manage its operators, or add a new one.'
@@ -296,21 +402,18 @@ const OperatorManagement: React.FC = () => {
             </div>
           </header>
 
-          <div className="management-content">
+          <div className="content-scrollable">
             {viewMode === 'tenants' ? (
               <div className="tenant-list-grid">
-                {tenants.map(tenant => (
-                  <div key={tenant.tenantId} className="tenant-card" onClick={() => handleSelectTenant(tenant.tenantId)}>
-                    <div className="tenant-accent" style={{ background: tenant.brandColor }}></div>
-                    <div className="tenant-info">
-                      <div className="tenant-id">{tenant.tenantId}</div>
-                      <div className="tenant-name">{tenant.name}</div>
+                {tenants.map(t => (
+                  <div key={t.tenantId} className="tenant-card" onClick={() => { setFilterTenantId(t.tenantId); setViewMode('operators'); }}>
+                    <div className="tenant-card__accent" style={{ background: t.brandColor }} />
+                    <div className="tenant-card__info">
+                      <h4 className="tenant-name">{t.name}</h4>
+                      <p className="tenant-id">{t.tenantId}</p>
                     </div>
-                    <div className="tenant-stats">
-                      <div className="stat-item">
-                        <span className="stat-value">{operators.filter(op => op.tenantId === tenant.tenantId).length}</span>
-                        <span className="stat-label">Operators</span>
-                      </div>
+                    <div className="tenant-card__meta">
+                      <span className="meta-item">👥 {operators.filter(op => op.tenantId === t.tenantId).length} Operators</span>
                     </div>
                   </div>
                 ))}
@@ -318,7 +421,10 @@ const OperatorManagement: React.FC = () => {
             ) : (
               <OperatorTable 
                 operators={filteredOperators}
-                onEdit={handleEditOperator}
+                selectedIds={selectedIds}
+                onSelectToggle={handleSelectToggle}
+                onSelectAll={setSelectedIds}
+                onRowClick={handleEditOperator}
                 onDelete={handleDeleteOperator}
                 isLoading={isLoading}
                 canManage={canManage}
@@ -478,6 +584,197 @@ const OperatorManagement: React.FC = () => {
           transition: all 0.2s;
           box-shadow: 0 4px 15px rgba(59, 130, 246, 0.2);
         }
+        
+        /* ── Header Improvements ── */
+        .header-title-row {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+        }
+
+        .context-switcher {
+          background: rgba(255, 255, 255, 0.05);
+          border: 1px solid var(--glass-border);
+          border-radius: 8px;
+          padding: 4px 12px;
+          color: #94a3b8;
+          font-size: 13px;
+          font-weight: 600;
+          outline: none;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        .context-switcher:hover {
+          background: rgba(255, 255, 255, 0.08);
+          border-color: rgba(255, 255, 255, 0.2);
+        }
+        .context-switcher optgroup {
+          background: #0f172a;
+          color: #64748b;
+          font-style: normal;
+        }
+        .context-switcher option {
+          background: #1e293b;
+          color: #f1f5f9;
+        }
+
+        /* ── Bulk Action Bar ── */
+        .bulk-action-bar {
+          position: absolute;
+          top: 20px;
+          left: 50%;
+          transform: translateX(-50%);
+          z-index: 1000;
+          display: flex;
+          align-items: center;
+          gap: 24px;
+          padding: 12px 24px;
+          background: rgba(15, 23, 42, 0.9);
+          backdrop-filter: blur(12px);
+          border: 1px solid rgba(59, 130, 246, 0.3);
+          border-radius: 16px;
+          box-shadow: 0 10px 40px -10px rgba(0,0,0,0.5);
+          animation: slideBulkIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes slideBulkIn {
+          from { opacity: 0; transform: translate(-50%, -20px); }
+          to { opacity: 1; transform: translate(-50%, 0); }
+        }
+
+        .bulk-info {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        .bulk-count {
+          font-size: 14px;
+          font-weight: 700;
+          color: #3b82f6;
+        }
+
+        .bulk-actions {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+        .bulk-select {
+          background: rgba(255, 255, 255, 0.05);
+          border: 1px solid var(--glass-border);
+          border-radius: 8px;
+          padding: 6px 12px;
+          color: #f1f5f9;
+          font-size: 13px;
+          outline: none;
+          cursor: pointer;
+        }
+        .bulk-select:hover {
+          background: rgba(255, 255, 255, 0.1);
+        }
+        .bulk-select option {
+          background: #1e293b;
+          color: white;
+        }
+        .btn-bulk {
+          padding: 8px 16px;
+          border-radius: 10px;
+          font-size: 13px;
+          font-weight: 700;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        .btn-bulk--delete {
+          background: #f43f5e;
+          border: none;
+          color: white;
+        }
+        .btn-bulk--delete:hover {
+          background: #e11d48;
+          box-shadow: 0 0 15px rgba(244, 63, 94, 0.4);
+        }
+        .btn-bulk--cancel {
+          background: rgba(255,255,255,0.05);
+          border: 1px solid var(--glass-border);
+          color: #94a3b8;
+        }
+        .btn-bulk--cancel:hover {
+          background: rgba(255,255,255,0.1);
+          color: white;
+        }
+
+        /* ── Tenant Improvements ── */
+        .tenant-list-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+          gap: 20px;
+          padding: 4px;
+        }
+        .tenant-card {
+          background: rgba(255, 255, 255, 0.02);
+          border: 1px solid var(--glass-border);
+          border-radius: 20px;
+          padding: 24px;
+          cursor: pointer;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+          position: relative;
+          overflow: hidden;
+        }
+        .tenant-card:hover {
+          background: rgba(255, 255, 255, 0.05);
+          transform: translateY(-4px);
+          border-color: rgba(255, 255, 255, 0.2);
+          box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5);
+        }
+        .tenant-card__accent {
+          position: absolute;
+          top: 0; left: 0; right: 0;
+          height: 4px;
+          opacity: 0.8;
+        }
+        .tenant-card__info {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+        .tenant-name {
+          margin: 0;
+          font-size: 1.1rem;
+          font-weight: 800;
+          color: #f1f5f9;
+        }
+        .tenant-id {
+          font-size: 0.75rem;
+          font-weight: 600;
+          color: #475569;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+        }
+        .tenant-card__meta {
+          margin-top: auto;
+          padding-top: 16px;
+          border-top: 1px solid rgba(255, 255, 255, 0.03);
+          display: flex;
+          align-items: center;
+        }
+        .meta-item {
+          font-size: 13px;
+          color: #94a3b8;
+          font-weight: 600;
+        }
+
+        .content-scrollable {
+          flex: 1;
+          overflow-y: auto;
+          padding: 24px;
+          padding-top: 0;
+          animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
         .btn-primary:hover {
           transform: translateY(-2px);
           box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);

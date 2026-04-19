@@ -4,7 +4,10 @@ import SkeletonTable from '../../../components/common/SkeletonTable';
 
 interface OperatorTableProps {
   operators: Operator[];
-  onEdit: (op: Operator) => void;
+  selectedIds: number[];
+  onSelectToggle: (id: number) => void;
+  onSelectAll: (ids: number[]) => void;
+  onRowClick: (op: Operator) => void;
   onDelete: (id: number) => void;
   isLoading: boolean;
   canManage: boolean;
@@ -15,7 +18,10 @@ type SortDir = 'asc' | 'desc';
 
 const OperatorTable: React.FC<OperatorTableProps> = ({
   operators,
-  onEdit,
+  selectedIds,
+  onSelectToggle,
+  onSelectAll,
+  onRowClick,
   onDelete,
   isLoading,
   canManage
@@ -30,11 +36,9 @@ const OperatorTable: React.FC<OperatorTableProps> = ({
     if (sortKey === key) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
     else { setSortKey(key); setSortDir('asc'); }
   };
-
+  
   const filtered = useMemo(() => {
     let data = [...operators];
-
-    // 검색 필터
     if (search.trim()) {
       const q = search.toLowerCase();
       data = data.filter(op =>
@@ -42,15 +46,10 @@ const OperatorTable: React.FC<OperatorTableProps> = ({
         op.email.toLowerCase().includes(q)
       );
     }
-
-    // 역할 필터
     if (roleFilter !== 'ALL') data = data.filter(op => op.roleId === roleFilter);
-
-    // 상태 필터
     if (statusFilter === 'active')   data = data.filter(op => op.isActive);
     if (statusFilter === 'inactive') data = data.filter(op => !op.isActive);
 
-    // 정렬
     data.sort((a, b) => {
       let aVal: string | boolean = a[sortKey] ?? '';
       let bVal: string | boolean = b[sortKey] ?? '';
@@ -59,9 +58,18 @@ const OperatorTable: React.FC<OperatorTableProps> = ({
       const cmp = String(aVal).localeCompare(String(bVal));
       return sortDir === 'asc' ? cmp : -cmp;
     });
-
     return data;
   }, [operators, search, roleFilter, statusFilter, sortKey, sortDir]);
+
+  const isAllSelected = filtered.length > 0 && filtered.every(op => selectedIds.includes(op.memberId));
+
+  const handleSelectAll = () => {
+    if (isAllSelected) {
+      onSelectAll([]);
+    } else {
+      onSelectAll(filtered.map(op => op.memberId));
+    }
+  };
 
   const SortIcon = ({ col }: { col: SortKey }) => (
     <span className="sort-icon">
@@ -73,7 +81,6 @@ const OperatorTable: React.FC<OperatorTableProps> = ({
 
   return (
     <div className="op-table-wrapper">
-      {/* ── 컨트롤 바 ── */}
       <div className="op-controls">
         <div className="op-search-wrap">
           <span className="op-search-icon">🔍</span>
@@ -116,7 +123,6 @@ const OperatorTable: React.FC<OperatorTableProps> = ({
         </div>
       </div>
 
-      {/* ── 테이블 ── */}
       {filtered.length === 0 ? (
         <div className="op-empty">
           <div className="op-empty-icon">🔎</div>
@@ -130,6 +136,13 @@ const OperatorTable: React.FC<OperatorTableProps> = ({
           <table className="management-table">
             <thead>
               <tr>
+                <th className="checkbox-col">
+                  <input 
+                    type="checkbox" 
+                    checked={isAllSelected} 
+                    onChange={handleSelectAll}
+                  />
+                </th>
                 <th className="sortable" onClick={() => handleSort('username')}>
                   Member <SortIcon col="username" />
                 </th>
@@ -148,7 +161,18 @@ const OperatorTable: React.FC<OperatorTableProps> = ({
             </thead>
             <tbody>
               {filtered.map((op) => (
-                <tr key={op.memberId}>
+                <tr 
+                  key={op.memberId} 
+                  className={selectedIds.includes(op.memberId) ? 'row-selected' : ''}
+                  onClick={() => onRowClick(op)}
+                >
+                  <td onClick={(e) => e.stopPropagation()}>
+                    <input 
+                      type="checkbox" 
+                      checked={selectedIds.includes(op.memberId)}
+                      onChange={() => onSelectToggle(op.memberId)}
+                    />
+                  </td>
                   <td>
                     <div className="member-cell">
                       <div className="member-avatar">
@@ -176,12 +200,9 @@ const OperatorTable: React.FC<OperatorTableProps> = ({
                       {op.isActive ? 'Active' : 'Inactive'}
                     </span>
                   </td>
-                  <td>
+                  <td onClick={(e) => e.stopPropagation()}>
                     <div className="action-buttons">
-                      <button className="btn-icon btn-icon--edit" onClick={() => onEdit(op)}>Edit</button>
-                      {canManage && (
-                        <button className="btn-icon btn-icon--delete" onClick={() => onDelete(op.memberId)}>Delete</button>
-                      )}
+                      <button className="btn-icon btn-icon--delete" onClick={() => onDelete(op.memberId)}>Delete</button>
                     </div>
                   </td>
                 </tr>
@@ -261,6 +282,9 @@ const OperatorTable: React.FC<OperatorTableProps> = ({
           color: var(--text-muted); font-weight: 600;
           font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em;
         }
+
+        .checkbox-col { width: 48px; text-align: center !important; }
+
         .management-table th.sortable {
           cursor: pointer; user-select: none; white-space: nowrap;
           transition: color 0.2s;
@@ -271,10 +295,16 @@ const OperatorTable: React.FC<OperatorTableProps> = ({
         .management-table tbody tr {
           background: rgba(255,255,255,0.02);
           backdrop-filter: blur(10px); transition: all 0.2s;
+          cursor: pointer;
         }
         .management-table tbody tr:hover {
           background: rgba(255,255,255,0.06); transform: translateX(4px);
         }
+        .management-table tbody tr.row-selected {
+          background: rgba(59, 130, 246, 0.08);
+          border-color: rgba(59, 130, 246, 0.2);
+        }
+
         .management-table td {
           padding: 12px 20px;
           border-top: 1px solid var(--glass-border);
