@@ -6,6 +6,8 @@ export interface TenantSummary {
   serviceStatus: 'GREEN' | 'YELLOW' | 'RED';
   incidentCount: number;
   brandColor: string;
+  mttr: number;
+  slaComplianceRate: number;
 }
 
 export interface RecentActivity {
@@ -16,6 +18,7 @@ export interface RecentActivity {
 }
 
 export interface OperatorDashboardSummary {
+  ciDistribution: Record<string, number>;
   totalTenants: number;
   totalCatalogs: number;
   totalActiveIncidents: number;
@@ -37,8 +40,12 @@ export interface OperatorDashboardSummary {
 }
 
 export const dashboardApi = {
-  getSummary: async (): Promise<OperatorDashboardSummary> => {
-    const response = await apiClient.get<OperatorDashboardSummary>('/operator/dashboard/summary');
+  getSummary: async (startDate?: string, endDate?: string): Promise<OperatorDashboardSummary> => {
+    const params = new URLSearchParams();
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+    
+    const response = await apiClient.get<OperatorDashboardSummary>(`/operator/dashboard/summary?${params.toString()}`);
     return response.data;
   },
 

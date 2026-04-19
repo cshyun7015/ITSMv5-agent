@@ -7,7 +7,8 @@ import FulfillmentList from './features/fulfillment/components/FulfillmentList';
 import FulfillmentDetail from './features/fulfillment/components/FulfillmentDetail';
 import IncidentBoard from './features/incident/components/IncidentBoard';
 import IncidentDetail from './features/incident/components/IncidentDetail';
-import DashboardPage from './features/dashboard/components/DashboardPage';
+import OperatorDashboard from './features/dashboard/components/OperatorDashboard';
+import AdminDashboard from './features/dashboard/components/AdminDashboard';
 import CatalogManagement from './features/catalog/components/CatalogManagement';
 import ChangeBoard from './features/change/components/ChangeBoard';
 import CIList from './features/cmdb/components/CIList';
@@ -82,11 +83,19 @@ const AdminCommandCenter: React.FC = () => {
       <main className="main-content">
         <div className="workspace-panel">
           {activeTab === 'dashboard' ? (
-            <DashboardPage onNavigate={(tab) => {
-              setActiveTab(tab as any);
-              setSelectedIncidentId(null);
-              setSelectedRequestId(null);
-            }} />
+            user?.roles.includes('ADMIN') ? (
+              <AdminDashboard onNavigate={(tab) => {
+                setActiveTab(tab as any);
+                setSelectedIncidentId(null);
+                setSelectedRequestId(null);
+              }} />
+            ) : (
+              <OperatorDashboard onNavigate={(tab) => {
+                setActiveTab(tab as any);
+                setSelectedIncidentId(null);
+                setSelectedRequestId(null);
+              }} />
+            )
           ) : activeTab === 'cis' ? (
             <CIList />
           ) : activeTab === 'catalog' ? (

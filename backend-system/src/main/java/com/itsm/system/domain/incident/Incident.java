@@ -53,6 +53,9 @@ public class Incident extends BaseEntity {
     @Column(name = "sla_deadline")
     private LocalDateTime slaDeadline;
 
+    @Column(name = "resolved_at")
+    private LocalDateTime resolvedAt;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "reporter_id", nullable = false)
     private Member reporter;
@@ -104,6 +107,7 @@ public class Incident extends BaseEntity {
     public void resolve(String resolution) {
         this.resolution = resolution;
         this.status = IncidentStatus.RESOLVED;
+        this.resolvedAt = LocalDateTime.now();
     }
 
     public void close() {

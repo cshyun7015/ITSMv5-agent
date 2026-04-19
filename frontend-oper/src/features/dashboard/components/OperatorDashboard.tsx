@@ -1,11 +1,11 @@
 import React from 'react';
-import { dashboardApi, OperatorDashboardSummary, RecentActivity } from '../api/dashboardApi';
+import { dashboardApi, OperatorDashboardSummary, TenantSummary, RecentActivity } from '../api/dashboardApi';
 
-interface DashboardPageProps {
+interface OperatorDashboardProps {
   onNavigate?: (tab: string) => void;
 }
 
-const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
+const OperatorDashboard: React.FC<OperatorDashboardProps> = ({ onNavigate }) => {
   const [summary, setSummary] = React.useState<OperatorDashboardSummary | null>(null);
   const [loading, setLoading] = React.useState(true);
   const activityListRef = React.useRef<HTMLDivElement>(null);
@@ -108,7 +108,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
           <section className="tenant-health">
             <h3>Tenant Operational Status</h3>
             <div className="tenant-scroller">
-              {summary.tenantSummaries.map(t => (
+              {summary.tenantSummaries.map((t: TenantSummary) => (
                 <div key={t.tenantId} className={`t-row ${t.serviceStatus}`}>
                   <div className="t-brand" style={{ background: t.brandColor }}></div>
                   <div className="t-name">{t.tenantName}</div>
@@ -140,7 +140,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
           <section className="activity-center">
             <h3>Situational Activity Feed</h3>
             <div className="activity-list" ref={activityListRef}>
-              {summary.recentActivities.map((act, i) => (
+              {summary.recentActivities.map((act: RecentActivity, i: number) => (
                 <div key={i} className={`act-item ${act.type}`}>
                   <div className="act-icon">{getActivityIcon(act.type)}</div>
                   <div className="act-content">
@@ -248,4 +248,4 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
   );
 };
 
-export default DashboardPage;
+export default OperatorDashboard;

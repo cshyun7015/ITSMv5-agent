@@ -8,6 +8,7 @@ import java.util.List;
 @Builder
 public class OperatorDashboardDTO {
     
+    private java.util.Map<String, Long> ciDistribution;
     private long totalTenants;
     private long totalCatalogs;
     private long totalActiveIncidents;
@@ -35,6 +36,8 @@ public class OperatorDashboardDTO {
         private String serviceStatus; // GREEN, YELLOW, RED
         private long incidentCount;
         private String brandColor;
+        private long mttr; // in minutes
+        private double slaComplianceRate; // 0.0 to 100.0
     }
 
     @Getter

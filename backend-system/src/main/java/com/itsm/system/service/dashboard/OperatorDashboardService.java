@@ -42,7 +42,11 @@ public class OperatorDashboardService {
     private final ConfigurationItemRepository configurationItemRepository;
 
     @Transactional(readOnly = true)
-    public OperatorDashboardDTO getOperatorDashboardSummary(@NonNull Member currentMember) {
+    public OperatorDashboardDTO getOperatorDashboardSummary(
+            @NonNull Member currentMember, 
+            LocalDateTime startDate, 
+            LocalDateTime endDate) {
+        
         if (currentMember.getTenant() == null) {
             throw new IllegalArgumentException("Tenant information missing for member");
         }
@@ -50,7 +54,7 @@ public class OperatorDashboardService {
         Tenant currentTenant = tenantRepository.findById(tenantId)
                 .orElseThrow(() -> new RuntimeException("Tenant not found: " + tenantId));
 
-        // 권한 체크: MSP 또는 운영사 소속 사용자만 접근 가능
+        // Authority Check
         String currentTenantType = currentTenant.getType();
         if (!"MSP".equals(currentTenantType) && !"OPERATOR".equals(currentTenantType)) {
             throw new org.springframework.security.access.AccessDeniedException("Only MSP or Operators can access this dashboard");
@@ -60,12 +64,10 @@ public class OperatorDashboardService {
 
         List<Tenant> managedTenants;
         if ("MSP".equals(currentTenantType)) {
-            // MSP 관리자는 모든 테넌트 조회 (본인 제외)
             managedTenants = tenantRepository.findAll().stream()
                     .filter(t -> !"OPER_MSP".equals(t.getTenantId()))
                     .collect(Collectors.toList());
         } else {
-            // 개별 운영사는 본인이 관리하는 테넌트만 조회
             managedTenants = tenantRelationRepository.findByOperator_TenantId(currentTenantId).stream()
                     .map(TenantRelation::getCustomer)
                     .collect(Collectors.toList());
@@ -75,9 +77,16 @@ public class OperatorDashboardService {
                 .map(Tenant::getTenantId)
                 .collect(Collectors.toList());
 
+        // Baseline datasets
         List<Incident> allIncidents = incidentRepository.findAll().stream()
                 .filter(i -> managedTenantIds.contains(i.getTenant().getTenantId()))
                 .collect(Collectors.toList());
+
+        // Global CI Distribution (Customer Tenants ONLY)
+        java.util.Map<String, Long> ciDistribution = configurationItemRepository.findAll().stream()
+                .filter(ci -> managedTenantIds.contains(ci.getTenant().getTenantId()))
+                .filter(ci -> !ci.getIsDeleted())
+                .collect(Collectors.groupingBy(com.itsm.system.domain.cmdb.ConfigurationItem::getTypeCode, Collectors.counting()));
         
         List<Incident> activeIncidentsList = allIncidents.stream()
                 .filter(i -> i.getStatus() != IncidentStatus.RESOLVED && i.getStatus() != IncidentStatus.CLOSED)
@@ -87,7 +96,7 @@ public class OperatorDashboardService {
                 .filter(sr -> managedTenantIds.contains(sr.getTenant().getTenantId()))
                 .collect(Collectors.toList());
 
-        // 1. Core Metrics Aggregation
+        // 1. Core Metrics
         long totalTenants = managedTenants.size();
         long totalCatalogs = serviceCatalogRepository.countByIsTemplateTrue();
         long activeIncidents = activeIncidentsList.size();
@@ -118,12 +127,36 @@ public class OperatorDashboardService {
                 .filter(i -> i.getSlaDeadline() != null && i.getSlaDeadline().isBefore(slaThreshold))
                 .count();
 
-        // 3. Tenant Summaries
+        // 3. Tenant Summaries (with dynamic MTTR/SLA)
         List<OperatorDashboardDTO.TenantSummary> tenantSummaries = managedTenants.stream()
                 .map(tenant -> {
                     List<Incident> tenantIncidents = activeIncidentsList.stream()
                             .filter(i -> i.getTenant().getTenantId().equals(tenant.getTenantId()))
                             .collect(Collectors.toList());
+
+                    // Period-based Performance Analysis
+                    List<Incident> resolvedInPeriod = allIncidents.stream()
+                            .filter(i -> i.getTenant().getTenantId().equals(tenant.getTenantId()))
+                            .filter(i -> i.getStatus() == IncidentStatus.RESOLVED || i.getStatus() == IncidentStatus.CLOSED)
+                            .filter(i -> i.getResolvedAt() != null)
+                            .filter(i -> (startDate == null || !i.getResolvedAt().isBefore(startDate)) && 
+                                         (endDate == null || !i.getResolvedAt().isAfter(endDate)))
+                            .collect(Collectors.toList());
+
+                    long mttr = 0;
+                    double slaRate = 100.0;
+
+                    if (!resolvedInPeriod.isEmpty()) {
+                        long totalMinutes = resolvedInPeriod.stream()
+                                .mapToLong(i -> java.time.Duration.between(i.getCreatedAt(), i.getResolvedAt()).toMinutes())
+                                .sum();
+                        mttr = totalMinutes / resolvedInPeriod.size();
+
+                        long compliantCount = resolvedInPeriod.stream()
+                                .filter(i -> i.getSlaDeadline() == null || !i.getResolvedAt().isAfter(i.getSlaDeadline()))
+                                .count();
+                        slaRate = (compliantCount * 100.0) / resolvedInPeriod.size();
+                    }
 
                     String status = "GREEN";
                     if (tenantIncidents.stream().anyMatch(i -> i.getPriority() == IncidentPriority.P1)) {
@@ -138,11 +171,13 @@ public class OperatorDashboardService {
                             .serviceStatus(status)
                             .incidentCount(tenantIncidents.size())
                             .brandColor(tenant.getBrandColor())
+                            .mttr(mttr)
+                            .slaComplianceRate(Math.round(slaRate * 10.0) / 10.0)
                             .build();
                 })
                 .collect(Collectors.toList());
 
-        // 4. Activity Feed Aggregate
+        // 4. Activity Feed
         List<OperatorDashboardDTO.RecentActivity> recentActivities = incidentHistoryRepository.findTop15ByIncidentInOrderByCreatedAtDesc(allIncidents).stream()
                 .map(h -> {
                     String type = "ACTIVITY";
@@ -163,6 +198,7 @@ public class OperatorDashboardService {
                 .collect(Collectors.toList());
 
         return OperatorDashboardDTO.builder()
+                .ciDistribution(ciDistribution)
                 .totalTenants(totalTenants)
                 .totalCatalogs(totalCatalogs)
                 .totalActiveIncidents(activeIncidents)
