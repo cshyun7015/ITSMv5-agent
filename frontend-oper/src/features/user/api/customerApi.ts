@@ -40,5 +40,16 @@ export const customerApi = {
     createUser: async (data: any): Promise<Operator> => {
         const response = await apiClient.post<Operator>('/customer/users', data);
         return response.data;
+    },
+
+    // 테넌트(고객사) 생성
+    createTenant: async (data: { tenantId: string, name: string, type: 'CUSTOMER', brandColor?: string }): Promise<CustomerTenant> => {
+        const response = await apiClient.post<CustomerTenant>('/operator/tenants', data);
+        return response.data;
+    },
+
+    // 테넌트(고객사) 삭제
+    deleteTenant: async (tenantId: string): Promise<void> => {
+        await apiClient.delete(`/operator/tenants/${tenantId}`);
     }
 };

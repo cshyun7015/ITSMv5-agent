@@ -8,5 +8,6 @@ import lombok.Getter;
 public class TenantDTO {
     private String tenantId;
     private String name;
+    private String type;
     private String brandColor;
 }

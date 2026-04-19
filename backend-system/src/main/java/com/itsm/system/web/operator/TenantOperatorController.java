@@ -11,8 +11,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -92,10 +95,10 @@ public class TenantOperatorController {
         return ResponseEntity.ok(users);
     }
 
-    @org.springframework.web.bind.annotation.PostMapping
+    @PostMapping
     public ResponseEntity<?> createTenant(
             @AuthenticationPrincipal Member currentMember,
-            @org.springframework.web.bind.annotation.RequestBody TenantDTO tenantDTO) {
+            @RequestBody TenantDTO tenantDTO) {
         
         // MSP 관리자만 테넌트를 생성할 수 있음
         String currentTenantId = currentMember.getTenant().getTenantId();
@@ -109,10 +112,15 @@ public class TenantOperatorController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Tenant ID already exists");
         }
 
+        String type = tenantDTO.getType();
+        if (type == null || (!"OPERATOR".equals(type) && !"CUSTOMER".equals(type))) {
+            type = "OPERATOR"; // Default if missing or invalid
+        }
+
         Tenant newTenant = Tenant.builder()
                 .tenantId(tenantDTO.getTenantId())
                 .name(tenantDTO.getName())
-                .type("OPERATOR") // 운영사 추가 기능이므로 기본값 OPERATOR
+                .type(type)
                 .brandColor(tenantDTO.getBrandColor() != null ? tenantDTO.getBrandColor() : "#3b82f6")
                 .isActive(true)
                 .build();
@@ -122,7 +130,35 @@ public class TenantOperatorController {
         return ResponseEntity.status(HttpStatus.CREATED).body(TenantDTO.builder()
                 .tenantId(newTenant.getTenantId())
                 .name(newTenant.getName())
+                .type(newTenant.getType())
                 .brandColor(newTenant.getBrandColor())
                 .build());
+    }
+
+    @DeleteMapping("/{targetTenantId}")
+    public ResponseEntity<?> deleteTenant(
+            @AuthenticationPrincipal Member currentMember,
+            @PathVariable String targetTenantId) {
+        
+        // MSP 관리자만 테넌트를 삭제할 수 있음
+        String currentTenantId = currentMember.getTenant().getTenantId();
+        Tenant currentTenant = tenantRepository.findById(Objects.requireNonNull(currentTenantId)).orElseThrow();
+        
+        if (!"MSP".equals(currentTenant.getType())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Only MSP admins can delete tenants");
+        }
+
+        if (!tenantRepository.existsById(Objects.requireNonNull(targetTenantId))) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Tenant not found");
+        }
+
+        // MSP 테넌트 자체는 삭제 불가
+        if ("OPER_MSP".equals(targetTenantId)) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Default MSP tenant cannot be deleted");
+        }
+
+        tenantRepository.deleteById(Objects.requireNonNull(targetTenantId));
+
+        return ResponseEntity.ok().build();
     }
 }

@@ -4,6 +4,7 @@ import { Operator, Team } from '../../operator/types';
 import CustomerTeamSidebar from './CustomerTeamSidebar';
 import CustomerUserTable from './CustomerUserTable';
 import CustomerUserDrawer from './CustomerUserDrawer';
+import TenantFormModal from '../../operator/components/TenantFormModal';
 import ConfirmDialog from '../../../components/common/ConfirmDialog';
 import { useAuth } from '../../auth/context/AuthContext';
 
@@ -21,6 +22,7 @@ const UserManagement: React.FC = () => {
   const [selectedTeamId, setSelectedTeamId] = useState<number | null>(null);
   
   // Modal visibility
+  const [isTenantModalOpen, setIsTenantModalOpen] = useState(false);
   const [isUserDrawerOpen, setIsUserDrawerOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<Operator | undefined>();
   const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
@@ -114,6 +116,37 @@ const UserManagement: React.FC = () => {
       }
   };
 
+  const handleCreateTenant = async (data: { tenantId: string, name: string, brandColor: string }) => {
+    try {
+      await customerApi.createTenant({ ...data, type: 'CUSTOMER' });
+      setIsTenantModalOpen(false);
+      loadInitialData(); // Reload tenant list
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const handleDeleteTenant = (tenantId: string) => {
+    const tenantName = tenants.find(t => t.tenantId === tenantId)?.name || tenantId;
+    setConfirmConfig({
+      isOpen: true,
+      title: 'Delete Customer',
+      message: `Are you sure you want to delete customer "${tenantName}"? All associated data will be removed permanently.`,
+      onConfirm: async () => {
+        try {
+          await customerApi.deleteTenant(tenantId);
+          setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+          if (selectedTenantId === tenantId) {
+            setSelectedTenantId(null);
+          }
+          loadInitialData();
+        } catch (error) {
+          alert('Failed to delete customer.');
+        }
+      }
+    });
+  };
+
   const filteredUsers = selectedTeamId 
     ? users.filter(u => u.teamId === selectedTeamId)
     : users;
@@ -130,9 +163,12 @@ const UserManagement: React.FC = () => {
           selectedTeamId={selectedTeamId}
           onSelectTenant={setSelectedTenantId}
           onSelectTeam={setSelectedTeamId}
+          onAddTenant={() => setIsTenantModalOpen(true)}
+          onDeleteTenant={handleDeleteTenant}
           onAddTeam={handleCreateTeam}
           isLoading={isLoading}
           canManage={canManage}
+          isAdmin={user?.roles?.includes('ROLE_ADMIN') || false}
         />
 
         <div className="management-main">
@@ -211,6 +247,14 @@ const UserManagement: React.FC = () => {
                 handleRefresh();
             }}
           />
+      )}
+
+      {isTenantModalOpen && (
+        <TenantFormModal 
+          isOpen={isTenantModalOpen}
+          onClose={() => setIsTenantModalOpen(false)}
+          onSubmit={handleCreateTenant}
+        />
       )}
 
       <ConfirmDialog 

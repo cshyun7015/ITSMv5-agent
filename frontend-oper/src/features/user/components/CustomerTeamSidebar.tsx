@@ -9,9 +9,12 @@ interface CustomerTeamSidebarProps {
   selectedTeamId: number | null;
   onSelectTenant: (id: string) => void;
   onSelectTeam: (id: number | null) => void;
+  onAddTenant: () => void;
+  onDeleteTenant: (tenantId: string) => void;
   onAddTeam: () => void;
   isLoading: boolean;
   canManage: boolean;
+  isAdmin: boolean;
 }
 
 const CustomerTeamSidebar: React.FC<CustomerTeamSidebarProps> = ({
@@ -21,14 +24,22 @@ const CustomerTeamSidebar: React.FC<CustomerTeamSidebarProps> = ({
   selectedTeamId,
   onSelectTenant,
   onSelectTeam,
+  onAddTenant,
+  onDeleteTenant,
   onAddTeam,
   isLoading,
-  canManage
+  canManage,
+  isAdmin
 }) => {
   return (
     <aside className="management-sidebar">
       <div className="sidebar-group">
-        <h3 className="sidebar-title">Mapped Customers</h3>
+        <div className="sidebar-header">
+           <h3 className="sidebar-title">Mapped Customers</h3>
+           {isAdmin && (
+             <button className="add-team-btn" onClick={onAddTenant}>+</button>
+           )}
+        </div>
         <div className="sidebar-content">
           {tenants.map(t => (
             <div 
@@ -38,6 +49,18 @@ const CustomerTeamSidebar: React.FC<CustomerTeamSidebarProps> = ({
             >
               <span className="tenant-icon">🏢</span>
               <span className="tenant-name">{t.name}</span>
+              {isAdmin && (
+                <button 
+                  className="delete-tenant-btn" 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDeleteTenant(t.tenantId);
+                  }}
+                  title="Delete Customer"
+                >
+                  🗑️
+                </button>
+              )}
             </div>
           ))}
         </div>
@@ -105,11 +128,27 @@ const CustomerTeamSidebar: React.FC<CustomerTeamSidebarProps> = ({
         .team-name { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .org-tag { font-size: 10px; color: #64748b; }
         
-        .add-team-btn {
-          width: 24px; height: 24px; border-radius: 6px; background: rgba(59, 130, 246, 0.1);
-          border: 1px solid rgba(59, 130, 246, 0.2); color: #3b82f6; cursor: pointer; font-weight: bold;
-        }
         .add-team-btn:hover { background: #3b82f6; color: white; }
+
+        .delete-tenant-btn {
+          margin-left: auto;
+          background: transparent;
+          border: none;
+          color: #64748b;
+          cursor: pointer;
+          font-size: 12px;
+          opacity: 0;
+          transition: all 0.2s;
+          padding: 4px;
+          border-radius: 4px;
+        }
+        .tenant-item:hover .delete-tenant-btn {
+          opacity: 1;
+        }
+        .delete-tenant-btn:hover {
+          color: #f43f5e;
+          background: rgba(244, 63, 94, 0.1);
+        }
         
         .loading-text { font-size: 12px; color: #64748b; text-align: center; padding: 10px; }
       `}</style>
