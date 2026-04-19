@@ -79,12 +79,12 @@ public class OperatorDashboardService {
 
         // Baseline datasets
         List<Incident> allIncidents = incidentRepository.findAll().stream()
-                .filter(i -> managedTenantIds.contains(i.getTenant().getTenantId()))
+                .filter(i -> i.getTenant() != null && managedTenantIds.contains(i.getTenant().getTenantId()))
                 .collect(Collectors.toList());
 
         // Global CI Distribution (Customer Tenants ONLY)
         java.util.Map<String, Long> ciDistribution = configurationItemRepository.findAll().stream()
-                .filter(ci -> managedTenantIds.contains(ci.getTenant().getTenantId()))
+                .filter(ci -> ci.getTenant() != null && managedTenantIds.contains(ci.getTenant().getTenantId()))
                 .filter(ci -> !ci.getIsDeleted())
                 .collect(Collectors.groupingBy(com.itsm.system.domain.cmdb.ConfigurationItem::getTypeCode, Collectors.counting()));
         
@@ -111,7 +111,7 @@ public class OperatorDashboardService {
                 .count();
 
         long activeCIs = configurationItemRepository.findAll().stream()
-                .filter(ci -> managedTenantIds.contains(ci.getTenant().getTenantId()))
+                .filter(ci -> ci.getTenant() != null && managedTenantIds.contains(ci.getTenant().getTenantId()))
                 .filter(ci -> !ci.getIsDeleted())
                 .filter(ci -> "ACTIVE".equals(ci.getStatusCode()))
                 .count();
