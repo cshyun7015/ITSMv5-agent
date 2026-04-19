@@ -19,7 +19,7 @@ const CatalogBrowser: React.FC<CatalogBrowserProps> = ({ onSelectItem }) => {
   const loadCatalog = async () => {
     try {
       const data = await catalogApi.getMyCatalog();
-      setCatalog(data);
+      setCatalog(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Failed to load catalog', error);
     } finally {
@@ -30,8 +30,10 @@ const CatalogBrowser: React.FC<CatalogBrowserProps> = ({ onSelectItem }) => {
   const categories = ['ALL', ...Array.from(new Set(catalog.map(item => item.categoryName)))];
 
   const filteredItems = catalog.filter(item => {
-    const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                         item.description.toLowerCase().includes(searchTerm.toLowerCase());
+    const name = item.name || '';
+    const description = item.description || '';
+    const matchesSearch = name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                         description.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = selectedCategory === 'ALL' || item.categoryName === selectedCategory;
     return matchesSearch && matchesCategory;
   });

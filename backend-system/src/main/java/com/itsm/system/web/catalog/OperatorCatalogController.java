@@ -30,6 +30,7 @@ public class OperatorCatalogController {
     private final CatalogCategoryRepository catalogCategoryRepository;
     private final CatalogDeploymentService catalogDeploymentService;
     private final TenantRepository tenantRepository;
+    private final com.itsm.system.domain.request.ServiceRequestRepository serviceRequestRepository;
 
     private boolean isCustomerTenant(Member member) {
         if (member == null || member.getTenant() == null) {
@@ -116,6 +117,7 @@ public class OperatorCatalogController {
     }
 
     @DeleteMapping("/templates/{id}")
+    @Transactional
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteTemplate(
             @AuthenticationPrincipal @NonNull Member currentMember,
@@ -132,7 +134,28 @@ public class OperatorCatalogController {
             throw new IllegalArgumentException("Only templates can be deleted via this endpoint");
         }
 
+        // 1. Dependency Check (Self)
+        if (serviceRequestRepository.existsByCatalogId(id)) {
+            log.warn("Cannot delete template ID {}: already used by service requests", id);
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        }
+
+        // 2. Find and Check Deployments
+        List<ServiceCatalog> deployments = serviceCatalogRepository.findAllByTemplateSourceId(id);
+        for (ServiceCatalog deployment : deployments) {
+            if (serviceRequestRepository.existsByCatalogId(deployment.getId())) {
+                log.warn("Cannot delete template ID {}: deployment ID {} is used by service requests", id, deployment.getId());
+                return ResponseEntity.status(HttpStatus.CONFLICT).build();
+            }
+        }
+
+        // 3. Delete Deployments first
+        serviceCatalogRepository.deleteAll(Objects.requireNonNull(deployments));
+
+        // 4. Delete Template
         serviceCatalogRepository.delete(template);
+        
+        log.info("Successfully deleted template ID {} and its {} deployments", id, deployments.size());
         return ResponseEntity.ok().build();
     }
 

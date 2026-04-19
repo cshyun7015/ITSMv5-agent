@@ -15,4 +15,6 @@ public interface ServiceRequestRepository extends JpaRepository<ServiceRequest, 
 
     @Query("SELECT sr FROM ServiceRequest sr WHERE sr.tenant.tenantId IN :tenantIds AND sr.isDeleted = false")
     List<ServiceRequest> findByTenantIdIn(@Param("tenantIds") List<String> tenantIds);
+
+    boolean existsByCatalogId(Long catalogId);
 }
