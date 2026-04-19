@@ -6,6 +6,8 @@ import OperatorTable from './OperatorTable';
 import OperatorDrawer from './OperatorDrawer';
 import TenantFormModal from './TenantFormModal';
 import ConfirmDialog from '../../../components/common/ConfirmDialog';
+import ToastContainer from '../../../components/common/ToastContainer';
+import { useToast } from '../../../hooks/useToast';
 import { useAuth } from '../../auth/context/AuthContext';
 import { Tenant } from '../types';
 
@@ -16,6 +18,7 @@ interface Organization {
 
 const OperatorManagement: React.FC = () => {
   const { user } = useAuth();
+  const { toasts, removeToast, toast } = useToast();
   const canManage = user?.roles?.some(role => ['ROLE_ADMIN', 'ROLE_OPERATOR'].includes(role)) ?? false;
 
   const [operators, setOperators] = useState<Operator[]>([]);
@@ -114,9 +117,10 @@ const OperatorManagement: React.FC = () => {
         try {
           await operatorApi.deleteOperator(id);
           setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+          toast.success('Operator deleted successfully.');
           loadData();
         } catch (error) {
-          alert('Failed to delete operator');
+          toast.error('Failed to delete operator.');
         }
       }
     });
@@ -126,6 +130,7 @@ const OperatorManagement: React.FC = () => {
     try {
       await operatorApi.createTenant(data);
       setIsTenantModalOpen(false);
+      toast.success(`Operating company ${data.name} created successfully.`);
       loadData();
     } catch (error) {
       throw error;
@@ -161,9 +166,10 @@ const OperatorManagement: React.FC = () => {
           await operatorApi.deleteTeam(id);
           setConfirmConfig(prev => ({ ...prev, isOpen: false }));
           if (selectedTeamId === id) setSelectedTeamId(null);
+          toast.success('Team deleted successfully.');
           loadData();
         } catch (error: any) {
-          alert(error.response?.data?.message || 'Failed to delete team. Make sure it has no members.');
+          toast.error(error.response?.data?.message || 'Failed to delete team. Make sure it has no members.');
         }
       }
     });
@@ -174,13 +180,15 @@ const OperatorManagement: React.FC = () => {
     try {
         if (editingTeam) {
             await operatorApi.updateTeam(editingTeam.teamId, teamForm);
+            toast.success('Team updated successfully.');
         } else {
             await operatorApi.createTeam(teamForm);
+            toast.success('Team created successfully.');
         }
         setIsTeamModalOpen(false);
         loadData();
     } catch (error) {
-        alert('Failed to save team.');
+        toast.error('Failed to save team.');
     }
   };
 
@@ -190,8 +198,17 @@ const OperatorManagement: React.FC = () => {
     return true;
   });
 
+  // 현재 선택된 테넌트 (브랜드 색상 추출용)
+  const activeTenant = filterTenantId
+    ? tenants.find(t => t.tenantId === filterTenantId)
+    : null;
+  const brandColor = activeTenant?.brandColor || 'var(--primary, #3b82f6)';
+
   return (
-    <div className="management-page">
+    <div
+      className="management-page"
+      style={{ '--tenant-accent': brandColor } as React.CSSProperties}
+    >
       <div className="management-container">
         <TeamSidebar 
           teams={teams}
@@ -209,11 +226,44 @@ const OperatorManagement: React.FC = () => {
         <div className="management-main">
           <header className="management-header">
             <div className="header-info">
+              {/* ── Breadcrumb ── */}
+              {viewMode === 'operators' && user?.roles?.includes('ROLE_ADMIN') && (
+                <nav className="breadcrumb">
+                  <button
+                    className="breadcrumb-link"
+                    onClick={() => { setViewMode('tenants'); setFilterTenantId(null); }}
+                  >
+                    🏢 Companies
+                  </button>
+                  <span className="breadcrumb-sep">›</span>
+                  {activeTenant ? (
+                    <>
+                      <span
+                        className="breadcrumb-dot"
+                        style={{ background: brandColor }}
+                      />
+                      <span className="breadcrumb-current">{activeTenant.name}</span>
+                      <span className="breadcrumb-sep">›</span>
+                    </>
+                  ) : null}
+                  <span className="breadcrumb-current">Operators</span>
+                </nav>
+              )}
+
               <h2 className="header-title">
-                {selectedTeamId ? teams.find(t => t.teamId === selectedTeamId)?.name : 'All Operators'}
+                {viewMode === 'tenants'
+                  ? 'Operating Companies'
+                  : activeTenant
+                  ? `${activeTenant.name} — Operators`
+                  : selectedTeamId
+                  ? teams.find(t => t.teamId === selectedTeamId)?.name
+                  : 'All Operators'
+                }
               </h2>
               <p className="header-subtitle">
-                {selectedTeamId 
+                {viewMode === 'tenants'
+                  ? 'Select a company to manage its operators, or add a new one.'
+                  : selectedTeamId
                   ? teams.find(t => t.teamId === selectedTeamId)?.description || 'Administration for this operation team'
                   : 'Manage all security accounts and team assignments for the MSP portal.'}
               </p>
@@ -358,6 +408,8 @@ const OperatorManagement: React.FC = () => {
         onCancel={() => setConfirmConfig(prev => ({ ...prev, isOpen: false }))}
       />
 
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
+
       <style>{`
         .management-page {
           height: calc(100vh - 120px);
@@ -492,6 +544,30 @@ const OperatorManagement: React.FC = () => {
         .form-actions button { flex: 1; }
 
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* ── Breadcrumb ── */
+        .breadcrumb {
+          display: flex; align-items: center; gap: 6px;
+          margin-bottom: 8px;
+        }
+        .breadcrumb-link {
+          background: none; border: none;
+          color: var(--tenant-accent, #3b82f6);
+          font-size: 12px; font-weight: 700; cursor: pointer;
+          padding: 0; text-decoration: none; transition: opacity 0.2s;
+        }
+        .breadcrumb-link:hover { opacity: 0.75; }
+        .breadcrumb-sep { color: #475569; font-size: 14px; }
+        .breadcrumb-current {
+          font-size: 12px; color: #94a3b8; font-weight: 600;
+        }
+        .breadcrumb-dot {
+          width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+        }
+
+        /* ── Tenant-accent theming ── */
+        .btn-primary { background: var(--tenant-accent, var(--primary-gradient)); }
+        .toggle-btn.active { background: var(--tenant-accent, #3b82f6); }
 
         .view-mode-toggle {
           display: flex;
