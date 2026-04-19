@@ -12,10 +12,11 @@ import CatalogManagement from './features/catalog/components/CatalogManagement';
 import ChangeBoard from './features/change/components/ChangeBoard';
 import CIList from './features/cmdb/components/CIList';
 import OperatorManagement from './features/operator/components/OperatorManagement';
+import UserManagement from './features/user/components/UserManagement';
 
 const AdminCommandCenter: React.FC = () => {
   const { user, logout } = useAuth();
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'catalog' | 'cis' | 'changes' | 'codes' | 'fulfillment' | 'incidents' | 'opers'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'catalog' | 'cis' | 'changes' | 'codes' | 'fulfillment' | 'incidents' | 'opers' | 'users'>('dashboard');
   const [selectedRequestId, setSelectedRequestId] = useState<number | null>(null);
   const [selectedIncidentId, setSelectedIncidentId] = useState<number | null>(null);
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -28,7 +29,8 @@ const AdminCommandCenter: React.FC = () => {
     { id: 'changes', label: 'Changes', icon: '🔄' },
     { id: 'cis', label: 'CI', icon: '📦' },
     { id: 'codes', label: 'Codes', icon: '🏷️' },
-    { id: 'opers', label: 'Opers', icon: '👥' }
+    { id: 'opers', label: 'Opers', icon: '👥' },
+    { id: 'users', label: 'Users', icon: '👤' }
   ];
 
   return (
@@ -91,6 +93,8 @@ const AdminCommandCenter: React.FC = () => {
             <CodeManagement />
           ) : activeTab === 'opers' ? (
             <OperatorManagement />
+          ) : activeTab === 'users' ? (
+            <UserManagement />
           ) : activeTab === 'fulfillment' ? (
             <div className="fulfillment-section">
               {selectedRequestId ? (
