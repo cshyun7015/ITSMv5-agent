@@ -82,7 +82,11 @@ const AdminCommandCenter: React.FC = () => {
       <main className="main-content">
         <div className="workspace-panel">
           {activeTab === 'dashboard' ? (
-            <DashboardPage />
+            <DashboardPage onNavigate={(tab) => {
+              setActiveTab(tab as any);
+              setSelectedIncidentId(null);
+              setSelectedRequestId(null);
+            }} />
           ) : activeTab === 'cis' ? (
             <CIList />
           ) : activeTab === 'catalog' ? (

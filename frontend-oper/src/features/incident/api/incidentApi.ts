@@ -1,5 +1,5 @@
 import apiClient from '../../../api/client';
-import { Incident, IncidentReportRequest } from '../types';
+import { Incident, IncidentReportRequest, IncidentHistory } from '../types';
 
 export const incidentApi = {
   // 전체 인시던트 목록 조회
@@ -51,5 +51,22 @@ export const incidentApi = {
   getOperators: async (): Promise<any[]> => {
     const response = await apiClient.get<any[]>('/members/operators');
     return response.data;
+  },
+
+  // 인시던트 히스토리 조회
+  getHistory: async (id: number): Promise<IncidentHistory[]> => {
+    const response = await apiClient.get<IncidentHistory[]>(`/incidents/${id}/history`);
+    return response.data;
+  },
+
+  // 작업 노트 추가 (갱신된 인시던트 반환)
+  addWorkNote: async (id: number, note: string): Promise<Incident> => {
+    const response = await apiClient.post<Incident>(`/incidents/${id}/notes`, { note });
+    return response.data;
+  },
+
+  // 인시던트 종료
+  close: async (id: number): Promise<void> => {
+    await apiClient.post(`/incidents/${id}/close`);
   }
 };

@@ -24,6 +24,16 @@ export interface Incident {
   createdAt: string;
 }
 
+export interface IncidentHistory {
+  id: number;
+  authorName: string;
+  type: 'STATUS_CHANGE' | 'ASSIGNMENT' | 'WORK_NOTE' | 'SYSTEM_LOG';
+  note: string;
+  oldValue?: string;
+  newValue?: string;
+  createdAt: string;
+}
+
 export interface IncidentReportRequest {
   tenantId: string;
   title: string;

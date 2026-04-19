@@ -76,5 +76,28 @@ public class IncidentDTO {
         private String resolution;
         private LocalDateTime slaDeadline;
         private LocalDateTime createdAt;
+        private String syncId;
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class WorkNoteRequest {
+        @NotBlank(message = "Note is required")
+        private String note;
+    }
+
+    @Getter
+    @Builder
+    public static class HistoryResponse {
+        private Long id;
+        private String authorName;
+        private String type;
+        private String note;
+        private String oldValue;
+        private String newValue;
+        private LocalDateTime createdAt;
     }
 }

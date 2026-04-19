@@ -1,7 +1,11 @@
 import React from 'react';
 import { dashboardApi, OperatorDashboardSummary } from '../api/dashboardApi';
 
-const DashboardPage: React.FC = () => {
+interface DashboardPageProps {
+  onNavigate?: (tab: string) => void;
+}
+
+const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
   const [summary, setSummary] = React.useState<OperatorDashboardSummary | null>(null);
   const [logs, setLogs] = React.useState<string[]>([]);
   const [loading, setLoading] = React.useState(true);
@@ -56,42 +60,51 @@ const DashboardPage: React.FC = () => {
       </header>
 
       <section className="stats-section">
-        <div className="stat-card tenants">
+        <div className="stat-card tenants clickable" onClick={() => onNavigate?.('opers')}>
           <div className="stat-header">
             <span className="icon">🏢</span>
             <span className="label">Managed Tenants</span>
           </div>
           <span className="value">{summary.totalTenants}</span>
         </div>
-        <div className="stat-card catalogs">
+        <div className="stat-card catalogs clickable" onClick={() => onNavigate?.('catalog')}>
           <div className="stat-header">
             <span className="icon">📋</span>
             <span className="label">Service Catalogs</span>
           </div>
           <span className="value">{summary.totalCatalogs}</span>
         </div>
-        <div className={`stat-card requests ${summary.totalActiveRequests > 0 ? 'active' : ''}`}>
+        <div 
+          className={`stat-card requests ${summary.totalActiveRequests > 0 ? 'active' : ''} clickable`}
+          onClick={() => onNavigate?.('fulfillment')}
+        >
           <div className="stat-header">
             <span className="icon">📩</span>
             <span className="label">Active Requests</span>
           </div>
           <span className="value">{summary.totalActiveRequests}</span>
         </div>
-        <div className={`stat-card incidents ${summary.totalActiveIncidents > 0 ? 'risk' : ''}`}>
+        <div 
+          className={`stat-card incidents ${summary.totalActiveIncidents > 0 ? 'risk' : ''} clickable`}
+          onClick={() => onNavigate?.('incidents')}
+        >
           <div className="stat-header">
             <span className="icon">⚠️</span>
             <span className="label">Active Incidents</span>
           </div>
           <span className="value">{summary.totalActiveIncidents}</span>
         </div>
-        <div className={`stat-card changes ${summary.totalActiveChanges > 0 ? 'process' : ''}`}>
+        <div 
+          className={`stat-card changes ${summary.totalActiveChanges > 0 ? 'process' : ''} clickable`}
+          onClick={() => onNavigate?.('changes')}
+        >
           <div className="stat-header">
             <span className="icon">🔄</span>
             <span className="label">Active Changes</span>
           </div>
           <span className="value">{summary.totalActiveChanges}</span>
         </div>
-        <div className="stat-card cis">
+        <div className="stat-card cis clickable" onClick={() => onNavigate?.('cis')}>
           <div className="stat-header">
             <span className="icon">📦</span>
             <span className="label">Active CI (Assets)</span>
@@ -208,6 +221,7 @@ const DashboardPage: React.FC = () => {
           background: rgba(30, 41, 59, 0.9);
           box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
         }
+        .stat-card.clickable { cursor: pointer; }
 
         .stat-header {
           display: flex;

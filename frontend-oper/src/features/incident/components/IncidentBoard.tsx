@@ -11,6 +11,10 @@ const IncidentBoard: React.FC<IncidentBoardProps> = ({ onSelectIncident }) => {
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  
+  const [filterTenant, setFilterTenant] = useState('');
+  const [filterStatus, setFilterStatus] = useState('');
+  const [filterPriority, setFilterPriority] = useState('');
 
   useEffect(() => {
     loadIncidents();
@@ -41,19 +45,26 @@ const IncidentBoard: React.FC<IncidentBoardProps> = ({ onSelectIncident }) => {
 
   if (isLoading) return <div className="loading">Initializing Mission Control...</div>;
 
-  const activeIncidents = incidents.filter(i => i.status !== 'CLOSED');
+  const filteredIncidents = incidents.filter(i => {
+    if (filterTenant && i.tenantId !== filterTenant) return false;
+    if (filterStatus && i.status !== filterStatus) return false;
+    if (filterPriority && i.priority !== filterPriority) return false;
+    return i.status !== 'CLOSED';
+  });
+
+  const tenants = Array.from(new Set(incidents.map(i => i.tenantId)));
 
   return (
     <div className="incident-board">
       <div className="board-header">
         <div className="title-area">
           <h2>Active Incidents</h2>
-          <span className="count-badge">{activeIncidents.length} Issues</span>
+          <span className="count-badge">{filteredIncidents.length} Issues</span>
         </div>
         <div className="board-actions">
           <div className="stats-box">
-            <div className="stat critical">P1: {incidents.filter(i => i.priority === 'P1').length}</div>
-            <div className="stat high">P2: {incidents.filter(i => i.priority === 'P2').length}</div>
+            <div className="stat critical">P1: {incidents.filter(i => i.priority === 'P1' && i.status !== 'CLOSED').length}</div>
+            <div className="stat high">P2: {incidents.filter(i => i.priority === 'P2' && i.status !== 'CLOSED').length}</div>
           </div>
           <button className="btn-register" onClick={() => setIsModalOpen(true)}>
             + Register Incident
@@ -61,8 +72,45 @@ const IncidentBoard: React.FC<IncidentBoardProps> = ({ onSelectIncident }) => {
         </div>
       </div>
 
+      <div className="filter-bar">
+        <div className="filter-group">
+          <label>Tenant</label>
+          <select value={filterTenant} onChange={e => setFilterTenant(e.target.value)}>
+            <option value="">All Tenants</option>
+            {tenants.map(t => <option key={t} value={t}>{t}</option>)}
+          </select>
+        </div>
+        <div className="filter-group">
+          <label>Status</label>
+          <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
+            <option value="">All Status</option>
+            <option value="NEW">New</option>
+            <option value="ASSIGNED">Assigned</option>
+            <option value="IN_PROGRESS">In Progress</option>
+            <option value="RESOLVED">Resolved</option>
+          </select>
+        </div>
+        <div className="filter-group">
+          <label>Priority</label>
+          <select value={filterPriority} onChange={e => setFilterPriority(e.target.value)}>
+            <option value="">All Priority</option>
+            <option value="P1">P1 - Critical</option>
+            <option value="P2">P2 - High</option>
+            <option value="P3">P3 - Medium</option>
+            <option value="P4">P4 - Low</option>
+          </select>
+        </div>
+        {(filterTenant || filterStatus || filterPriority) && (
+          <button className="btn-clear-filters" onClick={() => {
+            setFilterTenant('');
+            setFilterStatus('');
+            setFilterPriority('');
+          }}>Reset</button>
+        )}
+      </div>
+
       <div className="incident-list">
-        {activeIncidents.map(incident => (
+        {filteredIncidents.map(incident => (
           <div 
             key={incident.incidentId} 
             className={`incident-item ${getPriorityClass(incident.priority, incident.status)}`}
@@ -86,11 +134,11 @@ const IncidentBoard: React.FC<IncidentBoardProps> = ({ onSelectIncident }) => {
           </div>
         ))}
 
-        {activeIncidents.length === 0 && (
+        {filteredIncidents.length === 0 && (
           <div className="all-clear">
             <div className="icon">✅</div>
             <h3>All Systems Operational</h3>
-            <p>No active incidents detected in any tenant cluster.</p>
+            <p>No active incidents detected for current filters.</p>
           </div>
         )}
       </div>
@@ -101,10 +149,43 @@ const IncidentBoard: React.FC<IncidentBoardProps> = ({ onSelectIncident }) => {
         .title-area { display: flex; align-items: center; gap: 12px; }
         .count-badge { background: rgba(255,255,255,0.1); padding: 4px 10px; border-radius: 20px; font-size: 14px; color: #94a3b8; }
         
-        .stats-box { display: flex; gap: 16px; }
-        .stat { padding: 4px 12px; border-radius: 6px; font-weight: 700; font-size: 13px; }
-        .stat.critical { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
-        .stat.high { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+        .stats-box { display: flex; gap: 12px; align-items: center; }
+        .stat { padding: 5px 12px; border-radius: 6px; font-weight: 700; font-size: 12px; letter-spacing: 0.5px; }
+        .stat.critical { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+        .stat.high { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+
+        .board-actions { display: flex; align-items: center; gap: 20px; }
+        .btn-register {
+          background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+          color: white; border: none; padding: 8px 18px; border-radius: 8px;
+          font-weight: 700; font-size: 13px; cursor: pointer;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+          display: flex; align-items: center; gap: 8px;
+        }
+        .btn-register:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+          filter: brightness(1.1);
+        }
+        .btn-register:active { transform: translateY(0); }
+
+        .filter-bar {
+          display: flex; gap: 20px; align-items: flex-end; margin-bottom: 24px;
+          padding: 16px; background: rgba(255,255,255,0.03); border-radius: 12px;
+          border: 1px solid rgba(255,255,255,0.05);
+        }
+        .filter-group { display: flex; flex-direction: column; gap: 6px; }
+        .filter-group label { font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; }
+        .filter-group select {
+          background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.1);
+          color: white; padding: 6px 12px; border-radius: 6px; font-size: 13px; min-width: 140px;
+        }
+        .btn-clear-filters {
+          padding: 6px 12px; background: transparent; border: 1px solid rgba(255,255,255,0.1);
+          color: #94a3b8; border-radius: 6px; font-size: 12px; cursor: pointer; transition: all 0.2s;
+        }
+        .btn-clear-filters:hover { background: rgba(255,255,255,0.05); color: white; }
 
         .incident-list { display: flex; flex-direction: column; gap: 12px; }
         .incident-item { 
@@ -157,24 +238,6 @@ const IncidentBoard: React.FC<IncidentBoardProps> = ({ onSelectIncident }) => {
           onSuccess={loadIncidents} 
         />
       )}
-
-      <style>{`
-        .incident-board { width: 100%; }
-        .board-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
-        .title-area { display: flex; align-items: center; gap: 12px; }
-        .count-badge { background: rgba(255,255,255,0.1); padding: 4px 10px; border-radius: 20px; font-size: 14px; color: #94a3b8; }
-        
-        .board-actions { display: flex; align-items: center; gap: 20px; }
-        .btn-register { 
-          background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; border: none; 
-          padding: 10px 18px; border-radius: 10px; font-weight: 700; font-size: 14px; 
-          cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
-        }
-        .btn-register:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(37, 99, 235, 0.4); }
-
-        .stats-box { display: flex; gap: 16px; }
-        .stat { padding: 4px 12px; border-radius: 6px; font-weight: 700; font-size: 13px; }
-      `}</style>
     </div>
   );
 };

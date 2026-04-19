@@ -18,9 +18,12 @@ const IncidentDetail: React.FC<IncidentDetailProps> = ({ incidentId, onBack, onU
   
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [history, setHistory] = useState<any[]>([]);
+  const [workNote, setWorkNote] = useState('');
 
   useEffect(() => {
     loadIncident();
+    loadHistory();
   }, [incidentId]);
 
   const loadIncident = async () => {
@@ -36,11 +39,37 @@ const IncidentDetail: React.FC<IncidentDetailProps> = ({ incidentId, onBack, onU
     }
   };
 
+  const loadHistory = async () => {
+    try {
+      const data = await incidentApi.getHistory(incidentId);
+      setHistory(data);
+    } catch (error) {
+      console.error('Failed to load history', error);
+    }
+  };
+
+  const handleAddNote = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!workNote.trim()) return;
+    setIsSubmitting(true);
+    try {
+      // Backend now returns the updated incident — use it directly to avoid race condition
+      const updatedIncident = await incidentApi.addWorkNote(incidentId, workNote);
+      setIncident(updatedIncident);
+      setWorkNote('');
+      await loadHistory();
+    } catch (error) {
+      alert('Failed to add note');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleAssign = async () => {
     setIsSubmitting(true);
     try {
       await incidentApi.assign(incidentId);
-      await loadIncident();
+      await Promise.all([loadIncident(), loadHistory()]);
       onUpdated();
     } catch (error) {
       alert('Failed to assign incident');
@@ -57,10 +86,23 @@ const IncidentDetail: React.FC<IncidentDetailProps> = ({ incidentId, onBack, onU
     setIsSubmitting(true);
     try {
       await incidentApi.resolve(incidentId, resolution);
-      await loadIncident();
+      await Promise.all([loadIncident(), loadHistory()]);
       onUpdated();
     } catch (error) {
       alert('Failed to resolve incident');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleClose = async () => {
+    setIsSubmitting(true);
+    try {
+      await incidentApi.close(incidentId);
+      await Promise.all([loadIncident(), loadHistory()]);
+      onUpdated();
+    } catch (error) {
+      alert('Failed to close incident');
     } finally {
       setIsSubmitting(false);
     }
@@ -78,6 +120,16 @@ const IncidentDetail: React.FC<IncidentDetailProps> = ({ incidentId, onBack, onU
 
   if (isLoading) return <div className="loading">Retrieving telemetry data...</div>;
   if (!incident) return <div className="loading">Incident not found.</div>;
+
+  const getHistoryIcon = (type: string) => {
+    switch (type) {
+      case 'STATUS_CHANGE': return '🔄';
+      case 'ASSIGNMENT': return '👤';
+      case 'WORK_NOTE': return '📝';
+      case 'SYSTEM_LOG': return '🤖';
+      default: return '📍';
+    }
+  };
 
   return (
     <div className="incident-detail">
@@ -120,6 +172,47 @@ const IncidentDetail: React.FC<IncidentDetailProps> = ({ incidentId, onBack, onU
             ) : (
               <div className="resolution-view">{incident.resolution}</div>
             )}
+          </section>
+
+          <section className="history-section">
+            <div className="section-header">
+              <h3>Collaboration & Audit Trail</h3>
+            </div>
+            
+            <form onSubmit={handleAddNote} className="work-note-form">
+              <textarea 
+                placeholder="Add a work note for other operators..."
+                value={workNote}
+                onChange={e => setWorkNote(e.target.value)}
+                disabled={isSubmitting}
+              />
+              <button type="submit" className="btn-add-note" disabled={isSubmitting || !workNote.trim()}>
+                Post Note
+              </button>
+            </form>
+
+            <div className="timeline-container">
+              {history.map((h) => (
+                <div key={h.id} className={`timeline-item ${h.type.toLowerCase()}`}>
+                  <div className="timeline-icon">{getHistoryIcon(h.type)}</div>
+                  <div className="timeline-content">
+                    <div className="timeline-meta">
+                      <span className="author">{h.authorName}</span>
+                      <span className="dot">•</span>
+                      <span className="time">{new Date(h.createdAt).toLocaleString()}</span>
+                    </div>
+                    <div className="timeline-note">{h.note}</div>
+                    {(h.oldValue || h.newValue) && (
+                      <div className="timeline-values">
+                        <span className="old">{h.oldValue || 'None'}</span>
+                        <span className="arrow">→</span>
+                        <span className="new">{h.newValue}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
           </section>
         </div>
 
@@ -179,6 +272,11 @@ const IncidentDetail: React.FC<IncidentDetailProps> = ({ incidentId, onBack, onU
             {(incident.status === 'ASSIGNED' || incident.status === 'IN_PROGRESS') && (
               <button className="btn-resolve" onClick={handleResolve} disabled={isSubmitting}>
                 Complete Resolution
+              </button>
+            )}
+            {incident.status === 'RESOLVED' && (
+              <button className="btn-close-action" onClick={handleClose} disabled={isSubmitting}>
+                Close Incident
               </button>
             )}
           </div>
@@ -255,6 +353,56 @@ const IncidentDetail: React.FC<IncidentDetailProps> = ({ incidentId, onBack, onU
         .btn-assign:hover { background: #2563eb; transform: translateY(-2px); }
         .btn-resolve { background: #10b981; color: white; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); }
         .btn-resolve:hover { background: #059669; transform: translateY(-2px); }
+        .btn-close-action { background: #475569; color: white; box-shadow: 0 4px 15px rgba(71, 85, 105, 0.3); }
+        .btn-close-action:hover { background: #334155; transform: translateY(-2px); }
+
+        .value-badge.IN_PROGRESS { background: #f59e0b; color: white; }
+        .value-badge.CLOSED { background: #1e293b; color: #94a3b8; border: 1px solid rgba(255,255,255,0.1); }
+
+        /* History & Timeline Styles */
+        .history-section { margin-top: 32px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 32px; }
+        .work-note-form { margin-bottom: 32px; display: flex; flex-direction: column; gap: 12px; }
+        .work-note-form textarea {
+          width: 100%; min-height: 80px; background: rgba(15, 23, 42, 0.5); border: 1px solid rgba(255,255,255,0.1);
+          border-radius: 8px; color: white; padding: 12px; font-size: 14px; resize: vertical;
+        }
+        .btn-add-note { align-self: flex-end; padding: 8px 20px; background: #6366f1; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; }
+        .btn-add-note:disabled { background: #334155; cursor: not-allowed; }
+
+        .timeline-container { display: flex; flex-direction: column; gap: 24px; padding-left: 12px; }
+        .timeline-item { display: flex; gap: 20px; position: relative; }
+        .timeline-item::before {
+          content: ''; position: absolute; left: 14px; top: 30px; bottom: -24px;
+          width: 2px; background: rgba(255,255,255,0.03);
+        }
+        .timeline-item:last-child::before { display: none; }
+        
+        .timeline-icon {
+          width: 30px; height: 30px; border-radius: 50%; background: #1e293b;
+          display: flex; align-items: center; justify-content: center; font-size: 14px;
+          border: 1px solid rgba(255,255,255,0.05); z-index: 1;
+        }
+        .timeline-content { flex: 1; min-width: 0; }
+        .timeline-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+        .timeline-meta .author { font-size: 13px; font-weight: 700; color: #e2e8f0; }
+        .timeline-meta .dot { color: #475569; }
+        .timeline-meta .time { font-size: 11px; color: #64748b; }
+        
+        .timeline-note { font-size: 14px; color: #cbd5e1; line-height: 1.5; white-space: pre-wrap; }
+        
+        .timeline-values {
+          margin-top: 8px; display: flex; align-items: center; gap: 12px;
+          background: rgba(0,0,0,0.2); padding: 6px 12px; border-radius: 6px;
+          font-family: monospace; font-size: 12px; width: fit-content;
+        }
+        .timeline-values .old { color: #94a3b8; text-decoration: line-through; }
+        .timeline-values .arrow { color: #475569; }
+        .timeline-values .new { color: #3b82f6; font-weight: 700; }
+
+        /* Color Coding for Timeline */
+        .timeline-item.status_change .timeline-icon { border-color: #fbbf24; }
+        .timeline-item.assignment .timeline-icon { border-color: #3b82f6; }
+        .timeline-item.work_note .timeline-content { background: rgba(99, 102, 241, 0.03); padding: 12px; border-radius: 8px; border: 1px solid rgba(99, 102, 241, 0.1); }
       `}</style>
     </div>
   );
