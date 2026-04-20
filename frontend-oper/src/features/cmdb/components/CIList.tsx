@@ -10,7 +10,7 @@ import { useToast } from '../../../hooks/useToast';
 
 const CIList: React.FC = () => {
   const { user } = useAuth();
-  const { addToast } = useToast();
+  const { toast } = useToast();
   const [cis, setCIs] = useState<ConfigurationItem[]>([]);
   const [tenants, setTenants] = useState<any[]>([]);
   const [selectedTenantId, setSelectedTenantId] = useState<string>('');
@@ -54,7 +54,7 @@ const CIList: React.FC = () => {
       setCIs(data);
     } catch (error) {
       console.error('Failed to load CIs');
-      addToast('critical', 'Failed to load assets');
+      toast.error('Failed to load assets');
     } finally {
       setIsLoading(false);
     }
@@ -64,15 +64,15 @@ const CIList: React.FC = () => {
     if (isDiscovering) return;
     
     setIsDiscovering(true);
-    addToast('info', 'Starting Infrastructure Scan via Ansible...');
+    toast.info('Starting Infrastructure Scan via Ansible...');
     
     try {
       await ciApi.runAnsibleDiscovery(selectedTenantId);
-      addToast('success', 'Scan completed! Refreshing configuration items...');
+      toast.success('Scan completed! Refreshing configuration items...');
       await loadCIs();
     } catch (error) {
       console.error('Discovery failed', error);
-      addToast('critical', 'Infrastructure scan failed. Check Ansible connectivity.');
+      toast.error('Infrastructure scan failed. Check Ansible connectivity.');
     } finally {
       setIsDiscovering(false);
     }
@@ -113,10 +113,10 @@ const CIList: React.FC = () => {
       await Promise.all(selectedIds.map(id => ciApi.deleteCI(id, false)));
       loadCIs();
       setSelectedIds([]);
-      addToast('success', 'Assets deleted successfully');
+      toast.success('Assets deleted successfully');
     } catch (error) {
       console.error('Bulk delete failed');
-      addToast('critical', 'Bulk delete failed');
+      toast.error('Bulk delete failed');
     }
   };
 
