@@ -143,3 +143,4 @@ backend-system/build/
 backend-system/bin/
 e2e/test-results/
 e2e/playwright-report/
+infra/ansible/ssh/
