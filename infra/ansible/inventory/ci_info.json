@@ -1,0 +1,35 @@
+[
+    {
+        "architecture": "ARM 64-bit Processor",
+        "cpu_cores": "2",
+        "hostname": "DESKTOP-9TUE1UM",
+        "ip_address": "192.168.55.102",
+        "kernel": "10.0.26200.0",
+        "last_scanned": "2026-04-20T12:33:29",
+        "memory_mb": "4091",
+        "os_distro": "Microsoft Windows 11 Pro 10.0.26200.0",
+        "os_family": "Windows"
+    },
+    {
+        "architecture": "aarch64",
+        "cpu_cores": "2",
+        "hostname": "oper",
+        "ip_address": "192.168.55.101",
+        "kernel": "6.8.0-110-generic",
+        "last_scanned": "2026-04-20T12:33:29",
+        "memory_mb": "3899",
+        "os_distro": "Ubuntu 24.04",
+        "os_family": "Debian"
+    },
+    {
+        "architecture": "aarch64",
+        "cpu_cores": "2",
+        "hostname": "rocky10",
+        "ip_address": "192.168.55.103",
+        "kernel": "6.12.0-124.8.1.el10_1.aarch64",
+        "last_scanned": "2026-04-20T12:33:29",
+        "memory_mb": "2635",
+        "os_distro": "Rocky 10.1",
+        "os_family": "RedHat"
+    }
+]

@@ -5,14 +5,17 @@ import { ConfigurationItem } from '../types';
 import CIFormModal from './CIFormModal';
 import CIQuickStats from './CIQuickStats';
 import { useAuth } from '../../auth/context/AuthContext';
+import { useToast } from '../../../hooks/useToast';
 
 
 const CIList: React.FC = () => {
   const { user } = useAuth();
+  const { addToast } = useToast();
   const [cis, setCIs] = useState<ConfigurationItem[]>([]);
   const [tenants, setTenants] = useState<any[]>([]);
   const [selectedTenantId, setSelectedTenantId] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
+  const [isDiscovering, setIsDiscovering] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCI, setSelectedCI] = useState<ConfigurationItem | undefined>();
   
@@ -21,8 +24,6 @@ const CIList: React.FC = () => {
   const [typeFilter, setTypeFilter] = useState('ALL');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
-
-
 
   useEffect(() => {
     fetchTenants();
@@ -53,8 +54,27 @@ const CIList: React.FC = () => {
       setCIs(data);
     } catch (error) {
       console.error('Failed to load CIs');
+      addToast('critical', 'Failed to load assets');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleRunDiscovery = async () => {
+    if (isDiscovering) return;
+    
+    setIsDiscovering(true);
+    addToast('info', 'Starting Infrastructure Scan via Ansible...');
+    
+    try {
+      await ciApi.runAnsibleDiscovery(selectedTenantId);
+      addToast('success', 'Scan completed! Refreshing configuration items...');
+      await loadCIs();
+    } catch (error) {
+      console.error('Discovery failed', error);
+      addToast('critical', 'Infrastructure scan failed. Check Ansible connectivity.');
+    } finally {
+      setIsDiscovering(false);
     }
   };
 
@@ -93,8 +113,10 @@ const CIList: React.FC = () => {
       await Promise.all(selectedIds.map(id => ciApi.deleteCI(id, false)));
       loadCIs();
       setSelectedIds([]);
+      addToast('success', 'Assets deleted successfully');
     } catch (error) {
       console.error('Bulk delete failed');
+      addToast('critical', 'Bulk delete failed');
     }
   };
 
@@ -138,6 +160,13 @@ const CIList: React.FC = () => {
           <span className="ci-count">{filteredCIs.length} of {cis.length} Assets</span>
         </div>
         <div className="board-actions">
+          <button 
+            className={`btn-scan ${isDiscovering ? 'loading' : ''}`} 
+            onClick={handleRunDiscovery}
+            disabled={isDiscovering}
+          >
+            {isDiscovering ? '⚡ Scanning...' : '🔍 Scan Infrastructure'}
+          </button>
           <button className="btn-register" onClick={() => handleOpenModal()}>
             + Register CI
           </button>
@@ -280,6 +309,15 @@ const CIList: React.FC = () => {
           transition: all 0.2s; box-shadow: 0 4px 15px rgba(37, 99, 235, 0.2);
         }
         .btn-register:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(37, 99, 235, 0.3); }
+
+        .btn-scan {
+          background: rgba(255, 255, 255, 0.05); color: #94a3b8; border: 1px solid rgba(255, 255, 255, 0.1);
+          padding: 10px 20px; border-radius: 12px; font-weight: 700; cursor: pointer;
+          transition: all 0.2s; display: flex; align-items: center; gap: 8px;
+        }
+        .btn-scan:hover:not(:disabled) { background: rgba(59, 130, 246, 0.1); border-color: #3b82f6; color: #fff; }
+        .btn-scan.loading { color: #3b82f6; border-color: #3b82f6; cursor: wait; }
+        .btn-scan:disabled { opacity: 0.6; cursor: not-allowed; }
 
         .bulk-action-bar { 
           background: #3b82f6; border-radius: 12px; padding: 12px 24px; margin-bottom: 24px; 

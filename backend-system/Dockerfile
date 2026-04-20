@@ -13,6 +13,9 @@ RUN gradle bootJar -x test --no-daemon
 FROM eclipse-temurin:17-jre-jammy
 WORKDIR /app
 
+# Docker 클라이언트 설치 (Docker 소켓 통신용)
+RUN apt-get update && apt-get install -y docker.io && rm -rf /var/lib/apt/lists/*
+
 # 빌드 결과물 복사
 COPY --from=build /app/build/libs/*.jar app.jar
 

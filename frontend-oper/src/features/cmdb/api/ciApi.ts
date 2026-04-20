@@ -29,5 +29,10 @@ export const ciApi = {
   // CI 삭제 (논리 삭제 또는 물리 삭제 선택)
   deleteCI: async (id: number, hard: boolean = false): Promise<void> => {
     await apiClient.delete(`/cis/${id}?hard=${hard}`);
+  },
+
+  // Ansible 기반 인프라 구성 정보 자동 수집 (Discovery)
+  runAnsibleDiscovery: async (tenantId: string): Promise<void> => {
+    await apiClient.post(`/cis/discovery/ansible?tenantId=${tenantId}`);
   }
 };

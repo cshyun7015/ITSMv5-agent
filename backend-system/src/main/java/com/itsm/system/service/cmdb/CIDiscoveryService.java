@@ -14,6 +14,65 @@ import java.util.Map;
 public class CIDiscoveryService {
 
     private final ConfigurationItemRepository configurationItemRepository;
+    private final com.fasterxml.jackson.databind.ObjectMapper objectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
+
+    @org.springframework.transaction.annotation.Transactional
+    public void runAnsibleDiscovery(String tenantId) {
+        try {
+            // 1. Execute Ansible Playbook via Docker
+            ProcessBuilder pb = new ProcessBuilder(
+                "docker", "exec", "ansible", "ansible-playbook", "playbooks/collect_ci_info.yml"
+            );
+            pb.inheritIO();
+            Process process = pb.start();
+            int exitCode = process.waitFor();
+            
+            if (exitCode != 0) {
+                throw new RuntimeException("Ansible discovery failed with exit code: " + exitCode);
+            }
+
+            // 2. Read Results from shared volume (/ansible/inventory/ci_info.json)
+            java.io.File resultFile = new java.io.File("/ansible/inventory/ci_info.json");
+            if (!resultFile.exists()) {
+                throw new RuntimeException("Discovery result file not found at /ansible/inventory/ci_info.json");
+            }
+
+            List<Map<String, Object>> discoveryData = objectMapper.readValue(
+                resultFile, 
+                new com.fasterxml.jackson.core.type.TypeReference<List<Map<String, Object>>>() {}
+            );
+
+            // 3. Update CMDB
+            List<ConfigurationItem> existingCis = configurationItemRepository.findAllWithDetailsByTenantId(tenantId);
+            
+            for (Map<String, Object> data : discoveryData) {
+                String hostname = (String) data.get("hostname");
+                String ipAddress = (String) data.get("ip_address");
+                
+                java.util.Optional<ConfigurationItem> targetCi = existingCis.stream()
+                    .filter(ci -> ci.getName().equalsIgnoreCase(hostname) || 
+                                 (ci.getConfigJson() != null && ci.getConfigJson().contains(ipAddress)))
+                    .findFirst();
+
+                if (targetCi.isPresent()) {
+                    ConfigurationItem ci = targetCi.get();
+                    String jsonInfo = objectMapper.writeValueAsString(data);
+                    
+                    ci.updateInfo(
+                        ci.getName(),
+                        ci.getTypeCode(),
+                        ci.getSerialNumber(),
+                        ci.getLocation(),
+                        ci.getDescription(),
+                        jsonInfo
+                    );
+                    configurationItemRepository.save(ci);
+                }
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Error during Ansible discovery", e);
+        }
+    }
 
     public List<Map<String, Object>> discoverLive(String tenantId) {
         List<ConfigurationItem> cis = configurationItemRepository.findAllWithDetailsByTenantId(tenantId);

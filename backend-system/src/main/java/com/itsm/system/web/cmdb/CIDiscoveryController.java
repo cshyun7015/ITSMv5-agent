@@ -21,4 +21,10 @@ public class CIDiscoveryController {
         // Fetches real-time traffic dependencies from Prometheus
         return ResponseEntity.ok(ciDiscoveryService.discoverLive(tenantId));
     }
+
+    @PostMapping("/ansible")
+    public ResponseEntity<Void> runAnsibleDiscovery(@RequestParam String tenantId) {
+        ciDiscoveryService.runAnsibleDiscovery(tenantId);
+        return ResponseEntity.ok().build();
+    }
 }

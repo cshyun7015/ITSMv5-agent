@@ -38,6 +38,9 @@ services:
       SPRING_JPA_HIBERNATE_DDL_AUTO: none
     ports:
       - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./infra/ansible:/ansible
     networks:
       - it-internal
 

@@ -1,0 +1,31 @@
+---
+- name: Collect Infrastructure Configuration Information
+  hosts: all
+  gather_facts: yes
+  tasks:
+    - name: Create local facts structure
+      set_fact:
+        ci_summary:
+          hostname: "{{ ansible_hostname | default(inventory_hostname) }}"
+          os_family: "{{ ansible_os_family }}"
+          os_distro: "{{ ansible_distribution }} {{ ansible_distribution_version }}"
+          cpu_cores: "{{ ansible_processor_vcpus | default(ansible_processor_count) | default('N/A') }}"
+          memory_mb: "{{ ansible_memtotal_mb | default('N/A') }}"
+          ip_address: "{{ ansible_default_ipv4.address | default(ansible_host) }}"
+          architecture: "{{ ansible_architecture }}"
+          kernel: "{{ ansible_kernel | default('N/A') }}"
+          last_scanned: "{{ lookup('pipe', 'date +%Y-%m-%dT%H:%M:%S') }}"
+
+- name: Aggregate and Save Research Results
+  hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Aggregate all host facts
+      set_fact:
+        all_ci_data: "{{ groups['all'] | map('extract', hostvars, 'ci_summary') | list }}"
+
+    - name: Save to JSON file
+      copy:
+        content: "{{ all_ci_data | to_nice_json }}"
+        dest: "/ansible/inventory/ci_info.json"
+      delegate_to: localhost
