@@ -73,7 +73,9 @@ public class SecurityConfig {
                 "http://localhost:3002", "http://localhost:4002",
                 "http://127.0.0.1:3002", "http://127.0.0.1:4002",
                 "http://localhost:8082", "http://localhost:8083",
-                "http://127.0.0.1:8082", "http://127.0.0.1:8083"
+                "http://127.0.0.1:8082", "http://127.0.0.1:8083",
+                "http://localhost:5173", "http://localhost:5174",
+                "http://127.0.0.1:5173", "http://127.0.0.1:5174"
         ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "x-tenant-id", "Cache-Control"));
