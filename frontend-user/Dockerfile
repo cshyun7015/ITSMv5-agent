@@ -24,7 +24,7 @@ RUN printf "server {\n\
         try_files \$uri \$uri/ /index.html;\n\
     }\n\
     location /api {\n\
-        proxy_pass http://it-backend:8080;\n\
+        proxy_pass http://backend-test:8080;\n\
     }\n\
 }" > /etc/nginx/conf.d/default.conf
 
