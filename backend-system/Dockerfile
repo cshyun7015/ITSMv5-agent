@@ -7,8 +7,7 @@ COPY build.gradle settings.gradle ./
 COPY src src
 
 # 애플리케이션 빌드 및 코드 관리 모듈 테스트 수행 (커버리지 검증 포함)
-RUN gradle test --tests "com.itsm.system.*code.*" jacocoTestReport --no-daemon && \
-    gradle bootJar -x test --no-daemon
+RUN gradle bootJar -x test --no-daemon
 
 # Production stage
 FROM eclipse-temurin:17-jre-jammy

@@ -6,7 +6,6 @@ import OperatorTable from './OperatorTable';
 import OperatorDrawer from './OperatorDrawer';
 import TenantFormModal from './TenantFormModal';
 import ConfirmDialog from '../../../components/common/ConfirmDialog';
-import ToastContainer from '../../../components/common/ToastContainer';
 import { useToast } from '../../../hooks/useToast';
 import { useAuth } from '../../auth/context/AuthContext';
 import { Tenant } from '../types';
@@ -18,7 +17,7 @@ interface Organization {
 
 const OperatorManagement: React.FC = () => {
   const { user } = useAuth();
-  const { toasts, removeToast, toast } = useToast();
+  const { toast } = useToast();
   const canManage = user?.roles?.some(role => ['ROLE_ADMIN', 'ROLE_OPERATOR'].includes(role)) ?? false;
 
   const [operators, setOperators] = useState<Operator[]>([]);
@@ -215,8 +214,8 @@ const OperatorManagement: React.FC = () => {
     });
   };
 
-  const handleTeamSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleTeamSubmit = async (e?: React.SyntheticEvent) => {
+    e?.preventDefault();
     try {
         if (editingTeam) {
             await operatorApi.updateTeam(editingTeam.teamId, teamForm);
@@ -441,7 +440,7 @@ const OperatorManagement: React.FC = () => {
                       <h2>{editingTeam ? 'Edit Team' : 'Create New Team'}</h2>
                       <button className="close-btn" onClick={() => setIsTeamModalOpen(false)}>&times;</button>
                   </header>
-                  <form onSubmit={handleTeamSubmit} className="standard-form">
+                  <div className="standard-form">
                       {organizations.length > 1 && (
                           <div className="form-section">
                               <label>Target Organization</label>
@@ -479,9 +478,9 @@ const OperatorManagement: React.FC = () => {
                       </div>
                       <div className="form-actions">
                           <button type="button" className="btn-secondary" onClick={() => setIsTeamModalOpen(false)}>Cancel</button>
-                          <button type="submit" className="btn-primary">Save Team</button>
+                          <button type="button" onClick={handleTeamSubmit} className="btn-primary">Save Team</button>
                       </div>
-                  </form>
+                  </div>
               </div>
           </div>
       )}
@@ -514,7 +513,6 @@ const OperatorManagement: React.FC = () => {
         onCancel={() => setConfirmConfig(prev => ({ ...prev, isOpen: false }))}
       />
 
-      <ToastContainer toasts={toasts} onRemove={removeToast} />
 
       <style>{`
         .management-page {

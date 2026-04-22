@@ -75,8 +75,8 @@ const OperatorDrawer: React.FC<OperatorDrawerProps> = ({ operator, isOpen, onClo
 
   const filteredTeams = orgId ? allTeams.filter(t => t.orgId === orgId) : allTeams;
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.SyntheticEvent) => {
+    e?.preventDefault();
     setIsSubmitting(true);
     try {
       const payload: OperatorRequest = {
@@ -113,7 +113,7 @@ const OperatorDrawer: React.FC<OperatorDrawerProps> = ({ operator, isOpen, onClo
           <button className="btn-close" onClick={onClose}>&times;</button>
         </header>
 
-        <form className="drawer-form" onSubmit={handleSubmit}>
+        <div className="drawer-form">
           <div className="form-group">
             <label className="form-label">Operator ID / Username</label>
             <input 
@@ -215,11 +215,11 @@ const OperatorDrawer: React.FC<OperatorDrawerProps> = ({ operator, isOpen, onClo
           
           <div className="drawer-actions">
             <button type="button" className="btn-secondary" onClick={onClose}>Cancel</button>
-            <button type="submit" className="btn-primary" disabled={isSubmitting}>
+            <button type="button" className="btn-primary" disabled={isSubmitting} onClick={handleSubmit}>
               {isSubmitting ? 'Saving...' : (isEdit ? 'Save Changes' : 'Create Account')}
             </button>
           </div>
-        </form>
+        </div>
       </div>
 
       <style>{`

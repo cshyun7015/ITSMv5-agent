@@ -25,44 +25,58 @@ const CodeDrawer: React.FC<CodeDrawerProps> = ({ isOpen, onClose, onSuccess, ini
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
+    const defaults = {
+      groupId: '',
+      codeId: '',
+      codeName: '',
+      description: '',
+      sortOrder: 10,
+      isActive: true
+    };
+
     if (initialData) {
-      setFormData(initialData);
+      console.log('CodeDrawer received initialData:', JSON.stringify(initialData));
+      setFormData({ ...defaults, ...initialData });
     } else {
-      setFormData({
-        groupId: '',
-        codeId: '',
-        codeName: '',
-        description: '',
-        sortOrder: 10,
-        isActive: true
-      });
+      setFormData(defaults);
     }
     setFieldErrors({});
   }, [initialData, isOpen]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.SyntheticEvent) => {
+    e?.preventDefault();
     setIsSubmitting(true);
     setFieldErrors({});
 
     // Data cleaning
-    const cleanData: CodeDTO = {
+    const cleanData = {
       ...formData,
       groupId: formData.groupId?.trim().toUpperCase() || '',
       codeId: formData.codeId?.trim().toUpperCase() || '',
       codeName: formData.codeName?.trim() || '',
-    } as CodeDTO;
+      sortOrder: formData.sortOrder,
+      isActive: formData.isActive
+    };
+    // Ensure id is not in the body if we want to be safe, or keep it if backend expects it.
+    // Let's remove it to see if it fixes 400.
+    const { id: _, ...payload } = cleanData as any;
 
+    console.log('PAYLOAD TO SEND (cleaned):', JSON.stringify(payload));
     try {
       if (initialData?.id) {
-        await codeApi.updateCode(initialData.id, cleanData);
+        console.log(`Updating code ID ${initialData.id}...`);
+        await codeApi.updateCode(initialData.id, payload as any);
+        console.log('Update API SUCCESS');
         toast.success('Code updated successfully');
       } else {
+        console.log('Creating new code...');
         await codeApi.createCode(cleanData);
+        console.log('Create API SUCCESS');
         toast.success('Code created successfully');
       }
       onSuccess();
     } catch (error: any) {
+      console.error('API ERROR:', error.response?.status, error.response?.data);
       console.error('Failed to save code', error);
       if (error.response?.status === 400 && error.response?.data?.errors) {
         setFieldErrors(error.response.data.errors);
@@ -78,14 +92,14 @@ const CodeDrawer: React.FC<CodeDrawerProps> = ({ isOpen, onClose, onSuccess, ini
   if (!isOpen) return null;
 
   return (
-    <div className="drawer-overlay" onClick={onClose}>
-      <div className="drawer-content glass-panel" onClick={(e) => e.stopPropagation()}>
+    <div className="drawer-overlay" onClick={onClose} data-testid="code-drawer-overlay">
+      <div className="drawer-content glass-panel" onClick={(e) => e.stopPropagation()} data-testid="code-drawer-content">
         <header className="drawer-header">
           <h2 className="drawer-header__title">{title}</h2>
           <button className="btn-close" onClick={onClose}>&times;</button>
         </header>
 
-        <form className="drawer-form" onSubmit={handleSubmit}>
+        <div className="drawer-form">
           <div className="form-group">
             <label className="form-label" htmlFor="groupId">Group ID</label>
             <input 
@@ -94,7 +108,7 @@ const CodeDrawer: React.FC<CodeDrawerProps> = ({ isOpen, onClose, onSuccess, ini
               className={`form-input ${fieldErrors.groupId ? 'form-input--error' : ''}`} 
               required
               value={formData.groupId}
-              onChange={(e) => setFormData({ ...formData, groupId: e.target.value.toUpperCase() })}
+              onChange={(e) => setFormData(prev => ({ ...prev, groupId: e.target.value.toUpperCase() }))}
               placeholder="e.g. SR_STATUS" 
             />
             {fieldErrors.groupId && <span className="field-error">{fieldErrors.groupId}</span>}
@@ -107,7 +121,7 @@ const CodeDrawer: React.FC<CodeDrawerProps> = ({ isOpen, onClose, onSuccess, ini
               className={`form-input ${fieldErrors.codeId ? 'form-input--error' : ''}`} 
               required
               value={formData.codeId}
-              onChange={(e) => setFormData({ ...formData, codeId: e.target.value.toUpperCase() })}
+              onChange={(e) => setFormData(prev => ({ ...prev, codeId: e.target.value.toUpperCase() }))}
               placeholder="e.g. OPEN" 
             />
             {fieldErrors.codeId && <span className="field-error">{fieldErrors.codeId}</span>}
@@ -120,7 +134,7 @@ const CodeDrawer: React.FC<CodeDrawerProps> = ({ isOpen, onClose, onSuccess, ini
               className={`form-input ${fieldErrors.codeName ? 'form-input--error' : ''}`} 
               required
               value={formData.codeName}
-              onChange={(e) => setFormData({ ...formData, codeName: e.target.value })}
+              onChange={(e) => setFormData(prev => ({ ...prev, codeName: e.target.value }))}
               placeholder="e.g. 접수 완료" 
             />
             {fieldErrors.codeName && <span className="field-error">{fieldErrors.codeName}</span>}
@@ -131,7 +145,7 @@ const CodeDrawer: React.FC<CodeDrawerProps> = ({ isOpen, onClose, onSuccess, ini
               className="form-input" 
               rows={3} 
               value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
               placeholder="Explain the purpose of this code" 
             />
           </div>
@@ -143,7 +157,7 @@ const CodeDrawer: React.FC<CodeDrawerProps> = ({ isOpen, onClose, onSuccess, ini
                 type="number" 
                 className="form-input" 
                 value={formData.sortOrder}
-                onChange={(e) => setFormData({ ...formData, sortOrder: parseInt(e.target.value) })}
+                onChange={(e) => setFormData(prev => ({ ...prev, sortOrder: parseInt(e.target.value) }))}
               />
             </div>
             <div className="form-group half checkbox">
@@ -151,7 +165,7 @@ const CodeDrawer: React.FC<CodeDrawerProps> = ({ isOpen, onClose, onSuccess, ini
                 <input 
                   type="checkbox" 
                   checked={formData.isActive}
-                  onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+                  onChange={(e) => setFormData(prev => ({ ...prev, isActive: e.target.checked }))}
                 />
                 Active
               </label>
@@ -160,11 +174,17 @@ const CodeDrawer: React.FC<CodeDrawerProps> = ({ isOpen, onClose, onSuccess, ini
           
           <div className="drawer-actions">
             <button type="button" className="btn-secondary" onClick={onClose}>Cancel</button>
-            <button type="submit" className="btn-primary" disabled={isSubmitting}>
-              {isSubmitting ? 'Saving...' : 'Save Changes'}
-            </button>
+              <button 
+                type="button" 
+                className="btn-primary" 
+                disabled={isSubmitting}
+                onClick={handleSubmit}
+                data-testid="save-code-btn"
+              >
+                {isSubmitting ? 'Saving...' : 'Save Changes'}
+              </button>
           </div>
-        </form>
+        </div>
       </div>
 
       <style>{`

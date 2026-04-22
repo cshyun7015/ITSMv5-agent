@@ -39,7 +39,12 @@ const GroupSidebar: React.FC<GroupSidebarProps> = ({
           <span className="search-icon">🔍</span>
         </div>
         {isAdmin && (
-          <button className="add-group-btn" onClick={onAddGroup} title="Add New Group">
+          <button 
+            className="add-group-btn" 
+            onClick={onAddGroup} 
+            title="Add New Group"
+            data-testid="add-group-btn"
+          >
             <span>+</span>
           </button>
         )}
@@ -56,6 +61,7 @@ const GroupSidebar: React.FC<GroupSidebarProps> = ({
               <button
                 className={`group-item ${selectedGroupId === group ? 'group-item--active' : ''}`}
                 onClick={() => onSelectGroup(group)}
+                data-testid={`group-item-${group}`}
               >
                 <span className="group-item__icon">📁</span>
                 <span className="group-item__name">{group}</span>
@@ -68,6 +74,7 @@ const GroupSidebar: React.FC<GroupSidebarProps> = ({
                     onDeleteGroup(group);
                   }}
                   title="Delete Group"
+                  data-testid={`delete-group-btn-${group}`}
                 >
                   🗑️
                 </button>

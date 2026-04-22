@@ -80,6 +80,7 @@ const ToastItem: React.FC<{ toast: Toast; onRemove: (id: string) => void }> = ({
 };
 
 const ToastContainer: React.FC<ToastContainerProps> = ({ toasts, onRemove }) => {
+  console.log(`RENDERING ToastContainer: count=${toasts.length}`);
   if (toasts.length === 0) return null;
   return (
     <div className="toast-container">

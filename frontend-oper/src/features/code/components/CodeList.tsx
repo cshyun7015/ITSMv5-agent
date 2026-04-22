@@ -31,7 +31,7 @@ const CodeList: React.FC<CodeListProps> = ({ codes, onEdit, onDelete, isLoading,
         </thead>
         <tbody className="code-list__body">
           {codes.map((code) => (
-            <tr key={code.id} className="code-list__row">
+            <tr key={code.id} className="code-list__row" data-testid={`code-row-${code.codeId}`}>
               <td className="code-list__cell code-list__cell--order">{code.sortOrder}</td>
               <td className="code-list__cell code-list__cell--id">{code.codeId}</td>
               <td className="code-list__cell code-list__cell--name">{code.codeName}</td>
@@ -44,10 +44,18 @@ const CodeList: React.FC<CodeListProps> = ({ codes, onEdit, onDelete, isLoading,
               <td className="code-list__cell">
                 {isAdmin && (
                   <div className="action-buttons">
-                    <button className="btn-icon btn-icon--edit" onClick={() => onEdit(code)}>
+                    <button 
+                      className="btn-icon btn-icon--edit" 
+                      onClick={() => onEdit(code)}
+                      data-testid={`edit-btn-${code.codeId}`}
+                    >
                       Edit
                     </button>
-                    <button className="btn-icon btn-icon--delete" onClick={() => code.id && onDelete(code.id)}>
+                    <button 
+                      className="btn-icon btn-icon--delete" 
+                      onClick={() => code.id && onDelete(code.id)}
+                      data-testid={`delete-btn-${code.codeId}`}
+                    >
                       Delete
                     </button>
                   </div>

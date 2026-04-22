@@ -162,7 +162,13 @@ const CodeManagement: React.FC = () => {
             <div className="header-actions">
               <button className="btn-secondary" onClick={handleRefresh}>🔄 Refresh</button>
               {isAdmin && (
-                <button className="btn-primary" onClick={handleAdd}>+ Add New Code</button>
+                <button 
+                  className="btn-primary" 
+                  onClick={handleAdd}
+                  data-testid="add-code-btn"
+                >
+                  + Add New Code
+                </button>
               )}
             </div>
           </div>
