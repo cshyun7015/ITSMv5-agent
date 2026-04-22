@@ -1,4 +1,4 @@
-import { CodeDTO } from '../../fulfillment/types';
+import { CodeDTO } from '../../../types/code';
 
 interface CodeListProps {
   codes: CodeDTO[];

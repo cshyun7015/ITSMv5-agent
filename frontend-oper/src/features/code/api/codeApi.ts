@@ -1,5 +1,5 @@
 import apiClient from '../../../api/client';
-import { CodeDTO } from '../../fulfillment/types';
+import { CodeDTO } from '../../../types/code';
 
 export const codeApi = {
   // 모든 코드 목록 조회

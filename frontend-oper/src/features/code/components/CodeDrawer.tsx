@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { CodeDTO } from '../../fulfillment/types';
+import { CodeDTO } from '../../../types/code';
+import { useToast } from '../../../hooks/useToast';
 import { codeApi } from '../api/codeApi';
 
 interface CodeDrawerProps {
@@ -11,6 +12,7 @@ interface CodeDrawerProps {
 }
 
 const CodeDrawer: React.FC<CodeDrawerProps> = ({ isOpen, onClose, onSuccess, initialData, title }) => {
+  const { toast } = useToast();
   const [formData, setFormData] = useState<Partial<CodeDTO>>({
     groupId: '',
     codeId: '',
@@ -19,6 +21,7 @@ const CodeDrawer: React.FC<CodeDrawerProps> = ({ isOpen, onClose, onSuccess, ini
     sortOrder: 10,
     isActive: true
   });
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -34,21 +37,39 @@ const CodeDrawer: React.FC<CodeDrawerProps> = ({ isOpen, onClose, onSuccess, ini
         isActive: true
       });
     }
+    setFieldErrors({});
   }, [initialData, isOpen]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setFieldErrors({});
+
+    // Data cleaning
+    const cleanData: CodeDTO = {
+      ...formData,
+      groupId: formData.groupId?.trim().toUpperCase() || '',
+      codeId: formData.codeId?.trim().toUpperCase() || '',
+      codeName: formData.codeName?.trim() || '',
+    } as CodeDTO;
+
     try {
       if (initialData?.id) {
-        await codeApi.updateCode(initialData.id, formData as CodeDTO);
+        await codeApi.updateCode(initialData.id, cleanData);
+        toast.success('Code updated successfully');
       } else {
-        await codeApi.createCode(formData as CodeDTO);
+        await codeApi.createCode(cleanData);
+        toast.success('Code created successfully');
       }
       onSuccess();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to save code', error);
-      alert('Failed to save code. Please check console for details.');
+      if (error.response?.status === 400 && error.response?.data?.errors) {
+        setFieldErrors(error.response.data.errors);
+        toast.error('Please check the validation errors');
+      } else {
+        toast.error(error.response?.data?.message || 'Failed to save code');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -66,37 +87,43 @@ const CodeDrawer: React.FC<CodeDrawerProps> = ({ isOpen, onClose, onSuccess, ini
 
         <form className="drawer-form" onSubmit={handleSubmit}>
           <div className="form-group">
-            <label className="form-label">Group ID</label>
+            <label className="form-label" htmlFor="groupId">Group ID</label>
             <input 
+              id="groupId"
               type="text" 
-              className="form-input" 
+              className={`form-input ${fieldErrors.groupId ? 'form-input--error' : ''}`} 
               required
               value={formData.groupId}
-              onChange={(e) => setFormData({ ...formData, groupId: e.target.value })}
+              onChange={(e) => setFormData({ ...formData, groupId: e.target.value.toUpperCase() })}
               placeholder="e.g. SR_STATUS" 
             />
+            {fieldErrors.groupId && <span className="field-error">{fieldErrors.groupId}</span>}
           </div>
           <div className="form-group">
-            <label className="form-label">Code ID</label>
+            <label className="form-label" htmlFor="codeId">Code ID</label>
             <input 
+              id="codeId"
               type="text" 
-              className="form-input" 
+              className={`form-input ${fieldErrors.codeId ? 'form-input--error' : ''}`} 
               required
               value={formData.codeId}
-              onChange={(e) => setFormData({ ...formData, codeId: e.target.value })}
+              onChange={(e) => setFormData({ ...formData, codeId: e.target.value.toUpperCase() })}
               placeholder="e.g. OPEN" 
             />
+            {fieldErrors.codeId && <span className="field-error">{fieldErrors.codeId}</span>}
           </div>
           <div className="form-group">
-            <label className="form-label">Code Name</label>
+            <label className="form-label" htmlFor="codeName">Code Name</label>
             <input 
+              id="codeName"
               type="text" 
-              className="form-input" 
+              className={`form-input ${fieldErrors.codeName ? 'form-input--error' : ''}`} 
               required
               value={formData.codeName}
               onChange={(e) => setFormData({ ...formData, codeName: e.target.value })}
               placeholder="e.g. 접수 완료" 
             />
+            {fieldErrors.codeName && <span className="field-error">{fieldErrors.codeName}</span>}
           </div>
           <div className="form-group">
             <label className="form-label">Description</label>
@@ -207,6 +234,21 @@ const CodeDrawer: React.FC<CodeDrawerProps> = ({ isOpen, onClose, onSuccess, ini
           border-color: var(--primary);
           background: rgba(255, 255, 255, 0.1);
           box-shadow: 0 0 0 4px var(--primary-glow);
+        }
+        .form-input--error {
+          border-color: #ef4444;
+          background: rgba(239, 68, 68, 0.05);
+        }
+        .form-input--error:focus {
+          border-color: #f87171;
+          box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.2);
+        }
+        .field-error {
+          display: block;
+          margin-top: 6px;
+          color: #f87171;
+          font-size: 0.8rem;
+          font-weight: 500;
         }
         .drawer-actions {
           margin-top: auto;

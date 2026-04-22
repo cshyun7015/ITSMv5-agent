@@ -4,11 +4,13 @@ import CodeList from './CodeList';
 import CodeDrawer from './CodeDrawer';
 import ConfirmDialog from '../../../components/common/ConfirmDialog';
 import { codeApi } from '../api/codeApi';
-import { CodeDTO } from '../../fulfillment/types';
+import { CodeDTO } from '../../../types/code';
 import { useAuth } from '../../auth/context/AuthContext';
+import { useToast } from '../../../hooks/useToast';
 
 const CodeManagement: React.FC = () => {
   const { user } = useAuth();
+  const { toast } = useToast();
   const isAdmin = user?.roles?.includes('ROLE_ADMIN') ?? false;
 
   const [groupIds, setGroupIds] = useState<string[]>([]);
@@ -90,8 +92,9 @@ const CodeManagement: React.FC = () => {
           await codeApi.deleteCode(id);
           setConfirmConfig((prev: any) => ({ ...prev, isOpen: false }));
           handleRefresh();
+          toast.success('Code deleted successfully');
         } catch (error) {
-          alert('Failed to delete code');
+          toast.error('Failed to delete code');
         }
       }
     });
@@ -110,8 +113,9 @@ const CodeManagement: React.FC = () => {
             setSelectedGroupId(null);
           }
           fetchGroups(true);
+          toast.success(`Group "${groupId}" and its codes deleted`);
         } catch (error) {
-          alert('Failed to delete group');
+          toast.error('Failed to delete group');
         }
       }
     });
