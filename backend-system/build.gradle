@@ -12,6 +12,7 @@ plugins {
     id 'org.springframework.boot' version '3.2.4'
     id 'io.spring.dependency-management' version '1.1.4'
     id 'org.flywaydb.flyway' version '9.22.3'
+    id 'jacoco'
 }
 
 group = 'com.itsm'
@@ -36,6 +37,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.springframework.boot:spring-boot-starter-cache'
     implementation 'org.flywaydb:flyway-core'
     implementation 'org.flywaydb:flyway-mysql:9.22.3'
     implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
@@ -61,4 +63,26 @@ flyway {
     url = 'jdbc:mariadb://localhost:3306/system_mgmt'
     user = 'itsm'
     password = 'itsm1234'
+}
+
+jacoco {
+    toolVersion = "0.8.11"
+}
+
+jacocoTestReport {
+    dependsOn test
+    reports {
+        xml.required = true
+        html.required = true
+    }
+}
+
+jacocoTestCoverageVerification {
+    violationRules {
+        rule {
+            limit {
+                minimum = 0.90
+            }
+        }
+    }
 }

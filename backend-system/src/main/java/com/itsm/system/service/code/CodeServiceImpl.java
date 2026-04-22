@@ -4,6 +4,8 @@ import com.itsm.system.domain.code.Code;
 import com.itsm.system.domain.code.CodeRepository;
 import com.itsm.system.dto.code.CodeDTO;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,6 +31,7 @@ public class CodeServiceImpl implements CodeService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = "codes", key = "#groupId")
     public List<CodeDTO> getCodesByGroup(String groupId) {
         return codeRepository.findByGroupIdOrderBySortOrderAsc(groupId).stream()
                 .map(this::convertToDTO)
@@ -36,6 +39,7 @@ public class CodeServiceImpl implements CodeService {
     }
 
     @Override
+    @CacheEvict(value = "codes", key = "#codeDTO.groupId")
     public CodeDTO createCode(@NonNull CodeDTO codeDTO) {
         Code code = convertToEntity(codeDTO);
         Code savedCode = codeRepository.save(code);
@@ -43,9 +47,10 @@ public class CodeServiceImpl implements CodeService {
     }
 
     @Override
+    @CacheEvict(value = "codes", allEntries = true)
     public CodeDTO updateCode(@NonNull Long id, @NonNull CodeDTO codeDTO) {
         Code code = codeRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Code not found"));
+                .orElseThrow(() -> new com.itsm.system.exception.CodeNotFoundException("Code not found with id: " + id));
         
         code.setGroupId(codeDTO.getGroupId());
         code.setCodeId(codeDTO.getCodeId());
@@ -59,11 +64,16 @@ public class CodeServiceImpl implements CodeService {
     }
 
     @Override
+    @CacheEvict(value = "codes", allEntries = true)
     public void deleteCode(@NonNull Long id) {
+        if (!codeRepository.existsById(id)) {
+            throw new com.itsm.system.exception.CodeNotFoundException("Code not found with id: " + id);
+        }
         codeRepository.deleteById(id);
     }
 
     @Override
+    @CacheEvict(value = "codes", key = "#groupId")
     public void deleteCodesByGroup(@NonNull String groupId) {
         codeRepository.deleteByGroupId(groupId);
     }

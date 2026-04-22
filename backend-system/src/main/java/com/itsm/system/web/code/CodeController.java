@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Objects;
 
+import jakarta.validation.Valid;
+
 @RestController
 @RequestMapping("/api/v1/codes")
 @RequiredArgsConstructor
@@ -34,13 +36,13 @@ public class CodeController {
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<CodeDTO> createCode(@RequestBody CodeDTO codeDTO) {
+    public ResponseEntity<CodeDTO> createCode(@Valid @RequestBody CodeDTO codeDTO) {
         return ResponseEntity.ok(codeService.createCode(Objects.requireNonNull(codeDTO)));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<CodeDTO> updateCode(@PathVariable Long id, @RequestBody CodeDTO codeDTO) {
+    public ResponseEntity<CodeDTO> updateCode(@PathVariable Long id, @Valid @RequestBody CodeDTO codeDTO) {
         return ResponseEntity.ok(codeService.updateCode(Objects.requireNonNull(id), Objects.requireNonNull(codeDTO)));
     }
 
