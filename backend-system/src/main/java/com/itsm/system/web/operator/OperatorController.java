@@ -53,10 +53,10 @@ public class OperatorController {
     }
 
     private String getTenantId(UserDetails userDetails) {
-        try {
-            return (String) userDetails.getClass().getMethod("getTenantId").invoke(userDetails);
-        } catch (Exception e) {
-            return "OPER_MSP";
+        if (userDetails instanceof com.itsm.system.domain.member.Member) {
+            return ((com.itsm.system.domain.member.Member) userDetails).getTenantId();
         }
+        // Fallback for system or special accounts
+        return "OPER_MSP";
     }
 }

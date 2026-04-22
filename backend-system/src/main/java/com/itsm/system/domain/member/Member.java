@@ -19,6 +19,7 @@ import java.util.stream.Collectors;
 @Table(name = "members", uniqueConstraints = {
         @UniqueConstraint(columnNames = {"tenant_id", "username"})
 })
+@org.hibernate.annotations.SQLRestriction("is_deleted = 0")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor

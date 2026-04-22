@@ -32,17 +32,14 @@ public class OperatorService {
     public List<OperatorDTO> listOperatorsByTenant(String tenantId) {
         List<Member> members;
         if ("MSP_CORE".equals(tenantId) || "OPER_MSP".equals(tenantId)) {
-            members = memberRepository.findAll().stream()
-                    .filter(m -> m.getTenant() != null && !"CUSTOMER".equals(m.getTenant().getType()))
-                    .collect(Collectors.toList());
+            // Super tenants see all operators except those in CUSTOMER tenants
+            members = memberRepository.findByTenant_TypeNot("CUSTOMER");
         } else {
-            members = memberRepository.findAll().stream()
-                    .filter(m -> m.getTenant() != null && tenantId.equals(m.getTenant().getTenantId()))
-                    .collect(Collectors.toList());
+            // Regular tenants see only their own operators
+            members = memberRepository.findByTenant_TenantId(tenantId);
         }
 
         return members.stream()
-                .filter(m -> !m.getIsDeleted())
                 .filter(m -> m.getRoles().stream()
                         .anyMatch(r -> r.getRoleId().equals("ROLE_OPERATOR") || r.getRoleId().equals("ROLE_ADMIN")))
                 .map(this::convertToDTO)
@@ -52,7 +49,6 @@ public class OperatorService {
     @Transactional(readOnly = true)
     public OperatorDTO getOperator(Long id, String tenantId) {
         Member operator = memberRepository.findById(Objects.requireNonNull(id))
-                .filter(m -> !m.getIsDeleted())
                 .orElseThrow(() -> new IllegalArgumentException("Operator not found"));
 
         if (!"MSP_CORE".equals(tenantId) && !"OPER_MSP".equals(tenantId) && !operator.getTenant().getTenantId().equals(tenantId)) {
@@ -64,6 +60,10 @@ public class OperatorService {
 
     @Transactional
     public OperatorDTO createOperator(OperatorDTO dto, String tenantId) {
+        if (memberRepository.existsByUsername(dto.getUsername())) {
+            throw new IllegalArgumentException("Username already exists: " + dto.getUsername());
+        }
+
         // Allow administrators to specify a different tenant
         String targetTenantId = (("MSP_CORE".equals(tenantId) || "OPER_MSP".equals(tenantId)) && dto.getTenantId() != null)
                 ? dto.getTenantId()
@@ -117,8 +117,10 @@ public class OperatorService {
         if (dto.getTeamId() != null) {
             teamRepository.findById(Objects.requireNonNull(dto.getTeamId()))
                     .ifPresent(operator::updateTeam);
-        } else if (dto.getTeamId() == null && "null".equals(String.valueOf(dto.getTeamId()))) { // Handle explicit clear if needed
-             operator.updateTeam(null);
+        } else {
+            // If teamId is explicitly null in DTO, we might want to clear the team
+            // This depends on the specific requirement, but for now we'll allow clearing
+            operator.updateTeam(null);
         }
 
         return convertToDTO(memberRepository.save(operator));
