@@ -11,21 +11,16 @@ import com.itsm.system.dto.operator.OperatorDTO;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.util.*;
+import java.util.Objects;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -144,14 +139,14 @@ class OperatorServiceTest {
         given(tenantRepository.findById("OPER_MSP")).willReturn(Optional.of(mspTenant));
         given(roleRepository.findByRoleId("ROLE_OPERATOR")).willReturn(Optional.of(operatorRole));
         given(passwordEncoder.encode("password")).willReturn("encoded_pwd");
-        given(memberRepository.save(any(Member.class))).willReturn(operatorMember);
+        given(memberRepository.save(Objects.requireNonNull(any(Member.class)))).willReturn(operatorMember);
 
         // when
         OperatorDTO result = operatorService.createOperator(dto, "OPER_MSP");
 
         // then
         assertThat(result).isNotNull();
-        verify(memberRepository).save(any(Member.class));
+        verify(memberRepository).save(Objects.requireNonNull(any(Member.class)));
     }
 
     @Test
@@ -161,7 +156,7 @@ class OperatorServiceTest {
         given(memberRepository.findById(1L)).willReturn(Optional.of(operatorMember));
         given(roleRepository.findByRoleId("ROLE_ADMIN")).willReturn(Optional.of(Role.builder().roleId("ROLE_ADMIN").build()));
         given(passwordEncoder.encode("new_pwd")).willReturn("encoded_new_pwd");
-        given(memberRepository.save(any(Member.class))).willReturn(operatorMember);
+        given(memberRepository.save(Objects.requireNonNull(any(Member.class)))).willReturn(operatorMember);
 
         OperatorDTO updateDto = OperatorDTO.builder()
                 .email("updated@itsm.com")
@@ -175,7 +170,7 @@ class OperatorServiceTest {
 
         // then
         assertThat(result).isNotNull();
-        verify(memberRepository).save(operatorMember);
+        verify(memberRepository).save(Objects.requireNonNull(operatorMember));
     }
 
     @Test
@@ -202,7 +197,7 @@ class OperatorServiceTest {
 
         // then
         assertThat(operatorMember.getIsDeleted()).isTrue();
-        verify(memberRepository).save(operatorMember);
+        verify(memberRepository).save(Objects.requireNonNull(operatorMember));
     }
 
     @Test
@@ -236,7 +231,7 @@ class OperatorServiceTest {
         
         given(memberRepository.findById(1L)).willReturn(Optional.of(operatorMember));
         given(teamRepository.findById(101L)).willReturn(Optional.of(team));
-        given(memberRepository.save(any(Member.class))).willReturn(operatorMember);
+        given(memberRepository.save(Objects.requireNonNull(any(Member.class)))).willReturn(operatorMember);
 
         // Case 1: Assign Team
         OperatorDTO assignTeamDto = OperatorDTO.builder().teamId(101L).build();
@@ -261,7 +256,7 @@ class OperatorServiceTest {
         given(memberRepository.existsByUsername("msp_created_op")).willReturn(false);
         given(tenantRepository.findById("CUST_001")).willReturn(Optional.of(customerTenant));
         given(roleRepository.findByRoleId("ROLE_OPERATOR")).willReturn(Optional.of(operatorRole));
-        given(memberRepository.save(any(Member.class))).willReturn(operatorMember);
+        given(memberRepository.save(Objects.requireNonNull(any(Member.class)))).willReturn(operatorMember);
 
         // when
         operatorService.createOperator(dto, "OPER_MSP");

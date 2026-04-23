@@ -16,6 +16,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.Collections;
+import java.util.Objects;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -69,8 +70,8 @@ class OperatorControllerTest {
         when(operatorService.createOperator(any(OperatorDTO.class), eq("OPER_MSP"))).thenReturn(sampleDTO);
 
         mockMvc.perform(post("/api/v1/operator/operators")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(sampleDTO)))
+                        .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON))
+                        .content(Objects.requireNonNull(objectMapper.writeValueAsString(sampleDTO))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.username").value("test_op"));
     }
@@ -80,8 +81,8 @@ class OperatorControllerTest {
     @WithMockUser(roles = "USER")
     void createOperator_Forbidden() throws Exception {
         mockMvc.perform(post("/api/v1/operator/operators")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(sampleDTO)))
+                        .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON))
+                        .content(Objects.requireNonNull(objectMapper.writeValueAsString(sampleDTO))))
                 .andExpect(status().isForbidden());
     }
 
@@ -92,8 +93,8 @@ class OperatorControllerTest {
         when(operatorService.updateOperator(eq(1L), any(OperatorDTO.class), eq("OPER_MSP"))).thenReturn(sampleDTO);
 
         mockMvc.perform(put("/api/v1/operator/operators/1")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(sampleDTO)))
+                        .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON))
+                        .content(Objects.requireNonNull(objectMapper.writeValueAsString(sampleDTO))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.username").value("test_op"));
     }
@@ -111,7 +112,7 @@ class OperatorControllerTest {
         when(operatorService.getOperator(eq(1L), eq("OPER_MSP"))).thenReturn(sampleDTO);
 
         mockMvc.perform(get("/api/v1/operator/operators/1")
-                        .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user(memberPrincipal)))
+                        .with(Objects.requireNonNull(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user(memberPrincipal))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.username").value("test_op"));
     }
