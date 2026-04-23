@@ -1,12 +1,22 @@
 import apiClient from '../../../api/client';
-import { ServiceRequest, ApprovalStep, CodeDTO } from '../types';
+import { ServiceRequest, ApprovalStep, CodeDTO, CreateRequestDTO, UpdateRequestDTO } from '../types';
 
-export const fulfillmentApi = {
+const createFormData = (dto: any, files?: File[]) => {
+  const formData = new FormData();
+  formData.append('request', new Blob([JSON.stringify(dto)], { type: 'application/json' }));
+  if (files) {
+    files.forEach(file => formData.append('files', file));
+  }
+  return formData;
+};
+
+export const requestApi = {
   // 공통 코드 조회
   getCodesByGroup: async (groupId: string): Promise<CodeDTO[]> => {
     const response = await apiClient.get<CodeDTO[]>(`/codes/group/${groupId}`);
     return response.data;
   },
+  
   // 운영자용 전체 요청 목록 조회
   getAllRequests: async (): Promise<ServiceRequest[]> => {
     const response = await apiClient.get<ServiceRequest[]>('/requests/all');
@@ -40,25 +50,21 @@ export const fulfillmentApi = {
     await apiClient.post(`/requests/${id}/close`);
   },
 
-  // 테넌트 목록 조회 (필터 및 등록용)
+  // 테넌트 목록 조회
   getTenants: async (): Promise<any[]> => {
     const response = await apiClient.get('/operator/tenants');
     return response.data;
   },
 
-  // 특정 테넌트의 사용자 목록 조회 (신청자 대행 선택용)
+  // 특정 테넌트의 사용자 목록 조회
   getTenantUsers: async (tenantId: string): Promise<any[]> => {
     const response = await apiClient.get(`/operator/tenants/${tenantId}/users`);
     return response.data;
   },
 
-  // 요청 생성 (수동 등록)
-  createRequest: async (dto: any, files?: File[]): Promise<ServiceRequest> => {
-    const formData = new FormData();
-    formData.append('request', new Blob([JSON.stringify(dto)], { type: 'application/json' }));
-    if (files) {
-      files.forEach(file => formData.append('files', file));
-    }
+  // 요청 생성
+  createRequest: async (dto: CreateRequestDTO, files?: File[]): Promise<ServiceRequest> => {
+    const formData = createFormData(dto, files);
     const response = await apiClient.post<ServiceRequest>('/requests', formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
@@ -66,12 +72,8 @@ export const fulfillmentApi = {
   },
 
   // 요청 수정
-  updateRequest: async (id: number, dto: any, files?: File[]): Promise<void> => {
-    const formData = new FormData();
-    formData.append('request', new Blob([JSON.stringify(dto)], { type: 'application/json' }));
-    if (files) {
-      files.forEach(file => formData.append('files', file));
-    }
+  updateRequest: async (id: number, dto: UpdateRequestDTO, files?: File[]): Promise<void> => {
+    const formData = createFormData(dto, files);
     await apiClient.put(`/requests/${id}`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
@@ -94,5 +96,6 @@ export const fulfillmentApi = {
     document.body.appendChild(link);
     link.click();
     link.remove();
+    window.URL.revokeObjectURL(url);
   }
 };

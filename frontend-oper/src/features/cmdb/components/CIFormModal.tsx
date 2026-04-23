@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { ciApi } from '../api/ciApi';
 import { incidentApi } from '../../incident/api/incidentApi';
 import { codeApi } from '../../code/api/codeApi';
-import { fulfillmentApi } from '../../fulfillment/api/fulfillmentApi';
+import { requestApi } from '../../requests/api/requestApi';
 import { ConfigurationItem, CIRequest } from '../types';
-import { CodeDTO } from '../../fulfillment/types';
+import { CodeDTO } from '../../requests/types';
 import { useAuth } from '../../auth/context/AuthContext';
 import ConfirmDialog from '../../../components/common/ConfirmDialog';
 import { CIDiscoveryService, DiscoverySuggestion } from '../api/CIDiscoveryService';
@@ -53,7 +53,7 @@ const CIFormModal: React.FC<CIFormModalProps> = ({ ci, onClose, onSuccess }) => 
   const loadMetadata = async () => {
     try {
       const [tenantData, typeData, statusData, operatorData] = await Promise.all([
-        fulfillmentApi.getTenants(),
+        requestApi.getTenants(),
         codeApi.getCodesByGroup('CI_TYPE'),
         codeApi.getCodesByGroup('CI_STATUS'),
         incidentApi.getOperators()

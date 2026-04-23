@@ -22,6 +22,27 @@ export interface ServiceRequest {
   slaDeadline?: string;
   createdAt: string;
   attachments?: AttachmentInfo[];
+  catalogId?: number;
+  catalogName?: string;
+  dynamicFields?: string;
+}
+
+export interface CreateRequestDTO {
+  title: string;
+  description: string;
+  priority: ServiceRequestPriority;
+  targetTenantId: string;
+  requesterId?: number;
+  catalogId?: number;
+  dynamicFields?: string;
+}
+
+export interface UpdateRequestDTO {
+  title?: string;
+  description?: string;
+  priority?: ServiceRequestPriority;
+  status?: ServiceRequestStatus;
+  resolution?: string;
 }
 
 export interface AttachmentInfo {

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { ciApi } from '../api/ciApi';
-import { fulfillmentApi } from '../../fulfillment/api/fulfillmentApi';
+import { requestApi } from '../../requests/api/requestApi';
 import { ConfigurationItem } from '../types';
 import CIFormModal from './CIFormModal';
 import CIQuickStats from './CIQuickStats';
@@ -37,7 +37,7 @@ const CIList: React.FC = () => {
 
   const fetchTenants = async () => {
     try {
-      const data = await fulfillmentApi.getTenants();
+      const data = await requestApi.getTenants();
       setTenants(data);
       if (data.length > 0 && (!selectedTenantId || data.every(t => t.tenantId !== selectedTenantId))) {
         setSelectedTenantId(data[0].tenantId);

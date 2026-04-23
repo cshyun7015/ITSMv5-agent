@@ -3,7 +3,7 @@ import { changeApi } from '../api/changeApi';
 import { incidentApi } from '../../incident/api/incidentApi';
 import { codeApi } from '../../code/api/codeApi';
 import { ChangeRequest, ChangeReportRequest } from '../types';
-import { CodeDTO } from '../../fulfillment/types';
+import { CodeDTO } from '../../requests/types';
 import { useAuth } from '../../auth/context/AuthContext';
 
 interface ChangeFormModalProps {

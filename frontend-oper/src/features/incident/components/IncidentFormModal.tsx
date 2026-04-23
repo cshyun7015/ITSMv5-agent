@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { incidentApi } from '../api/incidentApi';
-import { fulfillmentApi } from '../../fulfillment/api/fulfillmentApi';
+import { requestApi } from '../../requests/api/requestApi';
 import { codeApi } from '../../code/api/codeApi';
 import { Incident, IncidentReportRequest } from '../types';
-import { CodeDTO } from '../../fulfillment/types';
+import { CodeDTO } from '../../requests/types';
 import ToastNotification from '../../../components/common/ToastNotification';
 
 interface IncidentFormModalProps {
@@ -44,7 +44,7 @@ const IncidentFormModal: React.FC<IncidentFormModalProps> = ({ incident, onClose
   const loadInitialData = async () => {
     try {
       const [tenantData, categoryData, impactData, urgencyData, statusData, operatorData] = await Promise.all([
-        !isEdit ? fulfillmentApi.getTenants() : Promise.resolve([]),
+        !isEdit ? requestApi.getTenants() : Promise.resolve([]),
         codeApi.getCodesByGroup('IN_CATEGORY'),
         codeApi.getCodesByGroup('IN_IMPACT'),
         codeApi.getCodesByGroup('IN_URGENCY'),

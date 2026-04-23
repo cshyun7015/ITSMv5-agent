@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { catalogApi, ServiceCatalog } from '../api/catalogApi';
-import { fulfillmentApi } from '../../fulfillment/api/fulfillmentApi';
-import { CodeDTO } from '../../fulfillment/types';
+import { requestApi } from '../../requests/api/requestApi';
+import { CodeDTO } from '../../requests/types';
 import FormBuilder from './FormBuilder';
 import ToastNotification from '../../../components/common/ToastNotification';
 import ConfirmDialog from '../../../components/common/ConfirmDialog';
@@ -55,8 +55,8 @@ const CatalogManagement: React.FC = () => {
     try {
       const results = await Promise.allSettled([
         catalogApi.getTemplates(),
-        fulfillmentApi.getCodesByGroup('CATALOG_CATEGORY'),
-        fulfillmentApi.getTenants()
+        requestApi.getCodesByGroup('CATALOG_CATEGORY'),
+        requestApi.getTenants()
       ]);
 
       if (results[0].status === 'fulfilled') {

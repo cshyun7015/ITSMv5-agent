@@ -3,8 +3,8 @@ import './styles/global.css';
 import { AuthProvider, useAuth } from './features/auth/context/AuthContext';
 import LoginPage from './features/auth/components/LoginPage';
 import CodeManagement from './features/code/components/CodeManagement';
-import FulfillmentList from './features/fulfillment/components/FulfillmentList';
-import FulfillmentDetail from './features/fulfillment/components/FulfillmentDetail';
+import RequestList from './features/requests/components/RequestList';
+import RequestDetail from './features/requests/components/RequestDetail';
 import IncidentBoard from './features/incident/components/IncidentBoard';
 import IncidentDetail from './features/incident/components/IncidentDetail';
 import OperatorDashboard from './features/dashboard/components/OperatorDashboard';
@@ -17,7 +17,7 @@ import UserManagement from './features/user/components/UserManagement';
 
 const AdminCommandCenter: React.FC = () => {
   const { user, logout } = useAuth();
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'catalog' | 'cis' | 'changes' | 'codes' | 'fulfillment' | 'incidents' | 'opers' | 'users'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'catalog' | 'cis' | 'changes' | 'codes' | 'requests' | 'incidents' | 'opers' | 'users'>('dashboard');
   const [selectedRequestId, setSelectedRequestId] = useState<number | null>(null);
   const [selectedIncidentId, setSelectedIncidentId] = useState<number | null>(null);
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -25,7 +25,7 @@ const AdminCommandCenter: React.FC = () => {
   const navLinks = [
     { id: 'dashboard', label: 'Dashboard', icon: '📈' },
     { id: 'catalog', label: 'Service Catalog', icon: '📋' },
-    { id: 'fulfillment', label: 'Requests', icon: '📩' },
+    { id: 'requests', label: 'Requests', icon: '📩' },
     { id: 'incidents', label: 'Incidents', icon: '⚠️' },
     { id: 'changes', label: 'Changes', icon: '🔄' },
     { id: 'cis', label: 'CIs', icon: '📦' },
@@ -108,16 +108,16 @@ const AdminCommandCenter: React.FC = () => {
             <OperatorManagement />
           ) : activeTab === 'users' ? (
             <UserManagement />
-          ) : activeTab === 'fulfillment' ? (
-            <div className="fulfillment-section">
+          ) : activeTab === 'requests' ? (
+            <div className="requests-section">
               {selectedRequestId ? (
-                <FulfillmentDetail 
+                <RequestDetail 
                   requestId={selectedRequestId} 
                   onBack={() => setSelectedRequestId(null)}
-                  onUpdated={() => {}} 
+                  onSuccess={() => setSelectedRequestId(null)} 
                 />
               ) : (
-                <FulfillmentList onSelectRequest={(id) => setSelectedRequestId(id)} />
+                <RequestList onSelectRequest={(id) => setSelectedRequestId(id)} />
               )}
             </div>
           ) : (
