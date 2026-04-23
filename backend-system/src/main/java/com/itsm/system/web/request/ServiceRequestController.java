@@ -6,6 +6,7 @@ import com.itsm.system.dto.request.ServiceRequestDTO;
 import com.itsm.system.service.request.ServiceRequestService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.lang.NonNull;
@@ -23,16 +24,18 @@ public class ServiceRequestController {
     private final ServiceRequestService requestService;
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAnyRole('ADMIN', 'OPERATOR', 'USER', 'MANAGER')")
     public ResponseEntity<ServiceRequestDTO.Response> createDraft(
             @AuthenticationPrincipal @NonNull Member currentMember,
             @RequestPart("request") ServiceRequestDTO.Create dto,
             @RequestPart(value = "files", required = false) List<MultipartFile> files) {
         
         ServiceRequest request = requestService.createDraft(currentMember, Objects.requireNonNull(dto), files);
-        return ResponseEntity.ok(convertToResponse(request));
+        return ResponseEntity.ok(ServiceRequestDTO.Response.fromEntity(request));
     }
 
     @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAnyRole('ADMIN', 'OPERATOR', 'USER', 'MANAGER')")
     public ResponseEntity<Void> updateRequest(
             @AuthenticationPrincipal @NonNull Member currentMember,
             @PathVariable @NonNull Long id,
@@ -43,6 +46,7 @@ public class ServiceRequestController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OPERATOR', 'USER', 'MANAGER')")
     public ResponseEntity<Void> deleteRequest(
             @AuthenticationPrincipal @NonNull Member currentMember,
             @PathVariable @NonNull Long id) {
@@ -51,8 +55,20 @@ public class ServiceRequestController {
     }
 
     @GetMapping("/attachments/{attachmentId}")
-    public ResponseEntity<byte[]> downloadAttachment(@PathVariable @NonNull Long attachmentId) {
+    @PreAuthorize("hasAnyRole('ADMIN', 'OPERATOR', 'USER', 'MANAGER')")
+    public ResponseEntity<byte[]> downloadAttachment(
+            @AuthenticationPrincipal @NonNull Member currentMember,
+            @PathVariable @NonNull Long attachmentId) {
+        
         ServiceRequestAttachment attachment = requestService.getAttachment(attachmentId);
+        ServiceRequest request = attachment.getServiceRequest();
+        
+        // 보안 검증: MSP가 아니면 본인 테넌트 파일만 다운로드 가능
+        String userTenantId = currentMember.getTenant().getTenantId();
+        if (!"OPER_MSP".equals(userTenantId) && !request.getTenant().getTenantId().equals(userTenantId)) {
+            return ResponseEntity.status(403).build();
+        }
+
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + attachment.getFileName() + "\"")
                 .contentType(MediaType.parseMediaType(Objects.requireNonNull(attachment.getContentType() != null ? attachment.getContentType() : "application/octet-stream")))
@@ -60,6 +76,7 @@ public class ServiceRequestController {
     }
 
     @PostMapping("/{id}/submit")
+    @PreAuthorize("hasAnyRole('USER', 'MANAGER', 'ADMIN', 'OPERATOR')")
     public ResponseEntity<Void> submit(
             @PathVariable @NonNull Long id,
             @RequestBody ServiceRequestDTO.Submit dto) {
@@ -68,6 +85,7 @@ public class ServiceRequestController {
     }
 
     @PostMapping("/approvals/{approvalId}")
+    @PreAuthorize("hasAnyRole('USER', 'MANAGER', 'ADMIN', 'OPERATOR')")
     public ResponseEntity<Void> approve(
             @AuthenticationPrincipal @NonNull Member currentMember,
             @PathVariable @NonNull Long approvalId,
@@ -77,15 +95,16 @@ public class ServiceRequestController {
     }
 
     @PostMapping("/{id}/assign")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OPERATOR')")
     public ResponseEntity<Void> assign(
             @AuthenticationPrincipal @NonNull Member currentMember,
             @PathVariable @NonNull Long id) {
-        // 현재 로그인한 운영자 본인에게 배정
         requestService.assignRequest(id, Objects.requireNonNull(currentMember.getMemberId()));
         return ResponseEntity.ok().build();
     }
 
     @PostMapping("/{id}/resolve")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OPERATOR')")
     public ResponseEntity<Void> resolve(
             @PathVariable @NonNull Long id,
             @RequestBody ServiceRequestDTO.Resolve dto) {
@@ -94,6 +113,7 @@ public class ServiceRequestController {
     }
 
     @PostMapping("/{id}/close")
+    @PreAuthorize("hasAnyRole('USER', 'MANAGER', 'ADMIN', 'OPERATOR')")
     public ResponseEntity<Void> close(
             @PathVariable @NonNull Long id) {
         requestService.closeRequest(id);
@@ -101,27 +121,40 @@ public class ServiceRequestController {
     }
 
     @GetMapping("/all")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OPERATOR', 'USER', 'MANAGER')")
     public ResponseEntity<List<ServiceRequestDTO.Response>> listAllRequests(
             @AuthenticationPrincipal @NonNull Member currentMember) {
         List<ServiceRequest> requests = requestService.listRequestsByMember(currentMember);
-        return ResponseEntity.ok(requests.stream().map(this::convertToResponse).toList());
+        return ResponseEntity.ok(requests.stream().map(ServiceRequestDTO.Response::fromEntity).toList());
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'OPERATOR', 'USER', 'MANAGER')")
     public ResponseEntity<List<ServiceRequestDTO.Response>> listRequests(
             @AuthenticationPrincipal @NonNull Member currentMember) {
-        List<ServiceRequest> requests = requestService.listTenantRequests(Objects.requireNonNull(currentMember.getTenant().getTenantId()));
-        return ResponseEntity.ok(requests.stream().map(this::convertToResponse).toList());
+        // 기본 목록 조회도 listRequestsByMember를 사용하여 권한별 필터링 적용
+        List<ServiceRequest> requests = requestService.listRequestsByMember(currentMember);
+        return ResponseEntity.ok(requests.stream().map(ServiceRequestDTO.Response::fromEntity).toList());
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OPERATOR', 'USER', 'MANAGER')")
     public ResponseEntity<ServiceRequestDTO.Response> getRequest(
+            @AuthenticationPrincipal @NonNull Member currentMember,
             @PathVariable @NonNull Long id) {
         ServiceRequest request = requestService.getRequest(id);
-        return ResponseEntity.ok(convertToResponse(request));
+        
+        // 보안 검증
+        String userTenantId = currentMember.getTenant().getTenantId();
+        if (!"OPER_MSP".equals(userTenantId) && !request.getTenant().getTenantId().equals(userTenantId)) {
+            return ResponseEntity.status(403).build();
+        }
+        
+        return ResponseEntity.ok(ServiceRequestDTO.Response.fromEntity(request));
     }
 
     @GetMapping("/{id}/approvals")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OPERATOR', 'USER', 'MANAGER')")
     public ResponseEntity<List<ServiceRequestDTO.ApprovalResponse>> getApprovals(
             @PathVariable @NonNull Long id) {
         return ResponseEntity.ok(requestService.getApprovalSteps(id).stream()
@@ -134,30 +167,5 @@ public class ServiceRequestController {
                         .updatedAt(a.getUpdatedAt())
                         .build())
                 .toList());
-    }
-
-    private ServiceRequestDTO.Response convertToResponse(ServiceRequest request) {
-        return ServiceRequestDTO.Response.builder()
-                .requestId(request.getRequestId())
-                .tenantId(request.getTenant().getTenantId())
-                .title(request.getTitle())
-                .description(request.getDescription())
-                .status(request.getStatus())
-                .priority(request.getPriority())
-                .slaDeadline(request.getSlaDeadline())
-                .requesterName(request.getRequester().getUsername())
-                .assigneeName(request.getAssignee() != null ? request.getAssignee().getUsername() : null)
-                .resolution(request.getResolution())
-                .createdAt(request.getCreatedAt())
-                .catalogName(request.getCatalog() != null ? request.getCatalog().getName() : null)
-                .dynamicFields(request.getDynamicFields())
-                .attachments(request.getAttachments().stream()
-                        .map(a -> ServiceRequestDTO.AttachmentInfo.builder()
-                                .id(a.getId())
-                                .fileName(a.getFileName())
-                                .fileSize(a.getFileSize())
-                                .build())
-                        .toList())
-                .build();
     }
 }

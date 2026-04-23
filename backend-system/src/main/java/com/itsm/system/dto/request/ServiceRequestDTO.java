@@ -65,6 +65,8 @@ public class ServiceRequestDTO {
 
     @Getter
     @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class Response {
         private Long requestId;
         private String tenantId;
@@ -81,6 +83,32 @@ public class ServiceRequestDTO {
         private String catalogName;
         private String dynamicFields;
         private List<AttachmentInfo> attachments;
+
+        public static Response fromEntity(com.itsm.system.domain.request.ServiceRequest request) {
+            return Response.builder()
+                    .requestId(request.getRequestId())
+                    .tenantId(request.getTenant().getTenantId())
+                    .title(request.getTitle())
+                    .description(request.getDescription())
+                    .status(request.getStatus())
+                    .priority(request.getPriority())
+                    .slaDeadline(request.getSlaDeadline())
+                    .requesterName(request.getRequester().getUsername())
+                    .assigneeName(request.getAssignee() != null ? request.getAssignee().getUsername() : null)
+                    .resolution(request.getResolution())
+                    .createdAt(request.getCreatedAt())
+                    .catalogId(request.getCatalog() != null ? request.getCatalog().getId() : null)
+                    .catalogName(request.getCatalog() != null ? request.getCatalog().getName() : null)
+                    .dynamicFields(request.getDynamicFields())
+                    .attachments(request.getAttachments().stream()
+                            .map(a -> AttachmentInfo.builder()
+                                    .id(a.getId())
+                                    .fileName(a.getFileName())
+                                    .fileSize(a.getFileSize())
+                                    .build())
+                            .toList())
+                    .build();
+        }
     }
 
     @Getter
