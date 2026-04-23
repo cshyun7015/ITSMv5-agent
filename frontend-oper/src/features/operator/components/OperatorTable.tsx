@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Operator } from '../types';
 import SkeletonTable from '../../../components/common/SkeletonTable';
 
@@ -27,10 +27,19 @@ const OperatorTable: React.FC<OperatorTableProps> = ({
   canManage
 }) => {
   const [search, setSearch]       = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [roleFilter, setRoleFilter]   = useState<'ALL' | 'ROLE_ADMIN' | 'ROLE_OPERATOR'>('ALL');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'active' | 'inactive'>('ALL');
   const [sortKey, setSortKey]     = useState<SortKey>('username');
   const [sortDir, setSortDir]     = useState<SortDir>('asc');
+
+  // Search Debounce Logic
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [search]);
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
@@ -39,8 +48,8 @@ const OperatorTable: React.FC<OperatorTableProps> = ({
   
   const filtered = useMemo(() => {
     let data = [...operators];
-    if (search.trim()) {
-      const q = search.toLowerCase();
+    if (debouncedSearch.trim()) {
+      const q = debouncedSearch.toLowerCase();
       data = data.filter(op =>
         op.username.toLowerCase().includes(q) ||
         op.email.toLowerCase().includes(q)
@@ -59,7 +68,7 @@ const OperatorTable: React.FC<OperatorTableProps> = ({
       return sortDir === 'asc' ? cmp : -cmp;
     });
     return data;
-  }, [operators, search, roleFilter, statusFilter, sortKey, sortDir]);
+  }, [operators, debouncedSearch, roleFilter, statusFilter, sortKey, sortDir]);
 
   const isAllSelected = filtered.length > 0 && filtered.every(op => selectedIds.includes(op.memberId));
 

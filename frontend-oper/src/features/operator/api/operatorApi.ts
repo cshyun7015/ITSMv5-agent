@@ -55,14 +55,14 @@ export const operatorApi = {
   },
 
   // 테넌트(운영사) 목록 조회
-  getTenants: async (): Promise<Operator[]> => {
-    const response = await apiClient.get<Operator[]>('/operator/tenants');
+  getTenants: async (): Promise<Tenant[]> => {
+    const response = await apiClient.get<Tenant[]>('/operator/tenants');
     return response.data;
   },
 
   // 테넌트(운영사) 생성
-  createTenant: async (data: { tenantId: string, name: string, brandColor?: string }): Promise<Operator> => {
-    const response = await apiClient.post<Operator>('/operator/tenants', data);
+  createTenant: async (data: { tenantId: string, name: string, brandColor?: string }): Promise<Tenant> => {
+    const response = await apiClient.post<Tenant>('/operator/tenants', data);
     return response.data;
   }
 };

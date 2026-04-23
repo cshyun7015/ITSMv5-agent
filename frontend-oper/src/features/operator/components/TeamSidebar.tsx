@@ -199,11 +199,14 @@ const TeamSidebar: React.FC<TeamSidebarProps> = ({
           border: 1px solid transparent;
         }
         .sidebar-item:hover {
-          background: rgba(255, 255, 255, 0.04);
+          background: rgba(255, 255, 255, 0.06);
+          transform: translateX(4px);
+          border-color: rgba(255, 255, 255, 0.05);
         }
         .sidebar-item--active {
-          background: rgba(59, 130, 246, 0.1);
-          border-color: rgba(59, 130, 246, 0.2);
+          background: linear-gradient(90deg, rgba(59, 130, 246, 0.15), rgba(59, 130, 246, 0.05));
+          border-color: rgba(59, 130, 246, 0.3);
+          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
         }
 
         .sidebar-item__icon {

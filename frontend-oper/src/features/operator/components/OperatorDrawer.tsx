@@ -12,80 +12,79 @@ interface OperatorDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  allTeams: Team[];
+  organizations: Organization[];
 }
 
-const OperatorDrawer: React.FC<OperatorDrawerProps> = ({ operator, isOpen, onClose, onSuccess }) => {
+const OperatorDrawer: React.FC<OperatorDrawerProps> = ({ 
+  operator, 
+  isOpen, 
+  onClose, 
+  onSuccess,
+  allTeams,
+  organizations
+}) => {
   const isEdit = !!operator;
-  const [username, setUsername] = useState('');
-  const [email, setEmail] = useState('');
-  const [roleId, setRoleId] = useState('ROLE_OPERATOR');
-  const [teamId, setTeamId] = useState<number | null>(null);
-  const [orgId, setOrgId] = useState<number | null>(null);
-  const [password, setPassword] = useState('');
-  const [isActive, setIsActive] = useState(true);
   
+  const [formState, setFormState] = useState<OperatorRequest>({
+    username: '',
+    email: '',
+    roleId: 'ROLE_OPERATOR',
+    teamId: null,
+    password: '',
+    isActive: true
+  });
+  
+  const [orgId, setOrgId] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [allTeams, setAllTeams] = useState<Team[]>([]);
-  const [organizations, setOrganizations] = useState<Organization[]>([]);
-  const [loadingMetadata, setLoadingMetadata] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
         if (operator) {
-            setUsername(operator.username);
-            setEmail(operator.email);
-            setRoleId(operator.roleId);
-            setTeamId(operator.teamId);
-            setIsActive(operator.isActive);
-            setPassword('');
+            setFormState({
+                username: operator.username,
+                email: operator.email,
+                roleId: operator.roleId,
+                teamId: operator.teamId,
+                isActive: operator.isActive,
+                password: ''
+            });
+            const currentTeam = allTeams.find(t => t.teamId === operator.teamId);
+            if (currentTeam) setOrgId(currentTeam.orgId);
         } else {
-            setUsername('');
-            setEmail('');
-            setRoleId('ROLE_OPERATOR');
-            setTeamId(null);
-            setIsActive(true);
-            setPassword('');
+            setFormState({
+                username: '',
+                email: '',
+                roleId: 'ROLE_OPERATOR',
+                teamId: null,
+                isActive: true,
+                password: ''
+            });
+            setOrgId(null);
         }
-        fetchMetadata();
     }
-  }, [isOpen, operator]);
-
-  const fetchMetadata = async () => {
-    setLoadingMetadata(true);
-    try {
-      const teams = await operatorApi.getTeams();
-      setAllTeams(teams);
-      
-      const orgsMap = new Map<number, Organization>();
-      teams.forEach(t => {
-          if (t.orgId) orgsMap.set(t.orgId, { orgId: t.orgId, name: t.orgName || 'Unknown Org' });
-      });
-      setOrganizations(Array.from(orgsMap.values()));
-
-      if (operator?.teamId) {
-          const currentTeam = teams.find(t => t.teamId === operator.teamId);
-          if (currentTeam) setOrgId(currentTeam.orgId);
-      }
-    } catch (error) {
-      console.error('Failed to fetch metadata', error);
-    } finally {
-      setLoadingMetadata(false);
-    }
-  };
+  }, [isOpen, operator, allTeams]);
 
   const filteredTeams = orgId ? allTeams.filter(t => t.orgId === orgId) : allTeams;
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormState(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, checked } = e.target;
+    setFormState(prev => ({ ...prev, [name]: checked }));
+  };
 
   const handleSubmit = async (e?: React.SyntheticEvent) => {
     e?.preventDefault();
     setIsSubmitting(true);
     try {
       const payload: OperatorRequest = {
-        username: isEdit ? undefined : username,
-        email,
-        password: password || undefined,
-        roleId,
-        teamId,
-        isActive
+        ...formState,
+        username: isEdit ? undefined : formState.username,
+        password: formState.password || undefined
       };
 
       if (isEdit && operator) {
@@ -115,40 +114,45 @@ const OperatorDrawer: React.FC<OperatorDrawerProps> = ({ operator, isOpen, onClo
 
         <div className="drawer-form">
           <div className="form-group">
-            <label className="form-label">Operator ID / Username</label>
+            <label className="form-label" htmlFor="username">Operator ID / Username</label>
             <input 
+              id="username"
+              name="username"
               className="form-input" 
               required 
               disabled={isEdit}
-              value={username}
-              onChange={e => setUsername(e.target.value)}
+              value={formState.username}
+              onChange={handleInputChange}
               placeholder="e.g. operator_dev" 
             />
             {isEdit && <span className="helper-text">Username identifier is permanent.</span>}
           </div>
 
           <div className="form-group">
-            <label className="form-label">Email Address</label>
+            <label className="form-label" htmlFor="email">Email Address</label>
             <input 
+              id="email"
+              name="email"
               type="email"
               className="form-input" 
               required
-              value={email}
-              onChange={e => setEmail(e.target.value)}
+              value={formState.email}
+              onChange={handleInputChange}
               placeholder="operator@company.com" 
             />
           </div>
 
           {organizations.length > 1 && (
             <div className="form-group">
-                <label className="form-label">Organization (Tenant)</label>
+                <label className="form-label" htmlFor="orgId">Organization (Tenant)</label>
                 <select 
+                    id="orgId"
                     className="form-input"
                     required
                     value={orgId || ''}
                     onChange={e => {
                         setOrgId(Number(e.target.value));
-                        setTeamId(null);
+                        setFormState(prev => ({ ...prev, teamId: null }));
                     }}
                 >
                     <option value="">Select Organization</option>
@@ -160,12 +164,14 @@ const OperatorDrawer: React.FC<OperatorDrawerProps> = ({ operator, isOpen, onClo
           )}
 
           <div className="form-group">
-            <label className="form-label">Assigned Team</label>
+            <label className="form-label" htmlFor="teamId">Assigned Team</label>
             <select 
+              id="teamId"
+              name="teamId"
               className="form-input"
-              value={teamId || ''}
-              onChange={e => setTeamId(e.target.value ? Number(e.target.value) : null)}
-              disabled={loadingMetadata || (organizations.length > 1 && !orgId)}
+              value={formState.teamId || ''}
+              onChange={e => setFormState(prev => ({ ...prev, teamId: e.target.value ? Number(e.target.value) : null }))}
+              disabled={organizations.length > 1 && !orgId}
             >
               <option value="">Not Assigned</option>
               {filteredTeams.map(team => (
@@ -179,35 +185,39 @@ const OperatorDrawer: React.FC<OperatorDrawerProps> = ({ operator, isOpen, onClo
           <div className="form-group">
             <label className="form-label">Security Role</label>
             <div className="role-grid">
-                <label className={`role-card ${roleId === 'ROLE_OPERATOR' ? 'active' : ''}`}>
-                    <input type="radio" value="ROLE_OPERATOR" checked={roleId === 'ROLE_OPERATOR'} onChange={e => setRoleId(e.target.value)} />
+                <label className={`role-card ${formState.roleId === 'ROLE_OPERATOR' ? 'active' : ''}`}>
+                    <input type="radio" name="roleId" value="ROLE_OPERATOR" checked={formState.roleId === 'ROLE_OPERATOR'} onChange={handleInputChange} />
                     <span className="name">Operator</span>
                 </label>
-                <label className={`role-card ${roleId === 'ROLE_ADMIN' ? 'active' : ''}`}>
-                    <input type="radio" value="ROLE_ADMIN" checked={roleId === 'ROLE_ADMIN'} onChange={e => setRoleId(e.target.value)} />
+                <label className={`role-card ${formState.roleId === 'ROLE_ADMIN' ? 'active' : ''}`}>
+                    <input type="radio" name="roleId" value="ROLE_ADMIN" checked={formState.roleId === 'ROLE_ADMIN'} onChange={handleInputChange} />
                     <span className="name">Admin</span>
                 </label>
             </div>
           </div>
 
           <div className="form-group">
-            <label className="form-label">{isEdit ? 'Update Password' : 'Initial Password'}</label>
+            <label className="form-label" htmlFor="password">{isEdit ? 'Update Password' : 'Initial Password'}</label>
             <input 
+              id="password"
+              name="password"
               type="password"
               className="form-input" 
               required={!isEdit}
-              value={password}
-              onChange={e => setPassword(e.target.value)}
+              value={formState.password}
+              onChange={handleInputChange}
               placeholder={isEdit ? 'Leave blank to keep current' : 'Enter login password'} 
             />
           </div>
 
           <div className="form-group checkbox">
-            <label className="checkbox-label">
+            <label className="checkbox-label" htmlFor="isActive">
               <input 
+                id="isActive"
+                name="isActive"
                 type="checkbox" 
-                checked={isActive}
-                onChange={e => setIsActive(e.target.checked)}
+                checked={formState.isActive}
+                onChange={handleCheckboxChange}
               />
               Active Account Status
             </label>

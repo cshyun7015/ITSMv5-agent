@@ -380,12 +380,14 @@ const OperatorManagement: React.FC = () => {
                   <button 
                     className={`toggle-btn ${viewMode === 'tenants' ? 'active' : ''}`}
                     onClick={() => { setViewMode('tenants'); setFilterTenantId(null); }}
+                    data-testid="view-mode-tenants"
                   >
                     🏢 Companies
                   </button>
                   <button 
                     className={`toggle-btn ${viewMode === 'operators' ? 'active' : ''}`}
                     onClick={() => setViewMode('operators')}
+                    data-testid="view-mode-operators"
                   >
                     👥 Operators
                   </button>
@@ -393,9 +395,9 @@ const OperatorManagement: React.FC = () => {
               )}
               {canManage && (
                 viewMode === 'tenants' ? (
-                  <button className="btn-primary" onClick={() => setIsTenantModalOpen(true)}>+ Add Company</button>
+                  <button className="btn-primary" onClick={() => setIsTenantModalOpen(true)} data-testid="add-company-btn">+ Add Company</button>
                 ) : (
-                  <button className="btn-primary" onClick={handleCreateOperator}>+ Add Operator</button>
+                  <button className="btn-primary" onClick={handleCreateOperator} data-testid="add-operator-btn">+ Add Operator</button>
                 )
               )}
             </div>
@@ -405,7 +407,12 @@ const OperatorManagement: React.FC = () => {
             {viewMode === 'tenants' ? (
               <div className="tenant-list-grid">
                 {tenants.map(t => (
-                  <div key={t.tenantId} className="tenant-card" onClick={() => { setFilterTenantId(t.tenantId); setViewMode('operators'); }}>
+                  <div 
+                    key={t.tenantId} 
+                    className="tenant-card" 
+                    onClick={() => { setFilterTenantId(t.tenantId); setViewMode('operators'); }}
+                    style={{ '--tenant-color': t.brandColor } as React.CSSProperties}
+                  >
                     <div className="tenant-card__accent" style={{ background: t.brandColor }} />
                     <div className="tenant-card__info">
                       <h4 className="tenant-name">{t.name}</h4>
@@ -494,6 +501,8 @@ const OperatorManagement: React.FC = () => {
             setIsOperatorModalOpen(false);
             loadData();
           }}
+          allTeams={teams}
+          organizations={organizations}
         />
       )}
 
@@ -618,26 +627,24 @@ const OperatorManagement: React.FC = () => {
 
         /* ── Bulk Action Bar ── */
         .bulk-action-bar {
-          position: absolute;
-          top: 20px;
-          left: 50%;
-          transform: translateX(-50%);
+          position: sticky;
+          top: 0;
           z-index: 1000;
           display: flex;
           align-items: center;
+          justify-content: center;
           gap: 24px;
-          padding: 12px 24px;
-          background: rgba(15, 23, 42, 0.9);
-          backdrop-filter: blur(12px);
-          border: 1px solid rgba(59, 130, 246, 0.3);
-          border-radius: 16px;
-          box-shadow: 0 10px 40px -10px rgba(0,0,0,0.5);
-          animation: slideBulkIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+          padding: 14px 24px;
+          background: rgba(15, 23, 42, 0.95);
+          backdrop-filter: blur(16px);
+          border-bottom: 1px solid rgba(59, 130, 246, 0.3);
+          box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+          animation: slideBulkDown 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        @keyframes slideBulkIn {
-          from { opacity: 0; transform: translate(-50%, -20px); }
-          to { opacity: 1; transform: translate(-50%, 0); }
+        @keyframes slideBulkDown {
+          from { opacity: 0; transform: translateY(-100%); }
+          to { opacity: 1; transform: translateY(0); }
         }
 
         .bulk-info {
@@ -721,7 +728,7 @@ const OperatorManagement: React.FC = () => {
           overflow: hidden;
         }
         .tenant-card:hover {
-          background: rgba(255, 255, 255, 0.05);
+          background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, var(--tenant-color, rgba(59, 130, 246, 0.05)) 100%);
           transform: translateY(-4px);
           border-color: rgba(255, 255, 255, 0.2);
           box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5);
