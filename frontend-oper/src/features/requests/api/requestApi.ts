@@ -18,8 +18,18 @@ export const requestApi = {
   },
   
   // 운영자용 전체 요청 목록 조회
-  getAllRequests: async (): Promise<ServiceRequest[]> => {
-    const response = await apiClient.get<ServiceRequest[]>('/requests/all');
+  getAllRequests: async (params?: {
+    status?: string;
+    tenantId?: string;
+    keyword?: string;
+    startDate?: string;
+    endDate?: string;
+  }): Promise<ServiceRequest[]> => {
+    const cleanParams = params ? Object.fromEntries(
+      Object.entries(params).filter(([_, v]) => v !== undefined && v !== 'all' && v !== 'ALL' && v !== '')
+    ) : undefined;
+    
+    const response = await apiClient.get<ServiceRequest[]>('/requests/all', { params: cleanParams });
     return response.data;
   },
 

@@ -10,15 +10,16 @@ import com.itsm.system.domain.tenant.TenantRepository;
 import com.itsm.system.domain.tenant.TenantRelationRepository;
 import com.itsm.system.dto.request.ServiceRequestDTO;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.Objects;
-
+import java.util.stream.Collectors;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
-
+import java.util.ArrayList;
 import java.util.stream.IntStream;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -285,5 +286,62 @@ public class ServiceRequestService {
             request.setIsDeleted(true); // Soft delete for others
             requestRepository.save(Objects.requireNonNull(request));
         }
+    }
+
+    @Transactional(readOnly = true)
+    public List<ServiceRequest> searchRequests(Member member, ServiceRequestDTO.Search search) {
+        String tenantId = member.getTenant().getTenantId();
+        boolean isMsp = "OPER_MSP".equals(tenantId);
+        
+        Specification<ServiceRequest> spec = (root, query, cb) -> {
+            List<jakarta.persistence.criteria.Predicate> predicates = new ArrayList<>();
+
+            // 1. Permissions
+            if (!isMsp || member.getAuthorities().stream().noneMatch(a -> a.getAuthority().equals("ROLE_ADMIN"))) {
+                if (member.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_OPERATOR"))) {
+                    List<String> managedTenantIds = tenantRelationRepository.findByOperator_TenantId(tenantId)
+                            .stream()
+                            .map(rel -> rel.getCustomer().getTenantId())
+                            .collect(Collectors.toList());
+                    managedTenantIds.add(tenantId);
+                    predicates.add(root.get("tenant").get("tenantId").in(managedTenantIds));
+                } else {
+                    predicates.add(cb.equal(root.get("tenant").get("tenantId"), tenantId));
+                }
+            }
+            
+            if (!isMsp) {
+                predicates.add(cb.equal(root.get("isDeleted"), false));
+            }
+
+            // 2. Filters
+            if (search.getStatus() != null) {
+                predicates.add(cb.equal(root.get("status"), search.getStatus()));
+            }
+            
+            if (search.getTenantId() != null && !search.getTenantId().isEmpty() && !"ALL".equalsIgnoreCase(search.getTenantId())) {
+                predicates.add(cb.equal(root.get("tenant").get("tenantId"), search.getTenantId()));
+            }
+
+            if (search.getKeyword() != null && !search.getKeyword().trim().isEmpty()) {
+                String pattern = "%" + search.getKeyword().trim().toLowerCase() + "%";
+                predicates.add(cb.or(
+                    cb.like(cb.lower(root.get("title")), pattern),
+                    cb.like(cb.lower(root.get("description")), pattern),
+                    cb.like(cb.lower(root.get("requester").get("username")), pattern)
+                ));
+            }
+
+            if (search.getStartDate() != null) {
+                predicates.add(cb.greaterThanOrEqualTo(root.get("createdAt"), search.getStartDate()));
+            }
+            if (search.getEndDate() != null) {
+                predicates.add(cb.lessThanOrEqualTo(root.get("createdAt"), search.getEndDate()));
+            }
+
+            return cb.and(predicates.toArray(new jakarta.persistence.criteria.Predicate[0]));
+        };
+
+        return requestRepository.findAll(spec);
     }
 }

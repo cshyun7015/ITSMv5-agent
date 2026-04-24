@@ -1,5 +1,9 @@
 @import './design-tokens.css';
 
+*, *:before, *:after {
+  box-sizing: border-box;
+}
+
 :root {
   --glass-bg: rgba(15, 23, 42, 0.65);
   --glass-border: rgba(255, 255, 255, 0.08);
@@ -245,7 +249,7 @@ body {
 .filter-bar {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 32px; /* Even larger gap */
   padding: 16px 24px;
   background: rgba(15, 23, 42, 0.3);
   border-radius: 12px;
@@ -256,8 +260,8 @@ body {
 
 .search-input-wrapper {
   position: relative;
-  flex: 1;
-  min-width: 300px;
+  flex: 0 0 400px; /* Rigid width: no grow, no shrink */
+  margin-right: 8px; /* Extra safety margin */
 }
 
 .search-input {
@@ -270,10 +274,32 @@ body {
   font-size: 14px;
 }
 
-.search-input:focus {
-  border-color: var(--primary);
+.modern-input, .modern-select {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  padding: 10px 16px;
+  color: #fff;
+  font-size: 14px;
   outline: none;
-  background: rgba(0, 0, 0, 0.3);
+  transition: var(--transition-smooth);
+  appearance: none; /* Remove default browser styling */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='white'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
+  padding-right: 40px;
+}
+
+.modern-select option {
+  background-color: #1e293b; /* Dark background for options */
+  color: #fff;
+}
+
+.modern-input:focus, .modern-select:focus {
+  border-color: var(--primary);
+  background: rgba(59, 130, 246, 0.05);
+  box-shadow: 0 0 0 4px var(--primary-glow);
 }
 
 .search-icon {
@@ -282,6 +308,27 @@ body {
   top: 50%;
   transform: translateY(-50%);
   color: var(--text-muted);
+}
+
+.date-input {
+  width: 165px;
+  padding: 8px 12px;
+}
+
+.date-separator {
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+/* Customize date picker icon and colors for dark theme */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  cursor: pointer;
+  opacity: 0.6;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
 }
 
 /* Data Table */
@@ -372,6 +419,7 @@ body {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-shrink: 0; /* Prevent label squashing */
 }
 
 .filter-group .group-label {

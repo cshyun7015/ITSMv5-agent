@@ -15,66 +15,113 @@ const RequestList: React.FC<RequestListProps> = ({ onSelectRequest }) => {
   const [filterStatus, setFilterStatus] = useState<string>('ALL');
   const [filterTenant, setFilterTenant] = useState<string>('ALL');
   const [keyword, setKeyword] = useState<string>('');
+  const [dateRange, setDateRange] = useState<string>('ALL'); // ALL, TODAY, 1W, 1M, CUSTOM
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [statusCodes, setStatusCodes] = useState<CodeDTO[]>([]);
 
   useEffect(() => {
     loadInitialData();
   }, []);
 
   const loadInitialData = async () => {
-    setIsLoading(true);
     try {
-      // Fetch separately to ensure requests load even if tenants fail
-      const reqData = await requestApi.getAllRequests().catch(err => {
-        console.error('Failed to load requests', err);
-        return [];
-      });
-      setRequests(reqData);
-
       const tenantData = await requestApi.getTenants().catch(err => {
         console.error('Failed to load tenants', err);
         return [];
       });
       setTenants(tenantData);
+
+      const codesData = await requestApi.getCodesByGroup('SR_STATUS').catch(err => {
+        console.error('Failed to load status codes', err);
+        return [];
+      });
+      setStatusCodes(codesData);
     } catch (error) {
-      console.error('Data initialization error', error);
+      console.error('Initial metadata loading error', error);
+    }
+  };
+
+  const fetchRequests = async () => {
+    setIsLoading(true);
+    try {
+      let params: any = {
+        status: filterStatus === 'ALL' ? undefined : filterStatus,
+        tenantId: filterTenant === 'ALL' ? undefined : filterTenant,
+        keyword: keyword,
+      };
+
+      if (dateRange !== 'ALL') {
+        const now = new Date();
+        let start: Date | null = null;
+        let end: Date = new Date();
+
+        if (dateRange === 'TODAY') {
+          start = new Date();
+          start.setHours(0, 0, 0, 0);
+        } else if (dateRange === '1W') {
+          start = new Date();
+          start.setDate(now.getDate() - 7);
+        } else if (dateRange === '1M') {
+          start = new Date();
+          start.setMonth(now.getMonth() - 1);
+        } else if (dateRange === 'CUSTOM' && startDate && endDate) {
+          start = new Date(startDate);
+          end = new Date(endDate);
+          end.setHours(23, 59, 59, 999);
+        }
+
+        if (start) {
+          params.startDate = start.toISOString();
+          params.endDate = end.toISOString();
+        }
+      }
+
+      const data = await requestApi.getAllRequests(params);
+      console.log('Fetched requests with params:', params, 'Result count:', data.length);
+      setRequests(data);
+    } catch (error) {
+      console.error('Failed to fetch requests', error);
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Debounced effect for filtering
+  useEffect(() => {
+    console.log('Filter changed, scheduling fetch...', { filterStatus, filterTenant, keyword, dateRange });
+    const handler = setTimeout(() => {
+      fetchRequests();
+    }, 400);
+    return () => clearTimeout(handler);
+  }, [filterStatus, filterTenant, keyword, dateRange, startDate, endDate]);
+
   const handleQuickAssign = async (e: React.MouseEvent, id: number) => {
     e.stopPropagation();
     try {
       await requestApi.assignToMe(id);
-      loadInitialData();
+      fetchRequests(); // Refresh list after assignment
     } catch (error) {
       alert('Assignment failed');
     }
   };
 
   const filteredRequests = useMemo(() => {
-    return requests.filter(req => {
-      const matchesStatus = filterStatus === 'ALL' || req.status === filterStatus;
-      const matchesTenant = filterTenant === 'ALL' || req.tenantId === filterTenant;
-      
-      const searchKeyword = keyword.toLowerCase();
-      const matchesKeyword = !keyword || 
-        req.requestId.toString().includes(keyword) || 
-        (req.title?.toLowerCase() || '').includes(searchKeyword) ||
-        (req.requesterName?.toLowerCase() || '').includes(searchKeyword);
-      
-      return matchesStatus && matchesTenant && matchesKeyword;
-    });
-  }, [requests, filterStatus, filterTenant, keyword]);
+    return requests;
+  }, [requests]);
 
-  const draftCount = useMemo(() => requests.filter(r => r.status === 'DRAFT').length, [requests]);
-  const pendingCount = useMemo(() => requests.filter(r => r.status === 'PENDING_APPROVAL').length, [requests]);
-  const openCount = useMemo(() => requests.filter(r => r.status === 'OPEN' || r.status === 'NEW').length, [requests]);
-  const inProgressCount = useMemo(() => requests.filter(r => r.status === 'IN_PROGRESS').length, [requests]);
-  const resolvedCount = useMemo(() => requests.filter(r => r.status === 'RESOLVED').length, [requests]);
-  const closedCount = useMemo(() => requests.filter(r => r.status === 'CLOSED').length, [requests]);
-  const rejectedCount = useMemo(() => requests.filter(r => r.status === 'REJECTED').length, [requests]);
+  const handleRowClick = (id: number) => {
+    onSelectRequest(id);
+  };
+
+  const draftCount = useMemo(() => filteredRequests.filter(r => r.status === 'DRAFT').length, [filteredRequests]);
+  const pendingCount = useMemo(() => filteredRequests.filter(r => r.status === 'PENDING_APPROVAL').length, [filteredRequests]);
+  const openCount = useMemo(() => filteredRequests.filter(r => r.status === 'OPEN' || r.status === 'NEW').length, [filteredRequests]);
+  const inProgressCount = useMemo(() => filteredRequests.filter(r => r.status === 'IN_PROGRESS').length, [filteredRequests]);
+  const resolvedCount = useMemo(() => filteredRequests.filter(r => r.status === 'RESOLVED').length, [filteredRequests]);
+  const closedCount = useMemo(() => filteredRequests.filter(r => r.status === 'CLOSED').length, [filteredRequests]);
+  const rejectedCount = useMemo(() => filteredRequests.filter(r => r.status === 'REJECTED').length, [filteredRequests]);
 
   const getSlaInfo = (deadline: string | null | undefined) => {
     if (!deadline) return { text: 'No SLA', class: '' };
@@ -159,6 +206,7 @@ const RequestList: React.FC<RequestListProps> = ({ onSelectRequest }) => {
         <div className="search-input-wrapper">
           <span className="search-icon">🔍</span>
           <input 
+            id="search-keyword"
             type="text" 
             className="search-input" 
             placeholder="Search by ID, Title, or Requester..."
@@ -168,16 +216,53 @@ const RequestList: React.FC<RequestListProps> = ({ onSelectRequest }) => {
         </div>
 
         <div className="filter-group">
+          <span className="group-label">Created</span>
+          <select 
+            id="date-filter"
+            className="modern-select"
+            value={dateRange}
+            onChange={(e) => setDateRange(e.target.value)}
+          >
+            <option value="ALL">All Time</option>
+            <option value="TODAY">Today</option>
+            <option value="1W">1 Week</option>
+            <option value="1M">1 Month</option>
+            <option value="CUSTOM">Custom Range</option>
+          </select>
+        </div>
+
+        {dateRange === 'CUSTOM' && (
+          <div className="filter-group date-range-group">
+            <input 
+              type="date" 
+              className="modern-input date-input"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+            />
+            <span className="date-separator">~</span>
+            <input 
+              type="date" 
+              className="modern-input date-input"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+            />
+          </div>
+        )}
+
+        <div className="filter-group">
           <span className="group-label">Tenant</span>
           <select 
-            value={filterTenant} 
-            onChange={(e) => setFilterTenant(e.target.value)} 
+            id="tenant-filter"
             className="modern-select"
-            style={{ width: '180px' }}
+            value={filterTenant}
+            onChange={(e) => {
+              console.log('Tenant filter changed:', e.target.value);
+              setFilterTenant(e.target.value);
+            }}
           >
             <option value="ALL">All Tenants</option>
             {tenants.map(t => (
-              <option key={t.tenantId} value={t.tenantId}>{t.name}</option>
+              <option key={`tenant-${t.id || t.tenantId}`} value={t.id || t.tenantId}>{t.name}</option>
             ))}
           </select>
         </div>
@@ -185,16 +270,30 @@ const RequestList: React.FC<RequestListProps> = ({ onSelectRequest }) => {
         <div className="filter-group">
           <span className="group-label">Status</span>
           <select 
-            value={filterStatus} 
-            onChange={(e) => setFilterStatus(e.target.value)} 
+            id="status-filter"
             className="modern-select"
-            style={{ width: '150px' }}
+            value={filterStatus}
+            onChange={(e) => {
+              console.log('Status filter changed:', e.target.value);
+              setFilterStatus(e.target.value);
+            }}
           >
             <option value="ALL">All Status</option>
-            <option value="OPEN">Open</option>
-            <option value="IN_PROGRESS">In Progress</option>
-            <option value="RESOLVED">Resolved</option>
-            <option value="CLOSED">Closed</option>
+            {statusCodes.length > 0 ? (
+              statusCodes.map(code => (
+                <option key={`status-${code.codeId}`} value={code.codeId}>{code.codeName}</option>
+              ))
+            ) : (
+              <>
+                <option value="DRAFT">Draft</option>
+                <option value="PENDING_APPROVAL">Pending Approval</option>
+                <option value="OPEN">Open</option>
+                <option value="IN_PROGRESS">In Progress</option>
+                <option value="RESOLVED">Resolved</option>
+                <option value="CLOSED">Closed</option>
+                <option value="REJECTED">Rejected</option>
+              </>
+            )}
           </select>
         </div>
       </div>
@@ -215,7 +314,7 @@ const RequestList: React.FC<RequestListProps> = ({ onSelectRequest }) => {
           <tbody>
             {filteredRequests.map(req => {
               const sla = getSlaInfo(req.slaDeadline);
-              const tenant = tenants.find(t => t.tenantId === req.tenantId);
+              const tenant = tenants.find(t => (t.id || t.tenantId) === req.tenantId);
               
               // Map priority to standardized P1-P4 keys
               const priorityMap: Record<string, string> = {
@@ -229,7 +328,7 @@ const RequestList: React.FC<RequestListProps> = ({ onSelectRequest }) => {
               const pKey = priorityMap[req.priority || 'NORMAL'] || 'P3';
 
               return (
-                <tr key={req.requestId} onClick={() => onSelectRequest(req.requestId)} style={{ cursor: 'pointer' }}>
+                <tr key={`req-${req.requestId}`} onClick={() => handleRowClick(req.requestId)}>
                   <td>
                     <span className="table-link">#{req.requestId}</span>
                   </td>

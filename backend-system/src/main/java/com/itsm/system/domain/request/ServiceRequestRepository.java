@@ -6,10 +6,12 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+
 import java.util.List;
 
 @Repository
-public interface ServiceRequestRepository extends JpaRepository<ServiceRequest, Long> {
+public interface ServiceRequestRepository extends JpaRepository<ServiceRequest, Long>, JpaSpecificationExecutor<ServiceRequest> {
     
     @EntityGraph(attributePaths = {"tenant", "requester", "assignee", "catalog", "attachments"})
     @Query("SELECT sr FROM ServiceRequest sr WHERE sr.tenant.tenantId = :tenantId AND sr.isDeleted = false")

@@ -16,6 +16,18 @@ public class ServiceRequestDTO {
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
+    public static class Search {
+        private ServiceRequestStatus status;
+        private String tenantId;
+        private String keyword;
+        private LocalDateTime startDate;
+        private LocalDateTime endDate;
+    }
+
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class Create {
         private String title;
         private String description;

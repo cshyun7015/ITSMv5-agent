@@ -13,6 +13,8 @@ import org.springframework.lang.NonNull;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.format.annotation.DateTimeFormat;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 
@@ -123,8 +125,22 @@ public class ServiceRequestController {
     @GetMapping("/all")
     @PreAuthorize("hasAnyRole('ADMIN', 'OPERATOR', 'USER', 'MANAGER')")
     public ResponseEntity<List<ServiceRequestDTO.Response>> listAllRequests(
-            @AuthenticationPrincipal @NonNull Member currentMember) {
-        List<ServiceRequest> requests = requestService.listRequestsByMember(currentMember);
+            @AuthenticationPrincipal @NonNull Member currentMember,
+            @RequestParam(required = false) ServiceRequestStatus status,
+            @RequestParam(required = false) String tenantId,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate) {
+        
+        ServiceRequestDTO.Search search = ServiceRequestDTO.Search.builder()
+                .status(status)
+                .tenantId(tenantId)
+                .keyword(keyword)
+                .startDate(startDate)
+                .endDate(endDate)
+                .build();
+
+        List<ServiceRequest> requests = requestService.searchRequests(currentMember, search);
         return ResponseEntity.ok(requests.stream().map(ServiceRequestDTO.Response::fromEntity).toList());
     }
 
