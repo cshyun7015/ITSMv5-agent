@@ -144,3 +144,5 @@ backend-system/bin/
 e2e/test-results/
 e2e/playwright-report/
 infra/ansible/ssh/
+frontend-oper/.vite/
+frontend-user/.vite/
