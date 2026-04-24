@@ -1,0 +1,20 @@
+spring:
+  datasource:
+    url: jdbc:mariadb://it-mariadb-test:3306/system_mgmt_test?characterEncoding=UTF-8&serverTimezone=UTC
+    username: itsm
+    password: itsm1234
+    driver-class-name: org.mariadb.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    validate-on-migrate: false
+
+server:
+  port: 8081

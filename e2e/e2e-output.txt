@@ -1,0 +1,122 @@
+
+Running 1 test using 1 worker
+
+[1A[2K[1/1] [chromium] › tests/code-lifecycle.spec.ts:34:7 › Code Management Lifecycle E2E › should perform full CRUD lifecycle for code groups and codes
+[1A[2K[chromium] › tests/code-lifecycle.spec.ts:34:7 › Code Management Lifecycle E2E › should perform full CRUD lifecycle for code groups and codes
+Logged in user: {"username":"msp","memberId":1,"tenantId":"OPER_MSP","roles":["ROLE_ADMIN"]}
+
+[1A[2KNavigating to Code Management...
+
+[1A[2KClicking add group button via Playwright...
+
+[1A[2KDrawer still not visible, attempting direct JS click...
+
+[1A[2KDrawer title found: Create New Group
+
+[1A[2KFilling form: Group=E2E_GRP_1776860164572, Code=E2E_CD_1776860164572
+
+[1A[2KClicking save button...
+
+[1A[2KBROWSER [log]: PAYLOAD TO SEND (cleaned): {groupId: E2E_GRP_1776860164572, codeId: E2E_CD_1776860164572, codeName: Initial E2E Code, description: , sortOrder: 10}
+
+[1A[2KBROWSER [log]: Creating new code...
+
+[1A[2KWaiting for success toast...
+
+[1A[2KBROWSER [log]: Create API SUCCESS
+
+[1A[2KBROWSER [log]: ADDING TOAST: [success] Code created successfully
+
+[1A[2KBROWSER [log]: ToastProvider MOUNTING/RENDERING
+
+[1A[2KBROWSER [log]: CURRENT TOASTS STATE: count=1 [Object]
+
+[1A[2KBROWSER [log]: RENDERING ToastContainer: count=1
+
+[1A[2KVerifying group appears in sidebar and selecting it...
+
+[1A[2KVerifying header title...
+
+[1A[2KBROWSER [log]: PAYLOAD TO SEND (cleaned): {groupId: , codeId: , codeName: Updated E2E Code Name, description: , sortOrder: 10}
+
+[1A[2KBROWSER [log]: Updating code ID 87...
+
+[1A[2KWaiting for update toast (attached)...
+
+[1A[2KToast found in DOM: ✅
+Code created successfully
+×
+
+[1A[2KBROWSER [error]: Failed to load resource: the server responded with a status of 400 ()
+
+[1A[2KBROWSER [error]: API ERROR: 400 {errors: Object, timestamp: 2026-04-22T12:16:06.767252382, status: 400}
+
+[1A[2KBROWSER [error]: Failed to save code AxiosError: Request failed with status code 400
+    at ip (http://localhost:8082/assets/index-BpNUrZeO.js:42:1085)
+    at XMLHttpRequest.p (http://localhost:8082/assets/index-BpNUrZeO.js:42:6307)
+    at un.request (http://localhost:8082/assets/index-BpNUrZeO.js:44:2134)
+    at async Object.updateCode (http://localhost:8082/assets/index-BpNUrZeO.js:443:1133)
+    at async g (http://localhost:8082/assets/index-BpNUrZeO.js:443:2075)
+
+[1A[2KBROWSER [log]: ADDING TOAST: [error] Please check the validation errors
+
+[1A[2KBROWSER [log]: ToastProvider MOUNTING/RENDERING
+
+[1A[2KBROWSER [log]: CURRENT TOASTS STATE: count=2 [Object, Object]
+
+[1A[2KBROWSER [log]: RENDERING ToastContainer: count=2
+
+[1A[2KBROWSER [log]: REMOVING TOAST: toast-1
+
+[1A[2KBROWSER [log]: ToastProvider MOUNTING/RENDERING
+
+[1A[2KBROWSER [log]: CURRENT TOASTS STATE: count=1 [Object]
+
+[1A[2KBROWSER [log]: RENDERING ToastContainer: count=1
+
+[1A[2KBROWSER [log]: REMOVING TOAST: toast-2
+
+[1A[2KBROWSER [log]: ToastProvider MOUNTING/RENDERING
+
+[1A[2KBROWSER [log]: CURRENT TOASTS STATE: count=0 []
+
+[1A[2KBROWSER [log]: RENDERING ToastContainer: count=0
+
+[1A[2K  1) [chromium] › tests/code-lifecycle.spec.ts:34:7 › Code Management Lifecycle E2E › should perform full CRUD lifecycle for code groups and codes 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoContainText[2m([22m[32mexpected[39m[2m)[22m failed
+
+    Locator: locator('.toast-item').first()
+    Expected pattern: [32m/updated/i[39m
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toContainText" with timeout 5000ms[22m
+    [2m  - waiting for locator('.toast-item').first()[22m
+    [2m    7 × locator resolved to <div class="toast-item toast-success">…</div>[22m
+    [2m      - unexpected value "✅Code created successfully×"[22m
+    [2m    - locator resolved to <div class="toast-item toast-error">…</div>[22m
+    [2m    - unexpected value "❌Please check the validation errors×"[22m
+
+
+      111 |     const toastText = await toastLocator.innerText();
+      112 |     console.log('Toast found in DOM:', toastText);
+    > 113 |     await expect(toastLocator).toContainText(/updated/i);
+          |                                ^
+      114 |     await expect(codeRow).toContainText(UPDATED_NAME);
+      115 |
+      116 |     // --- DELETE CODE ---
+        at /Users/cshyun/Workspace/ITSMv5-agent/e2e/tests/code-lifecycle.spec.ts:113:32
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/code-lifecycle-Code-Manage-2a4c9-e-for-code-groups-and-codes-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/code-lifecycle-Code-Manage-2a4c9-e-for-code-groups-and-codes-chromium/error-context.md
+
+
+[1A[2K  1 failed
+    [chromium] › tests/code-lifecycle.spec.ts:34:7 › Code Management Lifecycle E2E › should perform full CRUD lifecycle for code groups and codes 
+
+  Serving HTML report at http://localhost:62710. Press Ctrl+C to quit.

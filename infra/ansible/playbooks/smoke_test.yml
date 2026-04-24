@@ -1,0 +1,20 @@
+---
+- name: Infrastructure Connectivity Test (Smoke Test)
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Ping Linux hosts
+      ping:
+      when: inventory_hostname in groups['linux']
+
+    - name: Ping Windows hosts
+      win_ping:
+      when: inventory_hostname in groups['windows']
+
+- name: Basic Info Gathering
+  hosts: linux
+  gather_facts: yes
+  tasks:
+    - name: Display OS version
+      debug:
+        msg: "Hostname: {{ ansible_hostname }}, OS: {{ ansible_distribution }} {{ ansible_distribution_version }}"

@@ -1,0 +1,80 @@
+{"numTotalTestSuites":10,"numPassedTestSuites":10,"numFailedTestSuites":0,"numPendingTestSuites":0,"numTotalTests":23,"numPassedTests":23,"numFailedTests":0,"numPendingTests":0,"numTodoTests":0,"startTime":1776857880937,"success":true,"testResults":[{"assertionResults":[{"ancestorTitles":["","codeApi"],"fullName":" codeApi getAllCodes should fetch all codes","status":"passed","title":"getAllCodes should fetch all codes","duration":1,"failureMessages":[]},{"ancestorTitles":["","codeApi"],"fullName":" codeApi getCodesByGroup should fetch codes for a specific group","status":"passed","title":"getCodesByGroup should fetch codes for a specific group","duration":0,"failureMessages":[]},{"ancestorTitles":["","codeApi"],"fullName":" codeApi createCode should send POST request","status":"passed","title":"createCode should send POST request","duration":0,"failureMessages":[]},{"ancestorTitles":["","codeApi"],"fullName":" codeApi updateCode should send PUT request","status":"passed","title":"updateCode should send PUT request","duration":0,"failureMessages":[]},{"ancestorTitles":["","codeApi"],"fullName":" codeApi deleteCode should send DELETE request","status":"passed","title":"deleteCode should send DELETE request","duration":0,"failureMessages":[]}],"startTime":1776857881253,"endTime":1776857881254,"status":"passed","message":"","name":"/Users/cshyun/Workspace/ITSMv5-agent/frontend-oper/src/features/code/api/codeApi.test.ts"},{"assertionResults":[{"ancestorTitles":["","CodeDrawer"],"fullName":" CodeDrawer should render correctly when open","status":"passed","title":"should render correctly when open","duration":21,"failureMessages":[]},{"ancestorTitles":["","CodeDrawer"],"fullName":" CodeDrawer should convert Group ID and Code ID to uppercase on input","status":"passed","title":"should convert Group ID and Code ID to uppercase on input","duration":7,"failureMessages":[]},{"ancestorTitles":["","CodeDrawer"],"fullName":" CodeDrawer should call createCode and onSuccess when form is submitted successfully","status":"passed","title":"should call createCode and onSuccess when form is submitted successfully","duration":33,"failureMessages":[]},{"ancestorTitles":["","CodeDrawer"],"fullName":" CodeDrawer should display validation errors from backend","status":"passed","title":"should display validation errors from backend","duration":12,"failureMessages":[]}],"startTime":1776857881311,"endTime":1776857881384,"status":"passed","message":"","name":"/Users/cshyun/Workspace/ITSMv5-agent/frontend-oper/src/features/code/components/CodeDrawer.test.tsx"},{"assertionResults":[{"ancestorTitles":["","CodeList"],"fullName":" CodeList should render loading state","status":"passed","title":"should render loading state","duration":12,"failureMessages":[]},{"ancestorTitles":["","CodeList"],"fullName":" CodeList should render empty state","status":"passed","title":"should render empty state","duration":1,"failureMessages":[]},{"ancestorTitles":["","CodeList"],"fullName":" CodeList should render table with codes","status":"passed","title":"should render table with codes","duration":6,"failureMessages":[]},{"ancestorTitles":["","CodeList"],"fullName":" CodeList should call onEdit when edit button is clicked","status":"passed","title":"should call onEdit when edit button is clicked","duration":6,"failureMessages":[]},{"ancestorTitles":["","CodeList"],"fullName":" CodeList should call onDelete when delete button is clicked","status":"passed","title":"should call onDelete when delete button is clicked","duration":2,"failureMessages":[]}],"startTime":1776857881310,"endTime":1776857881337,"status":"passed","message":"","name":"/Users/cshyun/Workspace/ITSMv5-agent/frontend-oper/src/features/code/components/CodeList.test.tsx"},{"assertionResults":[{"ancestorTitles":["","CodeManagement"],"fullName":" CodeManagement should fetch group IDs on mount","status":"passed","title":"should fetch group IDs on mount","duration":17,"failureMessages":[]},{"ancestorTitles":["","CodeManagement"],"fullName":" CodeManagement should fetch codes when a group is selected","status":"passed","title":"should fetch codes when a group is selected","duration":9,"failureMessages":[]},{"ancestorTitles":["","CodeManagement"],"fullName":" CodeManagement should open drawer when Add Code is clicked","status":"passed","title":"should open drawer when Add Code is clicked","duration":10,"failureMessages":[]},{"ancestorTitles":["","CodeManagement"],"fullName":" CodeManagement should show confirm dialog when delete is clicked","status":"passed","title":"should show confirm dialog when delete is clicked","duration":4,"failureMessages":[]}],"startTime":1776857881314,"endTime":1776857881354,"status":"passed","message":"","name":"/Users/cshyun/Workspace/ITSMv5-agent/frontend-oper/src/features/code/components/CodeManagement.test.tsx"},{"assertionResults":[{"ancestorTitles":["","GroupSidebar"],"fullName":" GroupSidebar should render group list","status":"passed","title":"should render group list","duration":17,"failureMessages":[]},{"ancestorTitles":["","GroupSidebar"],"fullName":" GroupSidebar should filter groups based on search term","status":"passed","title":"should filter groups based on search term","duration":6,"failureMessages":[]},{"ancestorTitles":["","GroupSidebar"],"fullName":" GroupSidebar should call onSelectGroup when a group is clicked","status":"passed","title":"should call onSelectGroup when a group is clicked","duration":3,"failureMessages":[]},{"ancestorTitles":["","GroupSidebar"],"fullName":" GroupSidebar should call onAddGroup when add button is clicked","status":"passed","title":"should call onAddGroup when add button is clicked","duration":4,"failureMessages":[]},{"ancestorTitles":["","GroupSidebar"],"fullName":" GroupSidebar should call onDeleteGroup when delete button is clicked","status":"passed","title":"should call onDeleteGroup when delete button is clicked","duration":2,"failureMessages":[]}],"startTime":1776857881311,"endTime":1776857881343,"status":"passed","message":"","name":"/Users/cshyun/Workspace/ITSMv5-agent/frontend-oper/src/features/code/components/GroupSidebar.test.tsx"}]}
+ % Coverage report from v8
+-------------------|---------|----------|---------|---------|-------------------
+File               | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+-------------------|---------|----------|---------|---------|-------------------
+All files          |    9.61 |    51.18 |   28.39 |    9.61 |                   
+ src               |       0 |        0 |       0 |       0 |                   
+  App.tsx          |       0 |        0 |       0 |       0 | 1-394             
+  main.tsx         |       0 |        0 |       0 |       0 | 1-10              
+ src/api           |       0 |        0 |       0 |       0 |                   
+  client.ts        |       0 |        0 |       0 |       0 | 1-18              
+ ...ponents/common |   23.25 |    42.85 |      25 |   23.25 |                   
+  ...irmDialog.tsx |     100 |       75 |     100 |     100 | 23                
+  ...etonTable.tsx |       0 |        0 |       0 |       0 | 1-78              
+  ...Container.tsx |       0 |        0 |       0 |       0 | 1-99              
+  ...ification.tsx |       0 |        0 |       0 |       0 | 1-54              
+ ...uth/components |       0 |        0 |       0 |       0 |                   
+  LoginPage.tsx    |       0 |        0 |       0 |       0 | 1-234             
+ ...s/auth/context |       0 |        0 |       0 |       0 |                   
+  AuthContext.tsx  |       0 |        0 |       0 |       0 | 1-56              
+ ...es/catalog/api |       0 |        0 |       0 |       0 |                   
+  catalogApi.ts    |       0 |        0 |       0 |       0 | 1-67              
+ ...log/components |       0 |        0 |       0 |       0 |                   
+  ...anagement.tsx |       0 |        0 |       0 |       0 | 1-459             
+  FormBuilder.tsx  |       0 |        0 |       0 |       0 | 1-286             
+ ...res/change/api |       0 |        0 |       0 |       0 |                   
+  changeApi.ts     |       0 |        0 |       0 |       0 | 1-28              
+ ...nge/components |       0 |        0 |       0 |       0 |                   
+  ChangeBoard.tsx  |       0 |        0 |       0 |       0 | 1-182             
+  ...FormModal.tsx |       0 |        0 |       0 |       0 | 1-387             
+ ...tures/cmdb/api |       0 |        0 |       0 |       0 |                   
+  ...eryService.ts |       0 |        0 |       0 |       0 | 1-63              
+  ciApi.ts         |       0 |        0 |       0 |       0 | 1-38              
+ ...mdb/components |       0 |        0 |       0 |       0 |                   
+  CIFormModal.tsx  |       0 |        0 |       0 |       0 | 1-549             
+  CIList.tsx       |       0 |        0 |       0 |       0 | 1-387             
+  CIQuickStats.tsx |       0 |        0 |       0 |       0 | 1-90              
+ ...tures/code/api |   88.63 |      100 |   71.42 |   88.63 |                   
+  codeApi.ts       |   88.63 |      100 |   71.42 |   88.63 | 19-21,42-43       
+ ...ode/components |   94.38 |       76 |   56.66 |   94.38 |                   
+  CodeDrawer.tsx   |   98.24 |    77.77 |   55.55 |   98.24 | 29,58-59,71-72    
+  CodeList.tsx     |     100 |      100 |     100 |     100 |                   
+  ...anagement.tsx |   84.01 |    54.54 |   35.71 |   84.01 | ...35-139,186-188 
+  GroupSidebar.tsx |   99.14 |    85.71 |     100 |   99.14 | 50,52             
+ .../dashboard/api |       0 |        0 |       0 |       0 |                   
+  dashboardApi.ts  |       0 |        0 |       0 |       0 | 1-56              
+ ...ard/components |       0 |        0 |       0 |       0 |                   
+  ...Dashboard.tsx |       0 |        0 |       0 |       0 | 1-314             
+  ...rdWidgets.tsx |       0 |        0 |       0 |       0 | 1-187             
+  ...Dashboard.tsx |       0 |        0 |       0 |       0 | 1-251             
+ ...ulfillment/api |       0 |        0 |       0 |       0 |                   
+  ...illmentApi.ts |       0 |        0 |       0 |       0 | 1-98              
+ ...ent/components |       0 |        0 |       0 |       0 |                   
+  ...entDetail.tsx |       0 |        0 |       0 |       0 | 1-309             
+  ...lmentList.tsx |       0 |        0 |       0 |       0 | 1-301             
+  ...FormModal.tsx |       0 |        0 |       0 |       0 | 1-376             
+ ...s/incident/api |       0 |        0 |       0 |       0 |                   
+  incidentApi.ts   |       0 |        0 |       0 |       0 | 1-72              
+ ...ent/components |       0 |        0 |       0 |       0 |                   
+  ...dentBoard.tsx |       0 |        0 |       0 |       0 | 1-245             
+  ...entDetail.tsx |       0 |        0 |       0 |       0 | 1-411             
+  ...FormModal.tsx |       0 |        0 |       0 |       0 | 1-362             
+ ...s/operator/api |       0 |        0 |       0 |       0 |                   
+  operatorApi.ts   |       0 |        0 |       0 |       0 | 1-68              
+ ...tor/components |       0 |        0 |       0 |       0 |                   
+  ...torDrawer.tsx |       0 |        0 |       0 |       0 | 1-273             
+  ...anagement.tsx |       0 |        0 |       0 |       0 | 1-960             
+  ...atorTable.tsx |       0 |        0 |       0 |       0 | 1-371             
+  TeamSidebar.tsx  |       0 |        0 |       0 |       0 | 1-402             
+  ...FormModal.tsx |       0 |        0 |       0 |       0 | 1-123             
+ ...tures/user/api |       0 |        0 |       0 |       0 |                   
+  customerApi.ts   |       0 |        0 |       0 |       0 | 1-55              
+ ...ser/components |       0 |        0 |       0 |       0 |                   
+  ...amSidebar.tsx |       0 |        0 |       0 |       0 | 1-159             
+  ...serDrawer.tsx |       0 |        0 |       0 |       0 | 1-188             
+  ...UserTable.tsx |       0 |        0 |       0 |       0 | 1-106             
+  ...anagement.tsx |       0 |        0 |       0 |       0 | 1-313             
+ src/hooks         |       0 |        0 |       0 |       0 |                   
+  useToast.ts      |       0 |        0 |       0 |       0 | 1-26              
+-------------------|---------|----------|---------|---------|-------------------

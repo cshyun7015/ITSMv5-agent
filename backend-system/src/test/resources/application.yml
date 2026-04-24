@@ -1,0 +1,15 @@
+spring:
+  datasource:
+    url: jdbc:mariadb://it-mariadb:3306/system_mgmt?characterEncoding=UTF-8&serverTimezone=UTC
+    username: itsm
+    password: itsm1234
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: true
+  flyway:
+    enabled: true
+
+jwt:
+  secret: ITSMBeyondAgentSecretKeyForJWTAuthManagementSystem
+  expiration: 3600000

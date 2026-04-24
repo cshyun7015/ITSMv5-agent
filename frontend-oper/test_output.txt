@@ -1,0 +1,122 @@
+
+ RUN  v1.6.1 /Users/cshyun/Workspace/ITSMv5-agent/frontend-oper
+      Coverage enabled with v8
+
+stdout | src/features/operator/components/OperatorManagement.test.tsx > OperatorManagement > should load and render data correctly
+ToastProvider MOUNTING/RENDERING
+CURRENT TOASTS STATE: count=0 []
+RENDERING ToastContainer: count=0
+ToastProvider EFFECT: mounted
+
+stdout | src/features/operator/components/OperatorManagement.test.tsx > OperatorManagement > should load and render data correctly
+ToastProvider EFFECT: unmounted
+
+stdout | src/features/operator/components/OperatorManagement.test.tsx > OperatorManagement > should switch view modes
+ToastProvider MOUNTING/RENDERING
+CURRENT TOASTS STATE: count=0 []
+RENDERING ToastContainer: count=0
+ToastProvider EFFECT: mounted
+
+ ✓ src/features/operator/components/TeamSidebar.test.tsx  (7 tests) 67ms
+stdout | src/features/operator/components/OperatorManagement.test.tsx > OperatorManagement > should switch view modes
+ToastProvider EFFECT: unmounted
+
+stdout | src/features/operator/components/OperatorManagement.test.tsx > OperatorManagement > should open operator drawer on add button click
+ToastProvider MOUNTING/RENDERING
+CURRENT TOASTS STATE: count=0 []
+RENDERING ToastContainer: count=0
+ToastProvider EFFECT: mounted
+
+ ✓ src/features/operator/components/OperatorDrawer.test.tsx  (6 tests) 89ms
+stdout | src/features/operator/components/OperatorManagement.test.tsx > OperatorManagement > should open operator drawer on add button click
+ToastProvider EFFECT: unmounted
+
+ ✓ src/features/operator/components/OperatorTable.test.tsx  (7 tests) 98ms
+ ✓ src/features/operator/components/OperatorManagement.test.tsx  (3 tests) 102ms
+
+ Test Files  4 passed (4)
+      Tests  23 passed (23)
+   Start at  18:52:22
+   Duration  589ms (transform 136ms, setup 189ms, collect 534ms, tests 356ms, environment 646ms, prepare 138ms)
+
+ % Coverage report from v8
+-------------------|---------|----------|---------|---------|-------------------
+File               | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+-------------------|---------|----------|---------|---------|-------------------
+All files          |   18.52 |    60.76 |   25.64 |   18.52 |                   
+ src               |       0 |        0 |       0 |       0 |                   
+  App.tsx          |       0 |        0 |       0 |       0 | 1-394             
+  main.tsx         |       0 |        0 |       0 |       0 | 1-11              
+ src/api           |       0 |        0 |       0 |       0 |                   
+  client.ts        |       0 |        0 |       0 |       0 | 1-18              
+ ...ponents/common |   36.09 |    33.33 |      40 |   36.09 |                   
+  ...irmDialog.tsx |      90 |    33.33 |     100 |      90 | 16-22             
+  ...etonTable.tsx |   12.82 |      100 |       0 |   12.82 | 9-76              
+  ...Container.tsx |      36 |       50 |      50 |      36 | 31-80,85-98       
+  ...ification.tsx |       0 |        0 |       0 |       0 | 1-54              
+ src/context       |   91.07 |       80 |   33.33 |   91.07 |                   
+  ToastContext.tsx |   91.07 |       80 |   33.33 |   91.07 | 27-29,33-34       
+ ...uth/components |       0 |        0 |       0 |       0 |                   
+  LoginPage.tsx    |       0 |        0 |       0 |       0 | 1-234             
+ ...s/auth/context |       0 |        0 |       0 |       0 |                   
+  AuthContext.tsx  |       0 |        0 |       0 |       0 | 1-56              
+ ...es/catalog/api |       0 |        0 |       0 |       0 |                   
+  catalogApi.ts    |       0 |        0 |       0 |       0 | 1-67              
+ ...log/components |       0 |        0 |       0 |       0 |                   
+  ...anagement.tsx |       0 |        0 |       0 |       0 | 1-459             
+  FormBuilder.tsx  |       0 |        0 |       0 |       0 | 1-286             
+ ...res/change/api |       0 |        0 |       0 |       0 |                   
+  changeApi.ts     |       0 |        0 |       0 |       0 | 1-28              
+ ...nge/components |       0 |        0 |       0 |       0 |                   
+  ChangeBoard.tsx  |       0 |        0 |       0 |       0 | 1-182             
+  ...FormModal.tsx |       0 |        0 |       0 |       0 | 1-387             
+ ...tures/cmdb/api |       0 |        0 |       0 |       0 |                   
+  ...eryService.ts |       0 |        0 |       0 |       0 | 1-63              
+  ciApi.ts         |       0 |        0 |       0 |       0 | 1-38              
+ ...mdb/components |       0 |        0 |       0 |       0 |                   
+  CIFormModal.tsx  |       0 |        0 |       0 |       0 | 1-549             
+  CIList.tsx       |       0 |        0 |       0 |       0 | 1-387             
+  CIQuickStats.tsx |       0 |        0 |       0 |       0 | 1-90              
+ ...tures/code/api |       0 |        0 |       0 |       0 |                   
+  codeApi.ts       |       0 |        0 |       0 |       0 | 1-44              
+ ...ode/components |       0 |        0 |       0 |       0 |                   
+  CodeDrawer.tsx   |       0 |        0 |       0 |       0 | 1-305             
+  CodeList.tsx     |       0 |        0 |       0 |       0 | 1-157             
+  ...anagement.tsx |       0 |        0 |       0 |       0 | 1-300             
+  GroupSidebar.tsx |       0 |        0 |       0 |       0 | 1-241             
+ .../dashboard/api |       0 |        0 |       0 |       0 |                   
+  dashboardApi.ts  |       0 |        0 |       0 |       0 | 1-56              
+ ...ard/components |       0 |        0 |       0 |       0 |                   
+  ...Dashboard.tsx |       0 |        0 |       0 |       0 | 1-314             
+  ...rdWidgets.tsx |       0 |        0 |       0 |       0 | 1-187             
+  ...Dashboard.tsx |       0 |        0 |       0 |       0 | 1-251             
+ ...ulfillment/api |       0 |        0 |       0 |       0 |                   
+  ...illmentApi.ts |       0 |        0 |       0 |       0 | 1-98              
+ ...ent/components |       0 |        0 |       0 |       0 |                   
+  ...entDetail.tsx |       0 |        0 |       0 |       0 | 1-309             
+  ...lmentList.tsx |       0 |        0 |       0 |       0 | 1-301             
+  ...FormModal.tsx |       0 |        0 |       0 |       0 | 1-376             
+ ...s/incident/api |       0 |        0 |       0 |       0 |                   
+  incidentApi.ts   |       0 |        0 |       0 |       0 | 1-72              
+ ...ent/components |       0 |        0 |       0 |       0 |                   
+  ...dentBoard.tsx |       0 |        0 |       0 |       0 | 1-245             
+  ...entDetail.tsx |       0 |        0 |       0 |       0 | 1-411             
+  ...FormModal.tsx |       0 |        0 |       0 |       0 | 1-362             
+ ...s/operator/api |       0 |        0 |       0 |       0 |                   
+  operatorApi.ts   |       0 |        0 |       0 |       0 | 1-68              
+ ...tor/components |   84.18 |    75.94 |   37.87 |   84.18 |                   
+  ...torDrawer.tsx |   98.58 |       90 |   71.42 |   98.58 | 76-78,97          
+  ...anagement.tsx |   77.82 |    58.69 |   12.12 |   77.82 | ...01-503,510-514 
+  ...atorTable.tsx |    97.1 |    77.08 |   55.55 |    97.1 | 45-47,77,136-142  
+  TeamSidebar.tsx  |     100 |    83.33 |   85.71 |     100 | 63,83,98          
+  ...FormModal.tsx |    8.94 |      100 |       0 |    8.94 | 10-121            
+ ...tures/user/api |       0 |        0 |       0 |       0 |                   
+  customerApi.ts   |       0 |        0 |       0 |       0 | 1-55              
+ ...ser/components |       0 |        0 |       0 |       0 |                   
+  ...amSidebar.tsx |       0 |        0 |       0 |       0 | 1-159             
+  ...serDrawer.tsx |       0 |        0 |       0 |       0 | 1-188             
+  ...UserTable.tsx |       0 |        0 |       0 |       0 | 1-106             
+  ...anagement.tsx |       0 |        0 |       0 |       0 | 1-313             
+ src/hooks         |     100 |      100 |     100 |     100 |                   
+  useToast.ts      |     100 |      100 |     100 |     100 |                   
+-------------------|---------|----------|---------|---------|-------------------

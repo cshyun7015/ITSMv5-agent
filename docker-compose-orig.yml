@@ -1,0 +1,165 @@
+version: '3.8'
+
+services:
+  it-mariadb:
+    image: mariadb:10.11
+    container_name: it-mariadb
+    restart: always
+    environment:
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root}
+      MARIADB_DATABASE: ${DB_NAME:-system_mgmt}
+      MARIADB_USER: ${DB_USER:-itsm}
+      MARIADB_PASSWORD: ${DB_PASSWORD:-itsm1234}
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - it-internal
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  it-backend:
+    build:
+      context: ./backend-system
+      dockerfile: Dockerfile
+    container_name: it-backend
+    restart: on-failure
+    depends_on:
+      it-mariadb:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mariadb://it-mariadb:3306/${DB_NAME:-system_mgmt}?characterEncoding=UTF-8&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: ${DB_USER:-itsm}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-itsm1234}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: none
+    ports:
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./infra/ansible:/ansible
+    networks:
+      - it-internal
+
+  it-frontend-oper:
+    build:
+      context: ./frontend-oper
+      dockerfile: Dockerfile
+    container_name: it-frontend-oper
+    restart: always
+    depends_on:
+      - it-backend
+    ports:
+      - "3000:80"
+    networks:
+      - it-internal
+
+  it-frontend-user:
+    build:
+      context: ./frontend-user
+      dockerfile: Dockerfile
+    container_name: it-frontend-user
+    restart: always
+    depends_on:
+      - it-backend
+    ports:
+      - "4001:80"
+    networks:
+      - it-internal
+
+  # --- Observability Stack (LGTM) ---
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: node-exporter
+    restart: always
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|host|etc)($$|/)'
+    networks:
+      - it-internal
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    volumes:
+      - ./infra/monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    ports:
+      - "9090:9090"
+    networks:
+      - it-internal
+
+  loki:
+    image: grafana/loki:latest
+    container_name: loki
+    volumes:
+      - ./infra/monitoring/loki/loki-config.yaml:/etc/loki/local-config.yaml
+    command: -config.file=/etc/loki/local-config.yaml
+    ports:
+      - "3100:3100"
+    networks:
+      - it-internal
+
+  promtail:
+    image: grafana/promtail:latest
+    container_name: promtail
+    volumes:
+      - /var/log:/var/log
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./infra/monitoring/promtail/promtail-config.yaml:/etc/promtail/config.yml
+    command: -config.file=/etc/promtail/config.yml
+    networks:
+      - it-internal
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_SECURITY_ALLOW_EMBEDDING=true
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
+    volumes:
+      - ./infra/monitoring/grafana/provisioning:/etc/grafana/provisioning
+    ports:
+      - "3001:3000"
+    networks:
+      - it-internal
+    depends_on:
+      - prometheus
+      - loki
+      - it-frontend-oper
+      - it-frontend-user
+
+  ansible:
+    build:
+      context: ./infra/ansible
+      dockerfile: Dockerfile
+    container_name: ansible
+    volumes:
+      - ./infra/ansible:/ansible
+      - ./infra/ansible/ssh/id_rsa:/root/.ssh/id_rsa:ro
+      - ./infra/ansible/ssh/id_rsa.pub:/root/.ssh/id_rsa.pub:ro
+    working_dir: /ansible
+    environment:
+      - ANSIBLE_CONFIG=/ansible/ansible.cfg
+    networks:
+      - it-internal
+    # Keeping the container alive for execution
+    command: tail -f /dev/null
+
+networks:
+  it-internal:
+    driver: bridge
+
+volumes:
+  db_data:

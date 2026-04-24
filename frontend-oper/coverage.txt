@@ -1,0 +1,143 @@
+
+ RUN  v1.6.1 /Users/cshyun/Workspace/ITSMv5-agent/frontend-oper
+      Coverage enabled with v8
+
+ ✓ src/features/code/api/codeApi.test.ts  (5 tests) 3ms
+stderr | src/features/code/components/CodeManagement.test.tsx > CodeManagement > should open drawer when Add Code is clicked
+Warning: An update to CodeManagement inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at CodeManagement (/Users/cshyun/Workspace/ITSMv5-agent/frontend-oper/src/features/code/components/CodeManagement.tsx:23:57)
+Warning: An update to CodeManagement inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at CodeManagement (/Users/cshyun/Workspace/ITSMv5-agent/frontend-oper/src/features/code/components/CodeManagement.tsx:23:57)
+Warning: An update to CodeManagement inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at CodeManagement (/Users/cshyun/Workspace/ITSMv5-agent/frontend-oper/src/features/code/components/CodeManagement.tsx:23:57)
+Warning: An update to CodeManagement inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at CodeManagement (/Users/cshyun/Workspace/ITSMv5-agent/frontend-oper/src/features/code/components/CodeManagement.tsx:23:57)
+
+ ✓ src/features/code/components/CodeList.test.tsx  (5 tests) 31ms
+ ✓ src/features/code/components/GroupSidebar.test.tsx  (5 tests) 33ms
+ ✓ src/features/code/components/CodeManagement.test.tsx  (4 tests) 43ms
+stderr | src/features/code/components/CodeDrawer.test.tsx > CodeDrawer > should display validation errors from backend
+Failed to save code { response: { status: 400, data: { errors: [Object] } } }
+
+ ✓ src/features/code/components/CodeDrawer.test.tsx  (4 tests) 76ms
+
+ Test Files  5 passed (5)
+      Tests  23 passed (23)
+   Start at  20:37:26
+   Duration  605ms (transform 127ms, setup 281ms, collect 504ms, tests 186ms, environment 1.09s, prepare 197ms)
+
+ % Coverage report from v8
+-------------------|---------|----------|---------|---------|-------------------
+File               | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+-------------------|---------|----------|---------|---------|-------------------
+All files          |    9.61 |    51.18 |   28.39 |    9.61 |                   
+ src               |       0 |        0 |       0 |       0 |                   
+  App.tsx          |       0 |        0 |       0 |       0 | 1-394             
+  main.tsx         |       0 |        0 |       0 |       0 | 1-10              
+ src/api           |       0 |        0 |       0 |       0 |                   
+  client.ts        |       0 |        0 |       0 |       0 | 1-18              
+ ...ponents/common |   23.25 |    42.85 |      25 |   23.25 |                   
+  ...irmDialog.tsx |     100 |       75 |     100 |     100 | 23                
+  ...etonTable.tsx |       0 |        0 |       0 |       0 | 1-78              
+  ...Container.tsx |       0 |        0 |       0 |       0 | 1-99              
+  ...ification.tsx |       0 |        0 |       0 |       0 | 1-54              
+ ...uth/components |       0 |        0 |       0 |       0 |                   
+  LoginPage.tsx    |       0 |        0 |       0 |       0 | 1-234             
+ ...s/auth/context |       0 |        0 |       0 |       0 |                   
+  AuthContext.tsx  |       0 |        0 |       0 |       0 | 1-56              
+ ...es/catalog/api |       0 |        0 |       0 |       0 |                   
+  catalogApi.ts    |       0 |        0 |       0 |       0 | 1-67              
+ ...log/components |       0 |        0 |       0 |       0 |                   
+  ...anagement.tsx |       0 |        0 |       0 |       0 | 1-459             
+  FormBuilder.tsx  |       0 |        0 |       0 |       0 | 1-286             
+ ...res/change/api |       0 |        0 |       0 |       0 |                   
+  changeApi.ts     |       0 |        0 |       0 |       0 | 1-28              
+ ...nge/components |       0 |        0 |       0 |       0 |                   
+  ChangeBoard.tsx  |       0 |        0 |       0 |       0 | 1-182             
+  ...FormModal.tsx |       0 |        0 |       0 |       0 | 1-387             
+ ...tures/cmdb/api |       0 |        0 |       0 |       0 |                   
+  ...eryService.ts |       0 |        0 |       0 |       0 | 1-63              
+  ciApi.ts         |       0 |        0 |       0 |       0 | 1-38              
+ ...mdb/components |       0 |        0 |       0 |       0 |                   
+  CIFormModal.tsx  |       0 |        0 |       0 |       0 | 1-549             
+  CIList.tsx       |       0 |        0 |       0 |       0 | 1-387             
+  CIQuickStats.tsx |       0 |        0 |       0 |       0 | 1-90              
+ ...tures/code/api |   88.63 |      100 |   71.42 |   88.63 |                   
+  codeApi.ts       |   88.63 |      100 |   71.42 |   88.63 | 19-21,42-43       
+ ...ode/components |   94.38 |       76 |   56.66 |   94.38 |                   
+  CodeDrawer.tsx   |   98.24 |    77.77 |   55.55 |   98.24 | 29,58-59,71-72    
+  CodeList.tsx     |     100 |      100 |     100 |     100 |                   
+  ...anagement.tsx |   84.01 |    54.54 |   35.71 |   84.01 | ...35-139,186-188 
+  GroupSidebar.tsx |   99.14 |    85.71 |     100 |   99.14 | 50,52             
+ .../dashboard/api |       0 |        0 |       0 |       0 |                   
+  dashboardApi.ts  |       0 |        0 |       0 |       0 | 1-56              
+ ...ard/components |       0 |        0 |       0 |       0 |                   
+  ...Dashboard.tsx |       0 |        0 |       0 |       0 | 1-314             
+  ...rdWidgets.tsx |       0 |        0 |       0 |       0 | 1-187             
+  ...Dashboard.tsx |       0 |        0 |       0 |       0 | 1-251             
+ ...ulfillment/api |       0 |        0 |       0 |       0 |                   
+  ...illmentApi.ts |       0 |        0 |       0 |       0 | 1-98              
+ ...ent/components |       0 |        0 |       0 |       0 |                   
+  ...entDetail.tsx |       0 |        0 |       0 |       0 | 1-309             
+  ...lmentList.tsx |       0 |        0 |       0 |       0 | 1-301             
+  ...FormModal.tsx |       0 |        0 |       0 |       0 | 1-376             
+ ...s/incident/api |       0 |        0 |       0 |       0 |                   
+  incidentApi.ts   |       0 |        0 |       0 |       0 | 1-72              
+ ...ent/components |       0 |        0 |       0 |       0 |                   
+  ...dentBoard.tsx |       0 |        0 |       0 |       0 | 1-245             
+  ...entDetail.tsx |       0 |        0 |       0 |       0 | 1-411             
+  ...FormModal.tsx |       0 |        0 |       0 |       0 | 1-362             
+ ...s/operator/api |       0 |        0 |       0 |       0 |                   
+  operatorApi.ts   |       0 |        0 |       0 |       0 | 1-68              
+ ...tor/components |       0 |        0 |       0 |       0 |                   
+  ...torDrawer.tsx |       0 |        0 |       0 |       0 | 1-273             
+  ...anagement.tsx |       0 |        0 |       0 |       0 | 1-960             
+  ...atorTable.tsx |       0 |        0 |       0 |       0 | 1-371             
+  TeamSidebar.tsx  |       0 |        0 |       0 |       0 | 1-402             
+  ...FormModal.tsx |       0 |        0 |       0 |       0 | 1-123             
+ ...tures/user/api |       0 |        0 |       0 |       0 |                   
+  customerApi.ts   |       0 |        0 |       0 |       0 | 1-55              
+ ...ser/components |       0 |        0 |       0 |       0 |                   
+  ...amSidebar.tsx |       0 |        0 |       0 |       0 | 1-159             
+  ...serDrawer.tsx |       0 |        0 |       0 |       0 | 1-188             
+  ...UserTable.tsx |       0 |        0 |       0 |       0 | 1-106             
+  ...anagement.tsx |       0 |        0 |       0 |       0 | 1-313             
+ src/hooks         |       0 |        0 |       0 |       0 |                   
+  useToast.ts      |       0 |        0 |       0 |       0 | 1-26              
+-------------------|---------|----------|---------|---------|-------------------

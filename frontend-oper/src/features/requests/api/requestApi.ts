@@ -1,0 +1,101 @@
+import apiClient from '../../../api/client';
+import { ServiceRequest, ApprovalStep, CodeDTO, CreateRequestDTO, UpdateRequestDTO } from '../types';
+
+const createFormData = (dto: any, files?: File[]) => {
+  const formData = new FormData();
+  formData.append('request', new Blob([JSON.stringify(dto)], { type: 'application/json' }));
+  if (files) {
+    files.forEach(file => formData.append('files', file));
+  }
+  return formData;
+};
+
+export const requestApi = {
+  // 공통 코드 조회
+  getCodesByGroup: async (groupId: string): Promise<CodeDTO[]> => {
+    const response = await apiClient.get<CodeDTO[]>(`/codes/group/${groupId}`);
+    return response.data;
+  },
+  
+  // 운영자용 전체 요청 목록 조회
+  getAllRequests: async (): Promise<ServiceRequest[]> => {
+    const response = await apiClient.get<ServiceRequest[]>('/requests/all');
+    return response.data;
+  },
+
+  // 특정 요청 상세 조회
+  getRequest: async (id: number): Promise<ServiceRequest> => {
+    const response = await apiClient.get<ServiceRequest>(`/requests/${id}`);
+    return response.data;
+  },
+
+  // 특정 요청의 결재 히스토리 조회
+  getApprovals: async (id: number): Promise<ApprovalStep[]> => {
+    const response = await apiClient.get<ApprovalStep[]>(`/requests/${id}/approvals`);
+    return response.data;
+  },
+
+  // 자신에게 배정
+  assignToMe: async (id: number): Promise<void> => {
+    await apiClient.post(`/requests/${id}/assign`);
+  },
+
+  // 해결 처리
+  resolve: async (id: number, resolution: string): Promise<void> => {
+    await apiClient.post(`/requests/${id}/resolve`, { resolution });
+  },
+
+  // 최종 종료
+  close: async (id: number): Promise<void> => {
+    await apiClient.post(`/requests/${id}/close`);
+  },
+
+  // 테넌트 목록 조회
+  getTenants: async (): Promise<any[]> => {
+    const response = await apiClient.get('/operator/tenants');
+    return response.data;
+  },
+
+  // 특정 테넌트의 사용자 목록 조회
+  getTenantUsers: async (tenantId: string): Promise<any[]> => {
+    const response = await apiClient.get(`/operator/tenants/${tenantId}/users`);
+    return response.data;
+  },
+
+  // 요청 생성
+  createRequest: async (dto: CreateRequestDTO, files?: File[]): Promise<ServiceRequest> => {
+    const formData = createFormData(dto, files);
+    const response = await apiClient.post<ServiceRequest>('/requests', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    return response.data;
+  },
+
+  // 요청 수정
+  updateRequest: async (id: number, dto: UpdateRequestDTO, files?: File[]): Promise<void> => {
+    const formData = createFormData(dto, files);
+    await apiClient.put(`/requests/${id}`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  },
+
+  // 요청 삭제
+  deleteRequest: async (id: number): Promise<void> => {
+    await apiClient.delete(`/requests/${id}`);
+  },
+
+  // 첨부 파일 다운로드
+  downloadAttachment: async (id: number, fileName: string): Promise<void> => {
+    const response = await apiClient.get(`/requests/attachments/${id}`, {
+      responseType: 'blob'
+    });
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', fileName);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  }
+};

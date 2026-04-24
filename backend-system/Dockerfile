@@ -1,0 +1,26 @@
+# Build stage
+FROM gradle:8.5-jdk17 AS build
+WORKDIR /app
+
+# 설정 파일 및 소스 코드 복사
+COPY build.gradle settings.gradle ./
+COPY src src
+
+# 애플리케이션 빌드 및 코드 관리 모듈 테스트 수행 (커버리지 검증 포함)
+RUN gradle bootJar -x test --no-daemon
+
+# Production stage
+FROM eclipse-temurin:17-jre-jammy
+WORKDIR /app
+
+# Docker 클라이언트 설치 (Docker 소켓 통신용)
+RUN apt-get update && apt-get install -y docker.io && rm -rf /var/lib/apt/lists/*
+
+# 빌드 결과물 복사
+COPY --from=build /app/build/libs/*.jar app.jar
+
+# 컨테이너 실행 환경 설정
+ENV JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0"
+EXPOSE 8080
+
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]

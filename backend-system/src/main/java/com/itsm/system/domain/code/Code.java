@@ -17,6 +17,7 @@ import org.hibernate.annotations.SQLDelete;
 @AllArgsConstructor
 @Builder
 @SQLDelete(sql = "UPDATE codes SET is_deleted = 1 WHERE id = ?")
+@org.hibernate.annotations.SQLRestriction("is_deleted = 0")
 public class Code extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

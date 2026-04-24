@@ -7,6 +7,12 @@ import java.util.List;
 
 @Repository
 public interface CodeRepository extends JpaRepository<Code, Long> {
-    List<Code> findByGroupId(String groupId);
+    List<Code> findByGroupIdOrderBySortOrderAsc(String groupId);
+    java.util.Optional<Code> findByGroupIdAndCodeId(String groupId, String codeId);
     List<Code> findByIsActiveTrueOrderBySortOrderAsc();
+
+    @org.springframework.data.jpa.repository.Query("SELECT DISTINCT c.groupId FROM Code c WHERE c.isDeleted = false")
+    List<String> findDistinctGroupIds();
+
+    void deleteByGroupId(String groupId);
 }

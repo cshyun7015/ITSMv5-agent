@@ -1,0 +1,213 @@
+/* Requests Module - Enterprise Data Table Styles */
+
+.requests-board {
+  color: #f1f5f9;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  padding: 24px;
+  animation: fadeIn 0.4s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Header Section */
+.requests-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 32px;
+}
+
+.title-section h2 {
+  font-size: 28px;
+  font-weight: 800;
+  margin: 0 0 4px 0;
+  color: #fff;
+}
+
+.title-section .subtitle {
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.header-actions {
+  display: flex;
+  gap: 12px;
+}
+
+/* Summary Section */
+.board-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.summary-item {
+  background: rgba(15, 23, 42, 0.4);
+  backdrop-filter: var(--glass-blur);
+  padding: 16px 20px;
+  border-radius: 16px;
+  border: 1px solid var(--glass-border);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.summary-item .label-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.summary-item .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.summary-item .dot.draft { background: #64748b; box-shadow: 0 0 10px rgba(100, 116, 139, 0.8); }
+.summary-item .dot.pending { background: #8b5cf6; box-shadow: 0 0 10px rgba(139, 92, 246, 0.8); }
+.summary-item .dot.open { background: #3b82f6; box-shadow: 0 0 10px rgba(59, 130, 246, 0.8); }
+.summary-item .dot.progress { background: #f59e0b; box-shadow: 0 0 10px rgba(245, 158, 11, 0.8); }
+.summary-item .dot.resolved { background: #10b981; box-shadow: 0 0 10px rgba(16, 185, 129, 0.8); }
+.summary-item .dot.closed { background: #94a3b8; box-shadow: 0 0 10px rgba(148, 163, 184, 0.8); }
+.summary-item .dot.rejected { background: #f43f5e; box-shadow: 0 0 10px rgba(244, 63, 94, 0.8); }
+
+.summary-item .label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.summary-item .value {
+  font-size: 24px;
+  font-weight: 900;
+  color: #fff;
+  line-height: 1;
+}
+
+/* Detail View Styles */
+.request-detail-view {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.detail-header {
+  margin-bottom: 32px;
+}
+
+.back-link {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.back-link:hover { color: var(--primary); }
+
+.title-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.id-tag {
+  background: rgba(59, 130, 246, 0.1);
+  color: var(--primary);
+  padding: 4px 12px;
+  border-radius: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 800;
+  font-size: 14px;
+}
+
+.title-row h1 {
+  font-size: 32px;
+  font-weight: 800;
+  margin: 0;
+  flex: 1;
+}
+
+.detail-layout {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 32px;
+}
+
+.detail-sec {
+  background: rgba(15, 23, 42, 0.4);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  padding: 32px;
+  margin-bottom: 24px;
+}
+
+.detail-sec h3 {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin: 0 0 20px 0;
+}
+
+.description-box {
+  color: #cbd5e1;
+  line-height: 1.8;
+  font-size: 16px;
+  white-space: pre-wrap;
+}
+
+.meta-card {
+  background: rgba(30, 41, 59, 0.4);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  padding: 24px;
+  margin-bottom: 20px;
+}
+
+.meta-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.meta-row:last-child { border-bottom: none; }
+
+.meta-row .label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.meta-row .value {
+  font-size: 14px;
+  font-weight: 700;
+  color: #f1f5f9;
+}
+
+/* Form Specific Overrides */
+.resolution-area {
+  min-height: 100px;
+  border-color: rgba(16, 185, 129, 0.3) !important;
+}
+
+.resolution-area:focus {
+  border-color: #10b981 !important;
+  background: rgba(16, 185, 129, 0.05) !important;
+}

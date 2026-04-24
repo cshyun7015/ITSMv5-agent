@@ -4,9 +4,13 @@ import com.itsm.system.dto.code.CodeDTO;
 import com.itsm.system.service.code.CodeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Objects;
+
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/v1/codes")
@@ -25,19 +29,34 @@ public class CodeController {
         return ResponseEntity.ok(codeService.getCodesByGroup(groupId));
     }
 
+    @GetMapping("/groups")
+    public ResponseEntity<List<String>> getAllGroupIds() {
+        return ResponseEntity.ok(codeService.getAllGroupIds());
+    }
+
     @PostMapping
-    public ResponseEntity<CodeDTO> createCode(@RequestBody CodeDTO codeDTO) {
-        return ResponseEntity.ok(codeService.createCode(codeDTO));
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<CodeDTO> createCode(@Valid @RequestBody CodeDTO codeDTO) {
+        return ResponseEntity.ok(codeService.createCode(Objects.requireNonNull(codeDTO)));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<CodeDTO> updateCode(@PathVariable Long id, @RequestBody CodeDTO codeDTO) {
-        return ResponseEntity.ok(codeService.updateCode(id, codeDTO));
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<CodeDTO> updateCode(@PathVariable Long id, @Valid @RequestBody CodeDTO codeDTO) {
+        return ResponseEntity.ok(codeService.updateCode(Objects.requireNonNull(id), Objects.requireNonNull(codeDTO)));
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteCode(@PathVariable Long id) {
-        codeService.deleteCode(id);
+        codeService.deleteCode(Objects.requireNonNull(id));
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/groups/{groupId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> deleteCodesByGroup(@PathVariable String groupId) {
+        codeService.deleteCodesByGroup(Objects.requireNonNull(groupId));
         return ResponseEntity.noContent().build();
     }
 }
