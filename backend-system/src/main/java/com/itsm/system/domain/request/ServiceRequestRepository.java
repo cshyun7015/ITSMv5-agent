@@ -39,4 +39,6 @@ public interface ServiceRequestRepository extends JpaRepository<ServiceRequest, 
     List<ServiceRequest> findAll();
 
     boolean existsByCatalogId(Long catalogId);
+
+    long countByRequestNoStartingWith(String prefix);
 }

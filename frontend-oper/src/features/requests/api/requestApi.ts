@@ -24,12 +24,14 @@ export const requestApi = {
     keyword?: string;
     startDate?: string;
     endDate?: string;
-  }): Promise<ServiceRequest[]> => {
+    page?: number;
+    size?: number;
+  }): Promise<import('../types').PaginatedResponse<ServiceRequest>> => {
     const cleanParams = params ? Object.fromEntries(
       Object.entries(params).filter(([_, v]) => v !== undefined && v !== 'all' && v !== 'ALL' && v !== '')
     ) : undefined;
     
-    const response = await apiClient.get<ServiceRequest[]>('/requests/all', { params: cleanParams });
+    const response = await apiClient.get<import('../types').PaginatedResponse<ServiceRequest>>('/requests/all', { params: cleanParams });
     return response.data;
   },
 
@@ -107,5 +109,17 @@ export const requestApi = {
     link.click();
     link.remove();
     window.URL.revokeObjectURL(url);
+  },
+  
+  // 서비스 카탈로그 템플릿 조회 (운영자용)
+  getCatalogTemplates: async (): Promise<any[]> => {
+    const response = await apiClient.get('/operator/catalog/templates');
+    return response.data;
+  },
+
+  // 운영자 목록 조회 (담당자 배정용)
+  getOperators: async (): Promise<any[]> => {
+    const response = await apiClient.get('/operator/operators');
+    return response.data;
   }
 };

@@ -11,6 +11,7 @@ export type ServiceRequestPriority = 'EMERGENCY' | 'NORMAL' | 'LOW';
 
 export interface ServiceRequest {
   requestId: number;
+  requestNo: string;
   tenantId: string;
   title: string;
   description: string;
@@ -21,6 +22,9 @@ export interface ServiceRequest {
   resolution?: string;
   slaDeadline?: string;
   createdAt: string;
+  submittedAt?: string;
+  resolvedAt?: string;
+  closedAt?: string;
   attachments?: AttachmentInfo[];
   catalogId?: number;
   catalogName?: string;
@@ -43,6 +47,8 @@ export interface UpdateRequestDTO {
   priority?: ServiceRequestPriority;
   status?: ServiceRequestStatus;
   resolution?: string;
+  assigneeId?: number;   // 담당자 재배정 (OPEN, IN_PROGRESS)
+  requesterId?: number;  // 대리 요청자 (DRAFT only)
 }
 
 export interface AttachmentInfo {
@@ -68,4 +74,12 @@ export interface CodeDTO {
   description?: string;
   sortOrder?: number;
   isActive?: boolean;
+}
+
+export interface PaginatedResponse<T> {
+  content: T[];
+  totalElements: number;
+  totalPages: number;
+  size: number;
+  number: number;
 }

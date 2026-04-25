@@ -22,6 +22,10 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.stream.IntStream;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 
 @Service
 @RequiredArgsConstructor
@@ -64,6 +68,8 @@ public class ServiceRequestService {
                     .orElseThrow(() -> new IllegalArgumentException("Catalog not found: " + catId));
         }
 
+        String requestNo = generateRequestNo();
+        
         ServiceRequest request = ServiceRequest.builder()
                 .tenant(tenant)
                 .requester(requester)
@@ -73,12 +79,20 @@ public class ServiceRequestService {
                 .catalog(catalog)
                 .dynamicFields(dto.getDynamicFields())
                 .status(ServiceRequestStatus.DRAFT)
+                .requestNo(requestNo)
                 .build();
         
         ServiceRequest savedRequest = requestRepository.save(Objects.requireNonNull(request));
         processAttachments(savedRequest, files);
 
         return savedRequest;
+    }
+
+    private String generateRequestNo() {
+        String datePart = java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd").format(java.time.LocalDate.now());
+        String prefix = "SR-" + datePart + "-";
+        long count = requestRepository.countByRequestNoStartingWith(prefix);
+        return prefix + String.format("%06d", count + 1);
     }
 
     private void processAttachments(ServiceRequest request, List<MultipartFile> files) {
@@ -184,6 +198,16 @@ public class ServiceRequestService {
         return approvalRepository.findByServiceRequest_RequestIdOrderByStepOrderAsc(requestId);
     }
 
+    @Transactional(readOnly = true)
+    public List<String> getManagedTenantIds(String operatorTenantId) {
+        List<String> managedTenantIds = tenantRelationRepository.findByOperator_TenantId(operatorTenantId)
+                .stream()
+                .map(rel -> rel.getCustomer().getTenantId())
+                .collect(java.util.stream.Collectors.toList());
+        managedTenantIds.add(operatorTenantId);
+        return managedTenantIds;
+    }
+
     @Transactional
     public void assignRequest(@NonNull Long requestId, @NonNull Long operatorId) {
         ServiceRequest request = getRequest(requestId);
@@ -217,12 +241,7 @@ public class ServiceRequestService {
         }
         
         if (member.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_OPERATOR"))) {
-            List<String> managedTenantIds = tenantRelationRepository.findByOperator_TenantId(tenantId)
-                    .stream()
-                    .map(rel -> rel.getCustomer().getTenantId())
-                    .collect(java.util.stream.Collectors.toList());
-            
-            managedTenantIds.add(tenantId);
+            List<String> managedTenantIds = getManagedTenantIds(tenantId);
             
             return isMsp ? 
                 requestRepository.findByTenantIdInIncludingDeleted(managedTenantIds) : 
@@ -257,9 +276,31 @@ public class ServiceRequestService {
         if (dto.getTitle() != null) request.setTitle(dto.getTitle());
         if (dto.getDescription() != null) request.setDescription(dto.getDescription());
         if (dto.getPriority() != null) request.setPriority(dto.getPriority());
+        ServiceRequestStatus oldStatus = request.getStatus();
         if (dto.getStatus() != null) request.setStatus(dto.getStatus());
         if (dto.getResolution() != null) request.setResolution(dto.getResolution());
-        
+
+        // 담당자 재배정: OPEN, IN_PROGRESS 상태에서만 허용
+        if (dto.getAssigneeId() != null && isStaff) {
+            if (oldStatus == ServiceRequestStatus.OPEN || oldStatus == ServiceRequestStatus.IN_PROGRESS) {
+                Member newAssignee = memberRepository.findById(dto.getAssigneeId())
+                        .orElseThrow(() -> new IllegalArgumentException("Assignee not found: " + dto.getAssigneeId()));
+                request.setAssignee(newAssignee);
+            }
+        }
+
+        // 대리 요청자 변경: DRAFT 상태에서만 허용, 동일 고객사 소속 검증
+        if (dto.getRequesterId() != null && isStaff) {
+            if (oldStatus == ServiceRequestStatus.DRAFT) {
+                Member newRequester = memberRepository.findById(dto.getRequesterId())
+                        .orElseThrow(() -> new IllegalArgumentException("Requester not found: " + dto.getRequesterId()));
+                if (!newRequester.getTenant().getTenantId().equals(request.getTenant().getTenantId())) {
+                    throw new SecurityException("Requester must belong to the same tenant as the request.");
+                }
+                request.setRequester(newRequester);
+            }
+        }
+
         requestRepository.save(Objects.requireNonNull(request));
         processAttachments(request, files);
     }
@@ -289,21 +330,21 @@ public class ServiceRequestService {
     }
 
     @Transactional(readOnly = true)
-    public List<ServiceRequest> searchRequests(Member member, ServiceRequestDTO.Search search) {
+    public Page<ServiceRequest> searchRequests(Member member, ServiceRequestDTO.Search search) {
         String tenantId = member.getTenant().getTenantId();
         boolean isMsp = "OPER_MSP".equals(tenantId);
         
+        int page = search.getPage() != null ? search.getPage() : 0;
+        int size = search.getSize() != null ? search.getSize() : 20;
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+
         Specification<ServiceRequest> spec = (root, query, cb) -> {
             List<jakarta.persistence.criteria.Predicate> predicates = new ArrayList<>();
 
             // 1. Permissions
             if (!isMsp || member.getAuthorities().stream().noneMatch(a -> a.getAuthority().equals("ROLE_ADMIN"))) {
                 if (member.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_OPERATOR"))) {
-                    List<String> managedTenantIds = tenantRelationRepository.findByOperator_TenantId(tenantId)
-                            .stream()
-                            .map(rel -> rel.getCustomer().getTenantId())
-                            .collect(Collectors.toList());
-                    managedTenantIds.add(tenantId);
+                    List<String> managedTenantIds = getManagedTenantIds(tenantId);
                     predicates.add(root.get("tenant").get("tenantId").in(managedTenantIds));
                 } else {
                     predicates.add(cb.equal(root.get("tenant").get("tenantId"), tenantId));
@@ -324,12 +365,25 @@ public class ServiceRequestService {
             }
 
             if (search.getKeyword() != null && !search.getKeyword().trim().isEmpty()) {
-                String pattern = "%" + search.getKeyword().trim().toLowerCase() + "%";
-                predicates.add(cb.or(
-                    cb.like(cb.lower(root.get("title")), pattern),
-                    cb.like(cb.lower(root.get("description")), pattern),
-                    cb.like(cb.lower(root.get("requester").get("username")), pattern)
-                ));
+                String keyword = search.getKeyword().trim();
+                String pattern = "%" + keyword.toLowerCase() + "%";
+                
+                List<jakarta.persistence.criteria.Predicate> keywordPredicates = new ArrayList<>();
+                keywordPredicates.add(cb.like(cb.lower(root.get("title")), pattern));
+                keywordPredicates.add(cb.like(cb.lower(root.get("description")), pattern));
+                keywordPredicates.add(cb.like(cb.lower(root.get("requester").get("username")), pattern));
+                
+                // ID 검색 지원 (#SR... 또는 SR... 또는 숫자)
+                String rawKeyword = keyword.startsWith("#") ? keyword.substring(1) : keyword;
+                if (rawKeyword.startsWith("SR-")) {
+                    keywordPredicates.add(cb.equal(root.get("requestNo"), rawKeyword));
+                } else if (rawKeyword.matches("\\d+")) {
+                    // 숫자인 경우 requestNo의 마지막 부분 또는 requestId 검색
+                    keywordPredicates.add(cb.equal(root.get("requestId"), Long.parseLong(rawKeyword)));
+                    keywordPredicates.add(cb.like(root.get("requestNo"), "%" + rawKeyword));
+                }
+                
+                predicates.add(cb.or(keywordPredicates.toArray(new jakarta.persistence.criteria.Predicate[0])));
             }
 
             if (search.getStartDate() != null) {
@@ -342,6 +396,6 @@ public class ServiceRequestService {
             return cb.and(predicates.toArray(new jakarta.persistence.criteria.Predicate[0]));
         };
 
-        return requestRepository.findAll(spec);
+        return requestRepository.findAll(spec, pageable);
     }
 }

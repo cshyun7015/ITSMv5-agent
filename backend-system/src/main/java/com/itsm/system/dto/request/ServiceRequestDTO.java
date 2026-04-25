@@ -22,6 +22,8 @@ public class ServiceRequestDTO {
         private String keyword;
         private LocalDateTime startDate;
         private LocalDateTime endDate;
+        private Integer page;
+        private Integer size;
     }
 
     @Getter
@@ -48,6 +50,8 @@ public class ServiceRequestDTO {
         private ServiceRequestPriority priority;
         private ServiceRequestStatus status;
         private String resolution;
+        private Long assigneeId;   // 담당자 재배정
+        private Long requesterId;  // 대리 요청자 변경 (DRAFT only)
     }
 
     @Getter
@@ -81,6 +85,7 @@ public class ServiceRequestDTO {
     @AllArgsConstructor
     public static class Response {
         private Long requestId;
+        private String requestNo;
         private String tenantId;
         private String title;
         private String description;
@@ -102,6 +107,7 @@ public class ServiceRequestDTO {
         public static Response fromEntity(com.itsm.system.domain.request.ServiceRequest request) {
             return Response.builder()
                     .requestId(request.getRequestId())
+                    .requestNo(request.getRequestNo())
                     .tenantId(request.getTenant().getTenantId())
                     .title(request.getTitle())
                     .description(request.getDescription())
@@ -150,5 +156,17 @@ public class ServiceRequestDTO {
         private Integer stepOrder;
         private String comment;
         private LocalDateTime updatedAt;
+    }
+
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class PaginatedResponse<T> {
+        private List<T> content;
+        private long totalElements;
+        private int totalPages;
+        private int size;
+        private int number;
     }
 }

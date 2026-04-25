@@ -1,14 +1,22 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { requestApi } from '../api/requestApi';
 import { ServiceRequest, CodeDTO } from '../types';
-import RequestFormModal from './RequestFormModal';
+import RequestDetail from './RequestDetail';
+import RequestCreate from './RequestCreate';
+import { useToast } from '../../../hooks/useToast';
+import { X } from 'lucide-react';
 import './../requests.css';
 
 interface RequestListProps {
   onSelectRequest: (id: number) => void;
 }
 
-const RequestList: React.FC<RequestListProps> = ({ onSelectRequest }) => {
+const RequestList: React.FC = () => {
+  const { toast } = useToast();
+  const [viewMode, setViewMode] = useState<'LIST' | 'DETAIL' | 'CREATE'>('LIST');
+  const [selectedRequestId, setSelectedRequestId] = useState<number | null>(null);
+  const [showMatrixModal, setShowMatrixModal] = useState(false);
+  
   const [requests, setRequests] = useState<ServiceRequest[]>([]);
   const [tenants, setTenants] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -18,8 +26,12 @@ const RequestList: React.FC<RequestListProps> = ({ onSelectRequest }) => {
   const [dateRange, setDateRange] = useState<string>('ALL');
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
-  const [showCreateModal, setShowCreateModal] = useState(false);
   const [statusCodes, setStatusCodes] = useState<CodeDTO[]>([]);
+
+  const [totalElements, setTotalElements] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [pageSize, setPageSize] = useState(20);
 
   useEffect(() => {
     loadInitialData();
@@ -35,6 +47,7 @@ const RequestList: React.FC<RequestListProps> = ({ onSelectRequest }) => {
       setStatusCodes(Array.isArray(cData) ? cData : []);
     } catch (error) {
       console.error('Initial metadata loading error', error);
+      toast.error('Failed to load metadata');
     }
   };
 
@@ -45,6 +58,8 @@ const RequestList: React.FC<RequestListProps> = ({ onSelectRequest }) => {
         status: filterStatus === 'ALL' ? undefined : filterStatus,
         tenantId: filterTenant === 'ALL' ? undefined : filterTenant,
         keyword: keyword,
+        page: currentPage,
+        size: pageSize
       };
 
       if (dateRange !== 'ALL') {
@@ -73,11 +88,13 @@ const RequestList: React.FC<RequestListProps> = ({ onSelectRequest }) => {
         }
       }
 
-      const data = await requestApi.getAllRequests(params);
-      // Ensure data is an array before setting
-      setRequests(Array.isArray(data) ? data : []);
+      const response = await requestApi.getAllRequests(params);
+      setRequests(response.content || []);
+      setTotalElements(response.totalElements || 0);
+      setTotalPages(response.totalPages || 0);
     } catch (error) {
       console.error('Failed to fetch requests', error);
+      toast.error('Failed to load requests');
       setRequests([]);
     } finally {
       setIsLoading(false);
@@ -85,19 +102,24 @@ const RequestList: React.FC<RequestListProps> = ({ onSelectRequest }) => {
   };
 
   useEffect(() => {
+    setCurrentPage(0); // Reset to first page when filters change
+  }, [filterStatus, filterTenant, keyword, dateRange, startDate, endDate, pageSize]);
+
+  useEffect(() => {
     const handler = setTimeout(() => {
       fetchRequests();
     }, 400);
     return () => clearTimeout(handler);
-  }, [filterStatus, filterTenant, keyword, dateRange, startDate, endDate]);
+  }, [filterStatus, filterTenant, keyword, dateRange, startDate, endDate, currentPage, pageSize]);
 
   const handleQuickAssign = async (e: React.MouseEvent, id: number) => {
     e.stopPropagation();
     try {
       await requestApi.assignToMe(id);
+      toast.success('Assigned to you');
       fetchRequests();
     } catch (error) {
-      alert('Assignment failed');
+      toast.error('Assignment failed');
     }
   };
 
@@ -117,16 +139,34 @@ const RequestList: React.FC<RequestListProps> = ({ onSelectRequest }) => {
 
   return (
     <div className="requests-board">
-      <div className="requests-header">
-        <div className="title-section">
-          <h2>Request Management</h2>
-          <div className="subtitle">Track and manage support tickets and service requests across tenants.</div>
-        </div>
-        <div className="header-actions">
-          <button className="btn-ghost" onClick={fetchRequests}>Refresh</button>
-          <button className="btn-primary" onClick={() => setShowCreateModal(true)}>+ Register Request</button>
-        </div>
-      </div>
+      {viewMode === 'DETAIL' && selectedRequestId && (
+        <RequestDetail 
+          requestId={selectedRequestId} 
+          onBack={() => setViewMode('LIST')} 
+          onSuccess={fetchRequests} 
+        />
+      )}
+
+      {viewMode === 'CREATE' && (
+        <RequestCreate 
+          onBack={() => setViewMode('LIST')} 
+          onSuccess={fetchRequests} 
+        />
+      )}
+
+      {viewMode === 'LIST' && (
+        <>
+          <div className="requests-header">
+            <div className="title-section">
+              <h2>Request Management</h2>
+              <div className="subtitle">Track and manage support tickets and service requests across tenants.</div>
+            </div>
+            <div className="header-actions">
+              <button className="btn-ghost" onClick={() => setShowMatrixModal(true)}>Field Control Guide</button>
+              <button className="btn-ghost" onClick={fetchRequests}>Refresh</button>
+              <button className="btn-primary" onClick={() => setViewMode('CREATE')}>+ Register Request</button>
+            </div>
+          </div>
 
       <div className="board-summary">
         <div className="summary-item"><span className="dot draft"></span><span className="label">Draft</span><span className="value">{draftCount}</span></div>
@@ -197,10 +237,13 @@ const RequestList: React.FC<RequestListProps> = ({ onSelectRequest }) => {
                 const pKey = priorityMap[req.priority || 'NORMAL'] || 'P3';
                 
                 return (
-                  <tr key={req.requestId || idx} onClick={() => onSelectRequest(req.requestId)}>
+                  <tr key={req.requestId || idx} onClick={() => {
+                    setSelectedRequestId(req.requestId);
+                    setViewMode('DETAIL');
+                  }}>
                     <td className="date-cell">{req.createdAt ? new Date(req.createdAt).toLocaleDateString() : '-'}</td>
                     <td className="title-cell" title={req.title}>
-                      <span className="req-id">#{req.requestId}</span>
+                      <span className="req-id">{req.requestNo}</span>
                       <span className="req-title-text">{req.title}</span>
                     </td>
                     <td><div className="tenant-cell">{tenant?.name || req.tenantId || '-'}</div></td>
@@ -218,8 +261,10 @@ const RequestList: React.FC<RequestListProps> = ({ onSelectRequest }) => {
                           <div className="avatar-sm" style={{ background: 'var(--primary)' }}>{req.assigneeName[0]}</div>
                           <span>{req.assigneeName}</span>
                         </div>
-                      ) : (
+                      ) : req.status === 'OPEN' ? (
                         <button className="btn-ghost" onClick={e => handleQuickAssign(e, req.requestId)}>Assign</button>
+                      ) : (
+                        <span className="text-muted" style={{ fontSize: '11px' }}>Unassigned</span>
                       )}
                     </td>
                   </tr>
@@ -233,10 +278,116 @@ const RequestList: React.FC<RequestListProps> = ({ onSelectRequest }) => {
         {filteredRequests.length === 0 && !isLoading && <div className="empty-state">No matching requests found.</div>}
       </div>
 
-      {showCreateModal && (
-        <RequestFormModal onClose={() => setShowCreateModal(false)} onSuccess={fetchRequests} />
+      <div className="pagination-footer">
+        <div className="pagination-info">
+          Total <strong>{totalElements}</strong> requests found
+        </div>
+        <div className="pagination-controls">
+          <button 
+            className="btn-page" 
+            disabled={currentPage === 0 || isLoading}
+            onClick={() => setCurrentPage(prev => prev - 1)}
+          >
+            &lt; Prev
+          </button>
+          
+          <div className="page-numbers">
+            {Array.from({ length: totalPages }, (_, i) => (
+              <button 
+                key={i} 
+                className={`btn-page-num ${currentPage === i ? 'active' : ''}`}
+                onClick={() => setCurrentPage(i)}
+                disabled={isLoading}
+              >
+                {i + 1}
+              </button>
+            )).slice(Math.max(0, currentPage - 2), Math.min(totalPages, currentPage + 3))}
+          </div>
+
+          <button 
+            className="btn-page" 
+            disabled={currentPage >= totalPages - 1 || isLoading}
+            onClick={() => setCurrentPage(prev => prev + 1)}
+          >
+            Next &gt;
+          </button>
+          
+          <select 
+            className="page-size-select"
+            value={pageSize}
+            onChange={e => setPageSize(Number(e.target.value))}
+            disabled={isLoading}
+          >
+            <option value={10}>10 per page</option>
+            <option value={20}>20 per page</option>
+            <option value={50}>50 per page</option>
+          </select>
+        </div>
+      </div>
+      {showMatrixModal && (
+        <div className="modal-overlay" onClick={() => setShowMatrixModal(false)}>
+          <div className="matrix-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Field Control Matrix</h3>
+              <button className="btn-close" onClick={() => setShowMatrixModal(false)}><X size={20} /></button>
+            </div>
+            <div className="modal-body">
+              <table className="matrix-table">
+                <thead>
+                  <tr>
+                    <th>Field / Category</th>
+                    <th>DRAFT</th>
+                    <th>PEND</th>
+                    <th>OPEN</th>
+                    <th>PROG</th>
+                    <th>RESL</th>
+                    <th>CLSD</th>
+                    <th>RJCT</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    // E = Editable, R = Read-Only
+                    // Columns: DRAFT, PENDING_APPROVAL, OPEN, IN_PROGRESS, RESOLVED, CLOSED, REJECTED
+                    { f: '📝 Title',          cat: 'Content',  s: ['E','R','E','R','R','R','R'] },
+                    { f: '📄 Description',    cat: 'Content',  s: ['E','R','E','R','R','R','R'] },
+                    { f: '🏢 Tenant',         cat: 'Context',  s: ['E','R','R','R','R','R','R'] },
+                    { f: '📋 Catalog',        cat: 'Context',  s: ['E','R','R','R','R','R','R'] },
+                    { f: '⚡ Priority',       cat: 'Control',  s: ['E','R','E','E','R','R','R'] },
+                    { f: '🔄 Status',         cat: 'Control',  s: ['E','R','E','E','E','R','R'] }, // Updated: DRAFT can change status
+                    { f: '✅ Resolution',     cat: 'Control',  s: ['R','R','R','E','E','R','R'] },
+                    { f: '📎 Attachments',   cat: 'Files',    s: ['E','R','E','E','R','R','R'] },
+                    { f: '👤 Requester',     cat: 'People',   s: ['E','R','R','R','R','R','R'] },
+                    { f: '👷 Assignee',      cat: 'People',   s: ['R','R','E','E','R','R','R'] },
+                    { f: '🔖 Request No.',   cat: 'System',   s: ['R','R','R','R','R','R','R'] },
+                    { f: '⏱️ SLA Deadline',  cat: 'System',   s: ['R','R','R','R','R','R','R'] },
+                    { f: '🕐 Timestamps',    cat: 'System',   s: ['R','R','R','R','R','R','R'] },
+                  ].map((row, i) => (
+                    <tr key={i}>
+                      <td className="field-name">{row.f}</td>
+                      {row.s.map((cell, j) => (
+                        <td key={j} className={cell === 'E' ? 'editable-cell' : 'readonly-cell'}>
+                          {cell === 'E' ? '✏️' : '🔒'}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <div className="matrix-legend">
+                <span className="legend-item"><span className="dot editable"></span> ✏️ Editable</span>
+                <span className="legend-item"><span className="dot readonly"></span> 🔒 Read-Only</span>
+                <span className="legend-item" style={{marginLeft: 'auto', fontSize: '11px', color: '#64748b'}}>
+                  PEND = PENDING_APPROVAL · PROG = IN_PROGRESS · RESL = RESOLVED · CLSD = CLOSED · RJCT = REJECTED
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
-    </div>
+      </>
+    )}
+  </div>
   );
 };
 

@@ -23,6 +23,10 @@ public class ServiceRequest extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long requestId;
 
+    @Setter
+    @Column(name = "request_no", unique = true, length = 30)
+    private String requestNo;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "tenant_id", nullable = false)
     private Tenant tenant;
@@ -57,10 +61,12 @@ public class ServiceRequest extends BaseEntity {
     @Column(name = "closed_at")
     private LocalDateTime closedAt;
 
+    @Setter
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "requester_id", nullable = false)
     private Member requester;
 
+    @Setter
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "assignee_id")
     private Member assignee;
@@ -103,7 +109,19 @@ public class ServiceRequest extends BaseEntity {
     }
 
     public void setStatus(ServiceRequestStatus status) {
+        if (this.status == status) return;
+        
         this.status = status;
+        
+        // Update timestamps based on the new status
+        LocalDateTime now = LocalDateTime.now();
+        if (status == ServiceRequestStatus.OPEN && this.submittedAt == null) {
+            this.submittedAt = now;
+        } else if (status == ServiceRequestStatus.RESOLVED && this.resolvedAt == null) {
+            this.resolvedAt = now;
+        } else if (status == ServiceRequestStatus.CLOSED && this.closedAt == null) {
+            this.closedAt = now;
+        }
     }
 
     // Status transition methods with validation

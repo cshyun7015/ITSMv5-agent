@@ -1,73 +1,58 @@
 package com.itsm.system.exception;
 
-import org.springframework.http.HttpStatus;
+import lombok.Builder;
+import lombok.Getter;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.FieldError;
-import org.springframework.web.bind.MethodArgumentNotValidException;
-import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.Map;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(com.itsm.system.exception.CodeNotFoundException.class)
-    public ResponseEntity<Map<String, Object>> handleCodeNotFoundException(com.itsm.system.exception.CodeNotFoundException ex) {
-        Map<String, Object> body = new HashMap<>();
-        body.put("timestamp", LocalDateTime.now());
-        body.put("message", ex.getMessage());
-        body.put("status", HttpStatus.NOT_FOUND.value());
-        return new ResponseEntity<>(body, HttpStatus.NOT_FOUND);
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<ErrorResponse> handleIllegalState(IllegalStateException e) {
+        return ResponseEntity.status(400).body(ErrorResponse.builder()
+                .message(e.getMessage())
+                .code("INVALID_STATE")
+                .timestamp(LocalDateTime.now())
+                .build());
     }
 
-    @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
-    public ResponseEntity<Map<String, Object>> handleAccessDeniedException(org.springframework.security.access.AccessDeniedException ex) {
-        Map<String, Object> body = new HashMap<>();
-        body.put("timestamp", LocalDateTime.now());
-        body.put("message", "Access Denied");
-        body.put("details", ex.getMessage());
-        body.put("status", HttpStatus.FORBIDDEN.value());
-        return new ResponseEntity<>(body, HttpStatus.FORBIDDEN);
+    @ExceptionHandler(SecurityException.class)
+    public ResponseEntity<ErrorResponse> handleSecurity(SecurityException e) {
+        return ResponseEntity.status(403).body(ErrorResponse.builder()
+                .message(e.getMessage())
+                .code("ACCESS_DENIED")
+                .timestamp(LocalDateTime.now())
+                .build());
     }
 
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, Object>> handleValidationExceptions(MethodArgumentNotValidException ex) {
-        Map<String, Object> errors = new HashMap<>();
-        ex.getBindingResult().getAllErrors().forEach((error) -> {
-            String fieldName = ((FieldError) error).getField();
-            String errorMessage = error.getDefaultMessage();
-            errors.put(fieldName, errorMessage);
-        });
-
-        Map<String, Object> body = new HashMap<>();
-        body.put("timestamp", LocalDateTime.now());
-        body.put("errors", errors);
-        body.put("status", HttpStatus.BAD_REQUEST.value());
-        System.out.println("VALIDATION FAILED: " + errors);
-        return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
-    }
-
-    @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<Map<String, Object>> handleHttpMessageNotReadableException(HttpMessageNotReadableException ex) {
-        Map<String, Object> body = new HashMap<>();
-        body.put("timestamp", LocalDateTime.now());
-        body.put("message", "Malformed JSON request or type mismatch");
-        body.put("details", ex.getMessage());
-        body.put("status", HttpStatus.BAD_REQUEST.value());
-        return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ErrorResponse> handleIllegalArgument(IllegalArgumentException e) {
+        return ResponseEntity.status(400).body(ErrorResponse.builder()
+                .message(e.getMessage())
+                .code("BAD_REQUEST")
+                .timestamp(LocalDateTime.now())
+                .build());
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<Map<String, Object>> handleGeneralException(Exception ex) {
-        Map<String, Object> body = new HashMap<>();
-        body.put("timestamp", LocalDateTime.now());
-        body.put("message", "An unexpected error occurred");
-        body.put("details", ex.getMessage());
-        body.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
-        return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
+    public ResponseEntity<ErrorResponse> handleGeneral(Exception e) {
+        e.printStackTrace(); // 서버 로그에는 기록
+        return ResponseEntity.status(500).body(ErrorResponse.builder()
+                .message("An unexpected system error occurred. Please contact the administrator.")
+                .code("INTERNAL_ERROR")
+                .timestamp(LocalDateTime.now())
+                .build());
+    }
+
+    @Getter
+    @Builder
+    public static class ErrorResponse {
+        private String message;
+        private String code;
+        private LocalDateTime timestamp;
     }
 }

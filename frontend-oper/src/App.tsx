@@ -121,15 +121,7 @@ const AdminCommandCenter: React.FC = () => {
             <UserManagement />
           ) : activeTab === 'requests' ? (
             <div className="requests-section">
-              {selectedRequestId ? (
-                <RequestDetail 
-                  requestId={selectedRequestId} 
-                  onBack={() => setSelectedRequestId(null)}
-                  onSuccess={() => setSelectedRequestId(null)} 
-                />
-              ) : (
-                <RequestList onSelectRequest={(id) => setSelectedRequestId(id)} />
-              )}
+              <RequestList />
             </div>
           ) : (
             <div className="incident-section">

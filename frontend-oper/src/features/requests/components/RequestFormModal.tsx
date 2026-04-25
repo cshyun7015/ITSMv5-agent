@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { requestApi } from '../api/requestApi';
 import { ServiceRequest, ServiceRequestPriority, CodeDTO, CreateRequestDTO, UpdateRequestDTO } from '../types';
+import { useToast } from '../../../hooks/useToast';
 import './../requests.css';
 
 interface RequestFormModalProps {
@@ -10,6 +11,7 @@ interface RequestFormModalProps {
 }
 
 const RequestFormModal: React.FC<RequestFormModalProps> = ({ request, onClose, onSuccess }) => {
+  const { toast } = useToast();
   const isEdit = !!request;
   const [tenants, setTenants] = useState<any[]>([]);
   const [targetTenantId, setTargetTenantId] = useState(request?.tenantId || '');
@@ -41,6 +43,7 @@ const RequestFormModal: React.FC<RequestFormModalProps> = ({ request, onClose, o
       setStatusOptions(data);
     } catch (error) {
       console.error('Failed to load status options', error);
+      toast.error('Failed to load status options');
     }
   };
 
@@ -50,6 +53,7 @@ const RequestFormModal: React.FC<RequestFormModalProps> = ({ request, onClose, o
       setPriorityOptions(data);
     } catch (error) {
       console.error('Failed to load priority options', error);
+      toast.error('Failed to load priority options');
     }
   };
 
@@ -71,6 +75,7 @@ const RequestFormModal: React.FC<RequestFormModalProps> = ({ request, onClose, o
       }
     } catch (error) {
       console.error('Failed to load tenants', error);
+      toast.error('Failed to load customer organizations');
     }
   };
 
@@ -80,6 +85,7 @@ const RequestFormModal: React.FC<RequestFormModalProps> = ({ request, onClose, o
       setTenantUsers(data);
     } catch (error) {
       console.error('Failed to load tenant users', error);
+      toast.error('Failed to load tenant users');
     }
   };
 
@@ -94,6 +100,7 @@ const RequestFormModal: React.FC<RequestFormModalProps> = ({ request, onClose, o
           title, description, priority, status, resolution
         };
         await requestApi.updateRequest(request!.requestId, dto, files);
+        toast.success('Request updated successfully');
       } else {
         const dto: CreateRequestDTO = {
           title,
@@ -103,11 +110,13 @@ const RequestFormModal: React.FC<RequestFormModalProps> = ({ request, onClose, o
           requesterId: useManualRequester ? (requesterId || undefined) : undefined
         };
         await requestApi.createRequest(dto, files);
+        toast.success('Request registered successfully');
       }
       onSuccess();
       onClose();
     } catch (error) {
-      alert(isEdit ? 'Failed to update request' : 'Failed to create request');
+      console.error('Submission error', error);
+      toast.error(isEdit ? 'Failed to update request' : 'Failed to create request');
     } finally {
       setIsSubmitting(false);
     }
