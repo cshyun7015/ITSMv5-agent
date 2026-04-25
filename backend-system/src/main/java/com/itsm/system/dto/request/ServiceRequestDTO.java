@@ -91,6 +91,9 @@ public class ServiceRequestDTO {
         private String assigneeName;
         private String resolution;
         private LocalDateTime createdAt;
+        private LocalDateTime submittedAt;
+        private LocalDateTime resolvedAt;
+        private LocalDateTime closedAt;
         private Long catalogId;
         private String catalogName;
         private String dynamicFields;
@@ -109,6 +112,9 @@ public class ServiceRequestDTO {
                     .assigneeName(request.getAssignee() != null ? request.getAssignee().getUsername() : null)
                     .resolution(request.getResolution())
                     .createdAt(request.getCreatedAt())
+                    .submittedAt(request.getSubmittedAt())
+                    .resolvedAt(request.getResolvedAt())
+                    .closedAt(request.getClosedAt())
                     .catalogId(request.getCatalog() != null ? request.getCatalog().getId() : null)
                     .catalogName(request.getCatalog() != null ? request.getCatalog().getName() : null)
                     .dynamicFields(request.getDynamicFields())

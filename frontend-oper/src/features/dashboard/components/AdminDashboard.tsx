@@ -118,7 +118,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
                 </tr>
               </thead>
               <tbody>
-                {summary.tenantSummaries.map((t: TenantSummary) => (
+                {(summary.tenantSummaries || []).map((t: TenantSummary) => (
                   <tr key={t.tenantId} onClick={() => onNavigate?.('incidents')}>
                     <td>
                       <div className="t-cell">
@@ -167,7 +167,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
 
         <Widget title="Situational Activity Feed" icon="📡" description="Real-time multi-tenant events" className="activity-widget">
            <div className="goc-activity-list">
-              {summary.recentActivities.map((act: RecentActivity, i: number) => (
+              {(summary.recentActivities || []).map((act: RecentActivity, i: number) => (
                 <div key={i} className="goc-act-item">
                   <div className="act-t-id">{act.tenantId}</div>
                   <div className="act-main">

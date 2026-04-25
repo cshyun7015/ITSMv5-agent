@@ -18,7 +18,7 @@ const OperatorDashboard: React.FC<OperatorDashboardProps> = ({ onNavigate }) => 
 
   React.useEffect(() => {
     if (activityListRef.current) {
-      activityListRef.current.scrollTop = 0; // Newest on top, or scroll to bottom if needed
+      activityListRef.current.scrollTop = 0;
     }
   }, [summary?.recentActivities]);
 
@@ -51,7 +51,7 @@ const OperatorDashboard: React.FC<OperatorDashboardProps> = ({ onNavigate }) => 
   
   if (!summary) return <div className="error">Satellite Link Offline.</div>;
 
-  const hasP1Record = summary.priorityP1Count > 0;
+  const hasP1Record = (summary.priorityP1Count || 0) > 0;
 
   return (
     <div className={`op-dashboard ${hasP1Record ? 'emergency' : ''}`}>
@@ -77,13 +77,13 @@ const OperatorDashboard: React.FC<OperatorDashboardProps> = ({ onNavigate }) => 
           <div className="radar-bars">
             <div className="bar-item p1" title="P1 - Critical">
                 <span className="b-label">P1</span>
-                <div className="b-track"><div className="b-fill" style={{ width: `${Math.min(100, (summary.priorityP1Count / (summary.totalActiveIncidents || 1)) * 100)}%` }}></div></div>
-                <span className="b-val">{summary.priorityP1Count}</span>
+                <div className="b-track"><div className="b-fill" style={{ width: `${Math.min(100, ((summary.priorityP1Count || 0) / (summary.totalActiveIncidents || 1)) * 100)}%` }}></div></div>
+                <span className="b-val">{summary.priorityP1Count || 0}</span>
             </div>
             <div className="bar-item p2" title="P2 - High">
                 <span className="b-label">P2</span>
-                <div className="b-track"><div className="b-fill" style={{ width: `${Math.min(100, (summary.priorityP2Count / (summary.totalActiveIncidents || 1)) * 100)}%` }}></div></div>
-                <span className="b-val">{summary.priorityP2Count}</span>
+                <div className="b-track"><div className="b-fill" style={{ width: `${Math.min(100, ((summary.priorityP2Count || 0) / (summary.totalActiveIncidents || 1)) * 100)}%` }}></div></div>
+                <span className="b-val">{summary.priorityP2Count || 0}</span>
             </div>
           </div>
         </div>
@@ -91,12 +91,12 @@ const OperatorDashboard: React.FC<OperatorDashboardProps> = ({ onNavigate }) => 
           <div className="kpi-label">Active Incidents</div>
           <div className="kpi-value">{summary.totalActiveIncidents}</div>
           <div className="kpi-meta">
-            {summary.priorityP1Count > 0 ? (
+            {(summary.priorityP1Count || 0) > 0 ? (
                <span className="urgent-flash">⚠️ {summary.priorityP1Count} CRITICAL</span>
             ) : "All Systems Green"}
           </div>
         </div>
-        <div className={`kpi-card sla ${summary.slaRiskCount > 0 ? 'risk' : ''}`}>
+        <div className={`kpi-card sla ${(summary.slaRiskCount || 0) > 0 ? 'risk' : ''}`}>
           <div className="kpi-label">SLA Breach Risk</div>
           <div className="kpi-value">{summary.slaRiskCount}</div>
           <div className="kpi-meta">Due within 1 hour</div>
@@ -108,7 +108,7 @@ const OperatorDashboard: React.FC<OperatorDashboardProps> = ({ onNavigate }) => 
           <section className="tenant-health">
             <h3>Tenant Operational Status</h3>
             <div className="tenant-scroller">
-              {summary.tenantSummaries.map((t: TenantSummary) => (
+              {(summary.tenantSummaries || []).map((t: TenantSummary) => (
                 <div key={t.tenantId} className={`t-row ${t.serviceStatus}`}>
                   <div className="t-brand" style={{ background: t.brandColor }}></div>
                   <div className="t-name">{t.tenantName}</div>
@@ -140,7 +140,7 @@ const OperatorDashboard: React.FC<OperatorDashboardProps> = ({ onNavigate }) => 
           <section className="activity-center">
             <h3>Situational Activity Feed</h3>
             <div className="activity-list" ref={activityListRef}>
-              {summary.recentActivities.map((act: RecentActivity, i: number) => (
+              {(summary.recentActivities || []).map((act: RecentActivity, i: number) => (
                 <div key={i} className={`act-item ${act.type}`}>
                   <div className="act-icon">{getActivityIcon(act.type)}</div>
                   <div className="act-content">
@@ -152,7 +152,7 @@ const OperatorDashboard: React.FC<OperatorDashboardProps> = ({ onNavigate }) => 
                   </div>
                 </div>
               ))}
-              {summary.recentActivities.length === 0 && (
+              {(!summary.recentActivities || summary.recentActivities.length === 0) && (
                 <div className="empty-feed">No recent activity detected.</div>
               )}
             </div>
@@ -175,7 +175,6 @@ const OperatorDashboard: React.FC<OperatorDashboardProps> = ({ onNavigate }) => 
         .live-tag { font-size: 10px; font-weight: 800; color: #10b981; text-transform: uppercase; letter-spacing: 1px; }
         .sys-time { font-family: monospace; color: #64748b; font-size: 14px; }
 
-        /* KPI Grid */
         .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 32px; }
         .kpi-card { background: rgba(30, 41, 59, 0.4); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.05); border-radius: 20px; padding: 24px; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; position: relative; overflow: hidden; }
         .kpi-card:hover { transform: translateY(-5px); background: rgba(30, 41, 59, 0.6); border-color: rgba(255,255,255,0.1); box-shadow: 0 12px 30px rgba(0,0,0,0.3); }
@@ -191,7 +190,6 @@ const OperatorDashboard: React.FC<OperatorDashboardProps> = ({ onNavigate }) => 
 
         .risk { border-color: rgba(245, 158, 11, 0.5); }
 
-        /* Priority Radar */
         .radar-bars { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
         .bar-item { display: flex; align-items: center; gap: 8px; }
         .b-label { font-size: 10px; font-weight: 800; width: 20px; }
@@ -201,7 +199,6 @@ const OperatorDashboard: React.FC<OperatorDashboardProps> = ({ onNavigate }) => 
         .p2 .b-fill { background: #f59e0b; }
         .b-val { font-size: 10px; font-weight: 700; width: 15px; text-align: right; }
 
-        /* Layout */
         .dashboard-layout { display: grid; grid-template-columns: 1fr 400px; gap: 24px; }
         .layout-left { display: flex; flex-direction: column; gap: 24px; }
         
@@ -223,7 +220,6 @@ const OperatorDashboard: React.FC<OperatorDashboardProps> = ({ onNavigate }) => 
 
         .monitor-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 
-        /* Activity Feed */
         .activity-center { display: flex; flex-direction: column; height: 750px; }
         .activity-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding-right: 5px; }
         .act-item { display: flex; gap: 12px; padding: 12px; background: rgba(255,255,255,0.02); border-radius: 12px; border-left: 2px solid transparent; }

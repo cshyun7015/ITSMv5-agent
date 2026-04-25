@@ -1,5 +1,5 @@
 import apiClient from '../../../api/client';
-import { Operator, OperatorRequest, Team, TeamRequest } from '../types';
+import { Operator, OperatorRequest, Team, TeamRequest, Tenant } from '../types';
 
 export const operatorApi = {
   // 운영자 목록 조회

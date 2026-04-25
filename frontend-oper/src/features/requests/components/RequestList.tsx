@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { requestApi } from '../api/requestApi';
-import { ServiceRequest } from '../types';
+import { ServiceRequest, CodeDTO } from '../types';
 import RequestFormModal from './RequestFormModal';
 import './../requests.css';
 
@@ -15,7 +15,7 @@ const RequestList: React.FC<RequestListProps> = ({ onSelectRequest }) => {
   const [filterStatus, setFilterStatus] = useState<string>('ALL');
   const [filterTenant, setFilterTenant] = useState<string>('ALL');
   const [keyword, setKeyword] = useState<string>('');
-  const [dateRange, setDateRange] = useState<string>('ALL'); // ALL, TODAY, 1W, 1M, CUSTOM
+  const [dateRange, setDateRange] = useState<string>('ALL');
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -27,17 +27,12 @@ const RequestList: React.FC<RequestListProps> = ({ onSelectRequest }) => {
 
   const loadInitialData = async () => {
     try {
-      const tenantData = await requestApi.getTenants().catch(err => {
-        console.error('Failed to load tenants', err);
-        return [];
-      });
-      setTenants(tenantData);
-
-      const codesData = await requestApi.getCodesByGroup('SR_STATUS').catch(err => {
-        console.error('Failed to load status codes', err);
-        return [];
-      });
-      setStatusCodes(codesData);
+      const [tData, cData] = await Promise.all([
+        requestApi.getTenants().catch(() => []),
+        requestApi.getCodesByGroup('SR_STATUS').catch(() => [])
+      ]);
+      setTenants(Array.isArray(tData) ? tData : []);
+      setStatusCodes(Array.isArray(cData) ? cData : []);
     } catch (error) {
       console.error('Initial metadata loading error', error);
     }
@@ -79,18 +74,17 @@ const RequestList: React.FC<RequestListProps> = ({ onSelectRequest }) => {
       }
 
       const data = await requestApi.getAllRequests(params);
-      console.log('Fetched requests with params:', params, 'Result count:', data.length);
-      setRequests(data);
+      // Ensure data is an array before setting
+      setRequests(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Failed to fetch requests', error);
+      setRequests([]);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Debounced effect for filtering
   useEffect(() => {
-    console.log('Filter changed, scheduling fetch...', { filterStatus, filterTenant, keyword, dateRange });
     const handler = setTimeout(() => {
       fetchRequests();
     }, 400);
@@ -101,128 +95,55 @@ const RequestList: React.FC<RequestListProps> = ({ onSelectRequest }) => {
     e.stopPropagation();
     try {
       await requestApi.assignToMe(id);
-      fetchRequests(); // Refresh list after assignment
+      fetchRequests();
     } catch (error) {
       alert('Assignment failed');
     }
   };
 
   const filteredRequests = useMemo(() => {
-    return requests;
+    return (requests || []).filter(r => r !== null && typeof r === 'object');
   }, [requests]);
 
-  const handleRowClick = (id: number) => {
-    onSelectRequest(id);
-  };
+  const draftCount = useMemo(() => filteredRequests.filter(r => r?.status === 'DRAFT').length, [filteredRequests]);
+  const pendingCount = useMemo(() => filteredRequests.filter(r => r?.status === 'PENDING_APPROVAL').length, [filteredRequests]);
+  const openCount = useMemo(() => filteredRequests.filter(r => r?.status === 'OPEN').length, [filteredRequests]);
+  const inProgressCount = useMemo(() => filteredRequests.filter(r => r?.status === 'IN_PROGRESS').length, [filteredRequests]);
+  const resolvedCount = useMemo(() => filteredRequests.filter(r => r?.status === 'RESOLVED').length, [filteredRequests]);
+  const closedCount = useMemo(() => filteredRequests.filter(r => r?.status === 'CLOSED').length, [filteredRequests]);
+  const rejectedCount = useMemo(() => filteredRequests.filter(r => r?.status === 'REJECTED').length, [filteredRequests]);
 
-  const draftCount = useMemo(() => filteredRequests.filter(r => r.status === 'DRAFT').length, [filteredRequests]);
-  const pendingCount = useMemo(() => filteredRequests.filter(r => r.status === 'PENDING_APPROVAL').length, [filteredRequests]);
-  const openCount = useMemo(() => filteredRequests.filter(r => r.status === 'OPEN' || r.status === 'NEW').length, [filteredRequests]);
-  const inProgressCount = useMemo(() => filteredRequests.filter(r => r.status === 'IN_PROGRESS').length, [filteredRequests]);
-  const resolvedCount = useMemo(() => filteredRequests.filter(r => r.status === 'RESOLVED').length, [filteredRequests]);
-  const closedCount = useMemo(() => filteredRequests.filter(r => r.status === 'CLOSED').length, [filteredRequests]);
-  const rejectedCount = useMemo(() => filteredRequests.filter(r => r.status === 'REJECTED').length, [filteredRequests]);
-
-  const getSlaInfo = (deadline: string | null | undefined) => {
-    if (!deadline) return { text: 'No SLA', class: '' };
-    const diff = new Date(deadline).getTime() - new Date().getTime();
-    if (diff < 0) return { text: 'SLA Overdue', class: 'overdue' };
-    if (diff < 7200000) return { text: 'Due Soon', class: 'urgent' }; // < 2h
-    return { text: new Date(deadline).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), class: '' };
-  };
-
-  if (isLoading) return <div className="loading">Initializing Requests Center...</div>;
+  if (isLoading && filteredRequests.length === 0) return <div className="loading">Initializing Requests Center...</div>;
 
   return (
-    <div className="requests-board" data-testid="requests-board">
+    <div className="requests-board">
       <div className="requests-header">
         <div className="title-section">
           <h2>Request Management</h2>
           <div className="subtitle">Track and manage support tickets and service requests across tenants.</div>
         </div>
-        
         <div className="header-actions">
-          <button className="btn-ghost" onClick={loadInitialData}>Refresh</button>
-          <button className="btn-secondary">Export CSV</button>
-          <button className="btn-primary" onClick={() => setShowCreateModal(true)} data-testid="btn-create-request">
-            + Register Request
-          </button>
+          <button className="btn-ghost" onClick={fetchRequests}>Refresh</button>
+          <button className="btn-primary" onClick={() => setShowCreateModal(true)}>+ Register Request</button>
         </div>
       </div>
 
       <div className="board-summary">
-        <div className="summary-item">
-          <div className="label-row">
-            <span className="dot draft"></span>
-            <span className="label">Draft</span>
-          </div>
-          <span className="value">{draftCount}</span>
-        </div>
-        <div className="summary-item">
-          <div className="label-row">
-            <span className="dot pending"></span>
-            <span className="label">Pending</span>
-          </div>
-          <span className="value">{pendingCount}</span>
-        </div>
-        <div className="summary-item">
-          <div className="label-row">
-            <span className="dot open"></span>
-            <span className="label">Open</span>
-          </div>
-          <span className="value">{openCount}</span>
-        </div>
-        <div className="summary-item">
-          <div className="label-row">
-            <span className="dot progress"></span>
-            <span className="label">In Progress</span>
-          </div>
-          <span className="value">{inProgressCount}</span>
-        </div>
-        <div className="summary-item">
-          <div className="label-row">
-            <span className="dot resolved"></span>
-            <span className="label">Resolved</span>
-          </div>
-          <span className="value">{resolvedCount}</span>
-        </div>
-        <div className="summary-item">
-          <div className="label-row">
-            <span className="dot closed"></span>
-            <span className="label">Closed</span>
-          </div>
-          <span className="value">{closedCount}</span>
-        </div>
-        <div className="summary-item">
-          <div className="label-row">
-            <span className="dot rejected"></span>
-            <span className="label">Rejected</span>
-          </div>
-          <span className="value">{rejectedCount}</span>
-        </div>
+        <div className="summary-item"><span className="dot draft"></span><span className="label">Draft</span><span className="value">{draftCount}</span></div>
+        <div className="summary-item"><span className="dot pending"></span><span className="label">Pending</span><span className="value">{pendingCount}</span></div>
+        <div className="summary-item"><span className="dot open"></span><span className="label">Open</span><span className="value">{openCount}</span></div>
+        <div className="summary-item"><span className="dot progress"></span><span className="label">Progress</span><span className="value">{inProgressCount}</span></div>
+        <div className="summary-item"><span className="dot resolved"></span><span className="label">Resolved</span><span className="value">{resolvedCount}</span></div>
+        <div className="summary-item"><span className="dot closed"></span><span className="label">Closed</span><span className="value">{closedCount}</span></div>
+        <div className="summary-item"><span className="dot rejected"></span><span className="label">Rejected</span><span className="value">{rejectedCount}</span></div>
       </div>
 
       <div className="filter-bar">
         <div className="search-input-wrapper">
-          <span className="search-icon">🔍</span>
-          <input 
-            id="search-keyword"
-            type="text" 
-            className="search-input" 
-            placeholder="Search by ID, Title, or Requester..."
-            value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
-          />
+          <input type="text" className="search-input" placeholder="Search by ID, Title..." value={keyword} onChange={e => setKeyword(e.target.value)} />
         </div>
-
         <div className="filter-group">
-          <span className="group-label">Created</span>
-          <select 
-            id="date-filter"
-            className="modern-select"
-            value={dateRange}
-            onChange={(e) => setDateRange(e.target.value)}
-          >
+          <select className="modern-select" value={dateRange} onChange={e => setDateRange(e.target.value)}>
             <option value="ALL">All Time</option>
             <option value="TODAY">Today</option>
             <option value="1W">1 Week</option>
@@ -230,163 +151,91 @@ const RequestList: React.FC<RequestListProps> = ({ onSelectRequest }) => {
             <option value="CUSTOM">Custom Range</option>
           </select>
         </div>
-
         {dateRange === 'CUSTOM' && (
           <div className="filter-group date-range-group">
-            <input 
-              type="date" 
-              className="modern-input date-input"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-            />
+            <input type="date" className="modern-input date-input" value={startDate} onChange={e => setStartDate(e.target.value)} />
             <span className="date-separator">~</span>
-            <input 
-              type="date" 
-              className="modern-input date-input"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-            />
+            <input type="date" className="modern-input date-input" value={endDate} onChange={e => setEndDate(e.target.value)} />
           </div>
         )}
-
         <div className="filter-group">
-          <span className="group-label">Tenant</span>
-          <select 
-            id="tenant-filter"
-            className="modern-select"
-            value={filterTenant}
-            onChange={(e) => {
-              console.log('Tenant filter changed:', e.target.value);
-              setFilterTenant(e.target.value);
-            }}
-          >
+          <select className="modern-select" value={filterTenant} onChange={e => setFilterTenant(e.target.value)}>
             <option value="ALL">All Tenants</option>
-            {tenants.map(t => (
-              <option key={`tenant-${t.id || t.tenantId}`} value={t.id || t.tenantId}>{t.name}</option>
+            {(tenants || []).filter(t => t !== null).map(t => (
+              <option key={t.id || t.tenantId} value={t.id || t.tenantId}>{t.name}</option>
             ))}
           </select>
         </div>
-
         <div className="filter-group">
-          <span className="group-label">Status</span>
-          <select 
-            id="status-filter"
-            className="modern-select"
-            value={filterStatus}
-            onChange={(e) => {
-              console.log('Status filter changed:', e.target.value);
-              setFilterStatus(e.target.value);
-            }}
-          >
+          <select className="modern-select" value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
             <option value="ALL">All Status</option>
-            {statusCodes.length > 0 ? (
-              statusCodes.map(code => (
-                <option key={`status-${code.codeId}`} value={code.codeId}>{code.codeName}</option>
-              ))
-            ) : (
-              <>
-                <option value="DRAFT">Draft</option>
-                <option value="PENDING_APPROVAL">Pending Approval</option>
-                <option value="OPEN">Open</option>
-                <option value="IN_PROGRESS">In Progress</option>
-                <option value="RESOLVED">Resolved</option>
-                <option value="CLOSED">Closed</option>
-                <option value="REJECTED">Rejected</option>
-              </>
-            )}
+            {(statusCodes || []).filter(c => c !== null).map(code => (
+              <option key={code.codeId} value={code.codeId}>{code.codeName}</option>
+            ))}
           </select>
         </div>
       </div>
 
       <div className="itsm-table-container">
-        <table className="itsm-table" data-testid="request-list">
+        <table className="itsm-table">
           <thead>
             <tr>
-              <th style={{ width: '100px' }}>ID</th>
-              <th>Request Title</th>
-              <th style={{ width: '140px' }}>Status</th>
-              <th style={{ width: '120px' }}>Priority</th>
-              <th style={{ width: '180px' }}>Requester</th>
-              <th style={{ width: '180px' }}>Assignee</th>
-              <th style={{ width: '150px' }}>SLA Deadline</th>
+              <th style={{ width: '120px' }}>Created Date</th>
+              <th style={{ minWidth: '200px' }}>Request Title</th>
+              <th style={{ width: '150px' }}>Tenant</th>
+              <th style={{ width: '150px' }}>Requester</th>
+              <th style={{ width: '120px' }}>Status</th>
+              <th style={{ width: '100px' }}>Priority</th>
+              <th style={{ width: '150px' }}>Assignee</th>
             </tr>
           </thead>
           <tbody>
-            {filteredRequests.map(req => {
-              const sla = getSlaInfo(req.slaDeadline);
-              const tenant = tenants.find(t => (t.id || t.tenantId) === req.tenantId);
-              
-              // Map priority to standardized P1-P4 keys
-              const priorityMap: Record<string, string> = {
-                'EMERGENCY': 'P1',
-                'CRITICAL': 'P1',
-                'HIGH': 'P2',
-                'NORMAL': 'P3',
-                'MEDIUM': 'P3',
-                'LOW': 'P4'
-              };
-              const pKey = priorityMap[req.priority || 'NORMAL'] || 'P3';
-
-              return (
-                <tr key={`req-${req.requestId}`} onClick={() => handleRowClick(req.requestId)}>
-                  <td>
-                    <span className="table-link">#{req.requestId}</span>
-                  </td>
-                  <td>
-                    <div style={{ fontWeight: 600 }}>{req.title}</div>
-                    <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{tenant?.name || req.tenantId}</div>
-                  </td>
-                  <td>
-                    <span className={`status-pill ${req.status}`}>{req.status}</span>
-                  </td>
-                  <td>
-                    <span className={`priority-pill ${pKey}`}>{req.priority || 'NORMAL'}</span>
-                  </td>
-                  <td>
-                    <div className="table-assignee">
-                      <div className="avatar-sm">{req.requesterName?.[0]}</div>
-                      <span>{req.requesterName}</span>
-                    </div>
-                  </td>
-                  <td>
-                    {req.assigneeName ? (
+            {filteredRequests.map((req, idx) => {
+              try {
+                const tenant = (tenants || []).find(t => t && (t.id || t.tenantId) === req.tenantId);
+                const priorityMap: any = { 'EMERGENCY': 'P1', 'CRITICAL': 'P1', 'HIGH': 'P2', 'NORMAL': 'P3', 'LOW': 'P4' };
+                const pKey = priorityMap[req.priority || 'NORMAL'] || 'P3';
+                
+                return (
+                  <tr key={req.requestId || idx} onClick={() => onSelectRequest(req.requestId)}>
+                    <td className="date-cell">{req.createdAt ? new Date(req.createdAt).toLocaleDateString() : '-'}</td>
+                    <td className="title-cell" title={req.title}>
+                      <span className="req-id">#{req.requestId}</span>
+                      <span className="req-title-text">{req.title}</span>
+                    </td>
+                    <td><div className="tenant-cell">{tenant?.name || req.tenantId || '-'}</div></td>
+                    <td>
                       <div className="table-assignee">
-                        <div className="avatar-sm" style={{ background: 'var(--primary)' }}>{req.assigneeName[0]}</div>
-                        <span>{req.assigneeName}</span>
+                        <div className="avatar-sm">{req.requesterName?.[0] || '?'}</div>
+                        <span>{req.requesterName || 'Unknown'}</span>
                       </div>
-                    ) : (
-                      <button 
-                        className="btn-ghost" 
-                        style={{ fontSize: '11px', padding: '4px 8px' }}
-                        onClick={(e) => handleQuickAssign(e, req.requestId)}
-                      >
-                        Assign to Me
-                      </button>
-                    )}
-                  </td>
-                  <td>
-                    <span className={sla.class === 'overdue' ? 'sla-warning' : ''}>
-                      {sla.text}
-                    </span>
-                  </td>
-                </tr>
-              );
+                    </td>
+                    <td><span className={`status-pill ${req.status}`}>{req.status}</span></td>
+                    <td><span className={`priority-pill ${pKey}`}>{req.priority || 'NORMAL'}</span></td>
+                    <td>
+                      {req.assigneeName ? (
+                        <div className="table-assignee">
+                          <div className="avatar-sm" style={{ background: 'var(--primary)' }}>{req.assigneeName[0]}</div>
+                          <span>{req.assigneeName}</span>
+                        </div>
+                      ) : (
+                        <button className="btn-ghost" onClick={e => handleQuickAssign(e, req.requestId)}>Assign</button>
+                      )}
+                    </td>
+                  </tr>
+                );
+              } catch (e) {
+                return <tr key={idx}><td colSpan={7}>Error rendering record</td></tr>;
+              }
             })}
           </tbody>
         </table>
-        
-        {filteredRequests.length === 0 && (
-          <div className="empty-state">No matching requests found in the current scope.</div>
-        )}
+        {filteredRequests.length === 0 && !isLoading && <div className="empty-state">No matching requests found.</div>}
       </div>
 
       {showCreateModal && (
-        <RequestFormModal 
-          onClose={() => setShowCreateModal(false)}
-          onSuccess={loadInitialData}
-        />
+        <RequestFormModal onClose={() => setShowCreateModal(false)} onSuccess={fetchRequests} />
       )}
-
     </div>
   );
 };

@@ -7,10 +7,10 @@ import './../requests.css';
 interface RequestDetailProps {
   requestId: number;
   onBack: () => void;
-  onUpdated: () => void;
+  onSuccess: () => void;
 }
 
-const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, onBack, onUpdated }) => {
+const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, onBack, onSuccess }) => {
   const [request, setRequest] = useState<ServiceRequest | null>(null);
   const [approvals, setApprovals] = useState<ApprovalStep[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -44,7 +44,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, onBack, onUpda
     try {
       await requestApi.assignToMe(requestId);
       await loadData();
-      onUpdated();
+      onSuccess();
     } catch (error) {
       alert('Failed to assign request');
     } finally {
@@ -61,7 +61,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, onBack, onUpda
     try {
       await requestApi.resolve(requestId, resolution);
       await loadData();
-      onUpdated();
+      onSuccess();
     } catch (error) {
       alert('Failed to resolve request');
     } finally {
@@ -74,7 +74,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, onBack, onUpda
     try {
       await requestApi.close(requestId);
       await loadData();
-      onUpdated();
+      onSuccess();
     } catch (error) {
       alert('Failed to close request');
     } finally {
@@ -87,7 +87,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, onBack, onUpda
     setIsSubmitting(true);
     try {
       await requestApi.deleteRequest(requestId);
-      onUpdated();
+      onSuccess();
       onBack();
     } catch (error) {
       alert('Deletion failed');
@@ -236,7 +236,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, onBack, onUpda
           onClose={() => setShowEditModal(false)}
           onSuccess={() => {
             loadData();
-            onUpdated();
+            onSuccess();
           }}
         />
       )}

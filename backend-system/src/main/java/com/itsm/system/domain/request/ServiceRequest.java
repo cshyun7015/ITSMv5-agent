@@ -48,6 +48,15 @@ public class ServiceRequest extends BaseEntity {
     @Column(name = "sla_deadline")
     private LocalDateTime slaDeadline;
 
+    @Column(name = "submitted_at")
+    private LocalDateTime submittedAt;
+
+    @Column(name = "resolved_at")
+    private LocalDateTime resolvedAt;
+
+    @Column(name = "closed_at")
+    private LocalDateTime closedAt;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "requester_id", nullable = false)
     private Member requester;
@@ -103,6 +112,7 @@ public class ServiceRequest extends BaseEntity {
             throw new IllegalStateException("Only DRAFT requests can be submitted. Current: " + this.status);
         }
         this.slaDeadline = deadline;
+        this.submittedAt = LocalDateTime.now();
         if (this.priority != null && this.priority.isApprovalRequired() && approvalSteps != null && !approvalSteps.isEmpty()) {
             this.status = ServiceRequestStatus.PENDING_APPROVAL;
             this.approvals.clear();
@@ -124,6 +134,7 @@ public class ServiceRequest extends BaseEntity {
             throw new IllegalStateException("Only PENDING_APPROVAL requests can be rejected.");
         }
         this.status = ServiceRequestStatus.DRAFT;
+        this.submittedAt = null;
         this.approvals.clear(); 
     }
 
@@ -141,6 +152,7 @@ public class ServiceRequest extends BaseEntity {
         }
         this.resolution = resolution;
         this.status = ServiceRequestStatus.RESOLVED;
+        this.resolvedAt = LocalDateTime.now();
     }
 
     public void close() {
@@ -148,5 +160,6 @@ public class ServiceRequest extends BaseEntity {
             throw new IllegalStateException("Only RESOLVED requests can be closed.");
         }
         this.status = ServiceRequestStatus.CLOSED;
+        this.closedAt = LocalDateTime.now();
     }
 }
