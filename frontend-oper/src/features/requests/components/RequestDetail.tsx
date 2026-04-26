@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { requestApi } from '../api/requestApi';
 import { ServiceRequest, ApprovalStep, AttachmentInfo, ServiceRequestPriority, ServiceRequestStatus, CodeDTO } from '../types';
 import { useToast } from '../../../hooks/useToast';
-import { ArrowLeft, Edit2, Trash2, Save, X, Paperclip, ShieldCheck, Info, Calendar, User, Building, Hash } from 'lucide-react';
+import { ArrowLeft, Edit2, Trash2, Save, X, Paperclip, ShieldCheck, Info, Calendar, User, Building, Hash, List, FileText } from 'lucide-react';
 import './../requests.css';
 
 interface RequestDetailProps {
@@ -27,10 +27,14 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, onBack, onSucc
   const [editResolution, setEditResolution] = useState('');
   const [editAssigneeId, setEditAssigneeId] = useState<number | null>(null);
   const [editRequesterId, setEditRequesterId] = useState<number | null>(null);
+  const [editCatalogId, setEditCatalogId] = useState<number | undefined>(undefined);
+  const [isCustomCatalog, setIsCustomCatalog] = useState(false);
+  const [editCustomCatalogName, setEditCustomCatalogName] = useState('');
   const [priorityOptions, setPriorityOptions] = useState<CodeDTO[]>([]);
   const [statusOptions, setStatusOptions] = useState<CodeDTO[]>([]);
   const [operators, setOperators] = useState<any[]>([]);
   const [tenantUsers, setTenantUsers] = useState<any[]>([]);
+  const [catalogs, setCatalogs] = useState<any[]>([]);
 
   useEffect(() => {
     loadData();
@@ -55,6 +59,9 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, onBack, onSucc
       setEditResolution(reqData.resolution || '');
       setEditAssigneeId(null);
       setEditRequesterId(null);
+      setEditCatalogId(reqData.catalogId);
+      setIsCustomCatalog(!reqData.catalogId && !!reqData.catalogName);
+      setEditCustomCatalogName(!reqData.catalogId ? reqData.catalogName || '' : '');
       // 고객사 사용자 목록 로드 (대리 요청자 선택용)
       if (reqData.tenantId) {
         requestApi.getTenantUsers(reqData.tenantId).then(setTenantUsers).catch(() => []);
@@ -69,14 +76,16 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, onBack, onSucc
 
   const loadOptions = async () => {
     try {
-      const [pData, sData, opData] = await Promise.all([
+      const [pData, sData, opData, cData] = await Promise.all([
         requestApi.getCodesByGroup('SR_PRIORITY').catch(() => []),
         requestApi.getCodesByGroup('SR_STATUS').catch(() => []),
-        requestApi.getOperators().catch(() => [])
+        requestApi.getOperators().catch(() => []),
+        requestApi.getCatalogTemplates().catch(() => [])
       ]);
       setPriorityOptions(pData);
       setStatusOptions(sData);
       setOperators(opData);
+      setCatalogs(cData);
     } catch (err) {
       console.error('Failed to load options', err);
     }
@@ -90,6 +99,9 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, onBack, onSucc
       setEditPriority(request.priority);
       setEditStatus(request.status);
       setEditResolution(request.resolution || '');
+      setEditCatalogId(request.catalogId);
+      setIsCustomCatalog(!request.catalogId && !!request.catalogName);
+      setEditCustomCatalogName(!request.catalogId ? request.catalogName || '' : '');
     }
     setIsEditing(!isEditing);
   };
@@ -109,6 +121,8 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, onBack, onSucc
         resolution: editResolution,
         ...(editAssigneeId !== null && { assigneeId: editAssigneeId }),
         ...(editRequesterId !== null && { requesterId: editRequesterId }),
+        catalogId: isCustomCatalog ? undefined : editCatalogId,
+        customCatalogName: isCustomCatalog ? editCustomCatalogName : undefined
       });
       toast.success('Changes saved successfully');
       await loadData();
@@ -263,7 +277,34 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ requestId, onBack, onSucc
                 </div>
                 <div className="attr-row">
                   <span className="attr-label">Service Catalog</span>
-                  <span className="attr-value">{request.catalogName || 'Default Catalog'}</span>
+                  {isEditing && isFieldEditable('catalog') ? (
+                    <div className="attr-input-group">
+                      {isCustomCatalog ? (
+                        <input 
+                          type="text" 
+                          className="attr-input-text" 
+                          value={editCustomCatalogName}
+                          onChange={e => setEditCustomCatalogName(e.target.value)}
+                        />
+                      ) : (
+                        <select 
+                          className="attr-select" 
+                          value={editCatalogId ?? ''} 
+                          onChange={e => setEditCatalogId(e.target.value ? Number(e.target.value) : undefined)}
+                        >
+                          {(catalogs || []).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                        </select>
+                      )}
+                      <button 
+                        className={`btn-toggle-input ${isCustomCatalog ? 'active' : ''}`}
+                        onClick={() => setIsCustomCatalog(!isCustomCatalog)}
+                      >
+                        {isCustomCatalog ? <List size={14} /> : <FileText size={14} />}
+                      </button>
+                    </div>
+                  ) : (
+                    <span className="attr-value">{request.catalogName || '-'}</span>
+                  )}
                 </div>
               </div>
 

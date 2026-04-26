@@ -23,7 +23,7 @@ const RequestList: React.FC = () => {
   const [filterStatus, setFilterStatus] = useState<string>('ALL');
   const [filterTenant, setFilterTenant] = useState<string>('ALL');
   const [keyword, setKeyword] = useState<string>('');
-  const [dateRange, setDateRange] = useState<string>('ALL');
+  const [dateRange, setDateRange] = useState<string>('TODAY');
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
   const [statusCodes, setStatusCodes] = useState<CodeDTO[]>([]);
@@ -51,6 +51,38 @@ const RequestList: React.FC = () => {
     }
   };
 
+  useEffect(() => {
+    updateDateInputs();
+  }, [dateRange]);
+
+  const updateDateInputs = () => {
+    const now = new Date();
+    const pad = (num: number) => String(num).padStart(2, '0');
+    const formatDate = (date: Date) => `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+
+    let start: Date | null = null;
+    let end: Date = new Date();
+
+    if (dateRange === 'TODAY') {
+      start = new Date();
+    } else if (dateRange === '1W') {
+      start = new Date();
+      start.setDate(now.getDate() - 7);
+    } else if (dateRange === '1M') {
+      start = new Date();
+      start.setMonth(now.getMonth() - 1);
+    } else if (dateRange === 'ALL') {
+      setStartDate('');
+      setEndDate('');
+      return;
+    }
+
+    if (start) {
+      setStartDate(formatDate(start));
+      setEndDate(formatDate(end));
+    }
+  };
+
   const fetchRequests = async () => {
     setIsLoading(true);
     try {
@@ -63,7 +95,11 @@ const RequestList: React.FC = () => {
       };
 
       if (dateRange !== 'ALL') {
-        const now = new Date();
+        const toLocalISO = (date: Date) => {
+          const pad = (num: number) => String(num).padStart(2, '0');
+          return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+        };
+
         let start: Date | null = null;
         let end: Date = new Date();
 
@@ -72,19 +108,20 @@ const RequestList: React.FC = () => {
           start.setHours(0, 0, 0, 0);
         } else if (dateRange === '1W') {
           start = new Date();
-          start.setDate(now.getDate() - 7);
+          start.setDate(start.getDate() - 7);
         } else if (dateRange === '1M') {
           start = new Date();
-          start.setMonth(now.getMonth() - 1);
+          start.setMonth(start.getMonth() - 1);
         } else if (dateRange === 'CUSTOM' && startDate && endDate) {
-          start = new Date(startDate);
-          end = new Date(endDate);
-          end.setHours(23, 59, 59, 999);
+          const [sY, sM, sD] = startDate.split('-').map(Number);
+          const [eY, eM, eD] = endDate.split('-').map(Number);
+          start = new Date(sY, sM - 1, sD, 0, 0, 0, 0);
+          end = new Date(eY, eM - 1, eD, 23, 59, 59, 999);
         }
 
         if (start) {
-          params.startDate = start.toISOString();
-          params.endDate = end.toISOString();
+          params.startDate = toLocalISO(start);
+          params.endDate = toLocalISO(end);
         }
       }
 
@@ -191,13 +228,27 @@ const RequestList: React.FC = () => {
             <option value="CUSTOM">Custom Range</option>
           </select>
         </div>
-        {dateRange === 'CUSTOM' && (
-          <div className="filter-group date-range-group">
-            <input type="date" className="modern-input date-input" value={startDate} onChange={e => setStartDate(e.target.value)} />
-            <span className="date-separator">~</span>
-            <input type="date" className="modern-input date-input" value={endDate} onChange={e => setEndDate(e.target.value)} />
-          </div>
-        )}
+        <div className="filter-group date-range-group">
+          <input 
+            type="date" 
+            className="modern-input date-input" 
+            value={startDate} 
+            onChange={e => {
+              setStartDate(e.target.value);
+              setDateRange('CUSTOM');
+            }} 
+          />
+          <span className="date-separator">~</span>
+          <input 
+            type="date" 
+            className="modern-input date-input" 
+            value={endDate} 
+            onChange={e => {
+              setEndDate(e.target.value);
+              setDateRange('CUSTOM');
+            }} 
+          />
+        </div>
         <div className="filter-group">
           <select className="modern-select" value={filterTenant} onChange={e => setFilterTenant(e.target.value)}>
             <option value="ALL">All Tenants</option>

@@ -77,6 +77,7 @@ public class ServiceRequestService {
                 .description(dto.getDescription())
                 .priority(dto.getPriority())
                 .catalog(catalog)
+                .customCatalogName(dto.getCustomCatalogName())
                 .dynamicFields(dto.getDynamicFields())
                 .status(ServiceRequestStatus.DRAFT)
                 .requestNo(requestNo)
@@ -298,6 +299,19 @@ public class ServiceRequestService {
                     throw new SecurityException("Requester must belong to the same tenant as the request.");
                 }
                 request.setRequester(newRequester);
+            }
+        }
+
+        // 카탈로그 정보 수정 (DRAFT 전용)
+        if (oldStatus == ServiceRequestStatus.DRAFT) {
+            if (dto.getCustomCatalogName() != null) {
+                request.setCustomCatalogName(dto.getCustomCatalogName());
+                request.setCatalog(null);
+            } else if (dto.getCatalogId() != null) {
+                ServiceCatalog catalog = serviceCatalogRepository.findById(dto.getCatalogId())
+                        .orElseThrow(() -> new IllegalArgumentException("Catalog not found: " + dto.getCatalogId()));
+                request.setCatalog(catalog);
+                request.setCustomCatalogName(null);
             }
         }
 

@@ -35,6 +35,7 @@ public class ServiceRequestDTO {
         private String description;
         private ServiceRequestPriority priority;
         private Long catalogId;
+        private String customCatalogName;
         private String dynamicFields;
         private String targetTenantId; // 운영자용: 대상 고객사
         private Long requesterId;      // 운영자용: 대행 신청자 (선택)
@@ -52,6 +53,8 @@ public class ServiceRequestDTO {
         private String resolution;
         private Long assigneeId;   // 담당자 재배정
         private Long requesterId;  // 대리 요청자 변경 (DRAFT only)
+        private Long catalogId;
+        private String customCatalogName;
     }
 
     @Getter
@@ -122,7 +125,7 @@ public class ServiceRequestDTO {
                     .resolvedAt(request.getResolvedAt())
                     .closedAt(request.getClosedAt())
                     .catalogId(request.getCatalog() != null ? request.getCatalog().getId() : null)
-                    .catalogName(request.getCatalog() != null ? request.getCatalog().getName() : null)
+                    .catalogName(request.getCatalog() != null ? request.getCatalog().getName() : request.getCustomCatalogName())
                     .dynamicFields(request.getDynamicFields())
                     .attachments(request.getAttachments().stream()
                             .map(a -> AttachmentInfo.builder()

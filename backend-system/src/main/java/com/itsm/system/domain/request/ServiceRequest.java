@@ -87,6 +87,10 @@ public class ServiceRequest extends BaseEntity {
     @JoinColumn(name = "catalog_id")
     private ServiceCatalog catalog;
 
+    @Setter
+    @Column(name = "custom_catalog_name")
+    private String customCatalogName;
+
     @Lob
     @Column(name = "dynamic_fields", columnDefinition = "LONGTEXT")
     private String dynamicFields;

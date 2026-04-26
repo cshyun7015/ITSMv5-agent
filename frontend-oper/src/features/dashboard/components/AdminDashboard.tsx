@@ -19,6 +19,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
   }, [period]);
 
   const loadDashboard = async () => {
+    const toLocalISO = (date: Date) => {
+      const pad = (num: number) => String(num).padStart(2, '0');
+      return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+    };
+
     try {
       setLoading(true);
       const now = new Date();
@@ -27,17 +32,17 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
       if (period === '30d') {
         const d = new Date();
         d.setDate(now.getDate() - 30);
-        startDateStr = d.toISOString();
+        startDateStr = toLocalISO(d);
       } else if (period === '90d') {
         const d = new Date();
         d.setDate(now.getDate() - 90);
-        startDateStr = d.toISOString();
+        startDateStr = toLocalISO(d);
       } else if (period === 'ytd') {
         const d = new Date(now.getFullYear(), 0, 1);
-        startDateStr = d.toISOString();
+        startDateStr = toLocalISO(d);
       }
 
-      const data = await dashboardApi.getSummary(startDateStr, now.toISOString());
+      const data = await dashboardApi.getSummary(startDateStr, toLocalISO(now));
       setSummary(data);
     } catch (error) {
       console.error('GOC Sync Failed', error);

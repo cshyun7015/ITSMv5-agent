@@ -826,3 +826,52 @@
   padding: 8px 16px; /* Match standard size */
   font-size: 13px;
 }
+.attr-input-group {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  width: 240px; /* Matching the select width */
+}
+
+.attr-input-text {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: #fff;
+  padding: 8px 12px;
+  font-size: 14px;
+  outline: none;
+  transition: all 0.2s;
+}
+
+.attr-input-text:focus {
+  border-color: var(--primary);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.btn-toggle-input {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #94a3b8;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.btn-toggle-input:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.btn-toggle-input.active {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}

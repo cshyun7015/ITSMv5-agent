@@ -28,6 +28,7 @@ export interface ServiceRequest {
   attachments?: AttachmentInfo[];
   catalogId?: number;
   catalogName?: string;
+  customCatalogName?: string;
   dynamicFields?: string;
 }
 
@@ -38,6 +39,7 @@ export interface CreateRequestDTO {
   targetTenantId: string;
   requesterId?: number;
   catalogId?: number;
+  customCatalogName?: string;
   dynamicFields?: string;
 }
 

@@ -19,7 +19,9 @@ const RequestCreate: React.FC<RequestCreateProps> = ({ onBack, onSuccess }) => {
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<ServiceRequestPriority>('NORMAL');
   const [tenantId, setTenantId] = useState('');
-  const [catalogId, setCatalogId] = useState<number>(1); // Default catalog
+  const [catalogId, setCatalogId] = useState<number | undefined>(undefined);
+  const [isCustomCatalog, setIsCustomCatalog] = useState(false);
+  const [customCatalogName, setCustomCatalogName] = useState('');
   const [files, setFiles] = useState<File[]>([]);
 
   // Options
@@ -81,7 +83,8 @@ const RequestCreate: React.FC<RequestCreateProps> = ({ onBack, onSuccess }) => {
         description,
         priority,
         targetTenantId: tenantId,
-        catalogId
+        catalogId: isCustomCatalog ? undefined : catalogId,
+        customCatalogName: isCustomCatalog ? customCatalogName : undefined
       };
       
       await requestApi.createRequest(dto, files);
@@ -142,10 +145,29 @@ const RequestCreate: React.FC<RequestCreateProps> = ({ onBack, onSuccess }) => {
               </div>
               <div className="attr-row">
                 <span className="attr-label"><List size={14} /> Service Catalog</span>
-                <select className="attr-select" value={catalogId} onChange={e => setCatalogId(Number(e.target.value))}>
-                  {catalogs.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  {catalogs.length === 0 && <option value={1}>General Technical Support</option>}
-                </select>
+                <div className="attr-input-group">
+                  {isCustomCatalog ? (
+                    <input 
+                      type="text" 
+                      className="attr-input-text" 
+                      value={customCatalogName}
+                      onChange={e => setCustomCatalogName(e.target.value)}
+                      placeholder="Enter service category..."
+                    />
+                  ) : (
+                    <select className="attr-select" value={catalogId} onChange={e => setCatalogId(Number(e.target.value))}>
+                      {catalogs.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                      {catalogs.length === 0 && <option value={1}>General Technical Support</option>}
+                    </select>
+                  )}
+                  <button 
+                    className={`btn-toggle-input ${isCustomCatalog ? 'active' : ''}`}
+                    onClick={() => setIsCustomCatalog(!isCustomCatalog)}
+                    title={isCustomCatalog ? "Select from list" : "Enter manually"}
+                  >
+                    {isCustomCatalog ? <List size={14} /> : <FileText size={14} />}
+                  </button>
+                </div>
               </div>
             </div>
             <div className="attr-group">
