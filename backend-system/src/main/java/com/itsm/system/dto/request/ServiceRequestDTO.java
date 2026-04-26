@@ -55,6 +55,7 @@ public class ServiceRequestDTO {
         private Long requesterId;  // 대리 요청자 변경 (DRAFT only)
         private Long catalogId;
         private String customCatalogName;
+        private List<Long> deleteAttachmentIds;
     }
 
     @Getter
@@ -143,9 +144,9 @@ public class ServiceRequestDTO {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class AttachmentInfo {
-        private Long id;
-        private String fileName;
-        private Long fileSize;
+        public Long id;
+        public String fileName;
+        public Long fileSize;
     }
 
     @Getter

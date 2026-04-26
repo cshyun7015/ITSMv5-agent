@@ -96,19 +96,16 @@ export const requestApi = {
     await apiClient.delete(`/requests/${id}`);
   },
 
-  // 첨부 파일 다운로드
-  downloadAttachment: async (id: number, fileName: string): Promise<void> => {
-    const response = await apiClient.get(`/requests/attachments/${id}`, {
-      responseType: 'blob'
-    });
-    const url = window.URL.createObjectURL(new Blob([response.data]));
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', fileName);
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    window.URL.revokeObjectURL(url);
+  // 첨부 파일 다운로드 (window.open + 토큰 쿼리 파라미터 방식 - 팝업 차단 우회)
+  downloadAttachment: (id: number, _fileName: string): void => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert('로그인이 필요합니다.');
+      return;
+    }
+    // 절대 URL(localhost:8080) 대신 상대 경로 사용 → Chrome 크로스 오리진 팝업 차단 우회
+    const url = `/api/v1/requests/attachments/${id}/download?token=${encodeURIComponent(token)}`;
+    window.open(url, '_blank');
   },
   
   // 서비스 카탈로그 템플릿 조회 (운영자용)

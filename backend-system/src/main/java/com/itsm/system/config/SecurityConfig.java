@@ -52,6 +52,7 @@ public class SecurityConfig {
                 .requestMatchers(AntPathRequestMatcher.antMatcher("/api/v1/incidents/**")).hasAnyRole("OPERATOR", "ADMIN")
                 .requestMatchers(AntPathRequestMatcher.antMatcher("/api/v1/dashboard/**")).hasAnyRole("USER", "OPERATOR", "ADMIN")
                 .requestMatchers(AntPathRequestMatcher.antMatcher("/api/v1/catalog/**")).hasAnyRole("USER", "OPERATOR", "ADMIN")
+                .requestMatchers(AntPathRequestMatcher.antMatcher("/api/v1/requests/attachments/*/download")).permitAll()
                 .requestMatchers(AntPathRequestMatcher.antMatcher("/api/v1/requests/**")).hasAnyRole("USER", "OPERATOR", "ADMIN")
                 .requestMatchers(AntPathRequestMatcher.antMatcher("/api/v1/cis/**")).hasAnyRole("OPERATOR", "ADMIN")
                 .requestMatchers(AntPathRequestMatcher.antMatcher("/api/v1/operator/**")).hasAnyRole("OPERATOR", "ADMIN")

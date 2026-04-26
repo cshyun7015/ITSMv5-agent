@@ -3,11 +3,14 @@ package com.itsm.system.web.request;
 import com.itsm.system.domain.member.Member;
 import com.itsm.system.domain.request.*;
 import com.itsm.system.dto.request.ServiceRequestDTO;
+import com.itsm.system.security.jwt.JwtTokenProvider;
 import com.itsm.system.service.request.ServiceRequestService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.lang.NonNull;
 import org.springframework.web.multipart.MultipartFile;
@@ -25,6 +28,8 @@ import org.springframework.data.domain.Page;
 public class ServiceRequestController {
 
     private final ServiceRequestService requestService;
+    private final JwtTokenProvider jwtTokenProvider;
+    private final UserDetailsService userDetailsService;
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasAnyRole('ADMIN', 'OPERATOR', 'USER', 'MANAGER')")
@@ -57,6 +62,49 @@ public class ServiceRequestController {
         return ResponseEntity.ok().build();
     }
 
+    // 토큰 쿼리 파라미터 기반 다운로드 (브라우저 직접 접근용 - window.open 지원)
+    @GetMapping("/attachments/{attachmentId}/download")
+    public ResponseEntity<byte[]> downloadAttachmentByToken(
+            @PathVariable @NonNull Long attachmentId,
+            @RequestParam("token") @NonNull String token) {
+
+        // JWT 토큰 수동 검증
+        if (!jwtTokenProvider.validateToken(token)) {
+            return ResponseEntity.status(401).build();
+        }
+
+        String username = jwtTokenProvider.getUsername(token);
+        Member currentMember = (Member) userDetailsService.loadUserByUsername(username);
+        ServiceRequestAttachment attachment = requestService.getAttachment(attachmentId);
+        ServiceRequest request = attachment.getServiceRequest();
+
+        // 보안 검증 (기존 엔드포인트와 동일 로직)
+        String userTenantId = currentMember.getTenant().getTenantId();
+        if (!"OPER_MSP".equalsIgnoreCase(userTenantId)) {
+            boolean isStaff = currentMember.getAuthorities().stream()
+                    .anyMatch(a -> {
+                        String auth = a.getAuthority();
+                        return auth.equals("OPERATOR") || auth.equals("ROLE_OPERATOR") ||
+                               auth.equals("ADMIN") || auth.equals("ROLE_ADMIN");
+                    });
+            if (isStaff) {
+                List<String> managedTenantIds = requestService.getManagedTenantIds(userTenantId);
+                boolean isAuthorized = managedTenantIds.stream()
+                        .anyMatch(tid -> tid.equalsIgnoreCase(request.getTenant().getTenantId()));
+                if (!isAuthorized) return ResponseEntity.status(403).build();
+            } else {
+                if (!request.getTenant().getTenantId().equalsIgnoreCase(userTenantId))
+                    return ResponseEntity.status(403).build();
+            }
+        }
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + attachment.getFileName() + "\"")
+                .contentType(MediaType.parseMediaType(Objects.requireNonNull(
+                        attachment.getContentType() != null ? attachment.getContentType() : "application/octet-stream")))
+                .body(attachment.getFileData());
+    }
+
     @GetMapping("/attachments/{attachmentId}")
     @PreAuthorize("hasAnyRole('ADMIN', 'OPERATOR', 'USER', 'MANAGER')")
     public ResponseEntity<byte[]> downloadAttachment(
@@ -66,10 +114,31 @@ public class ServiceRequestController {
         ServiceRequestAttachment attachment = requestService.getAttachment(attachmentId);
         ServiceRequest request = attachment.getServiceRequest();
         
-        // 보안 검증: MSP가 아니면 본인 테넌트 파일만 다운로드 가능
+        // 보안 검증: MSP는 전체 조회 가능, 일반 운영자는 관리 테넌트만 조회 가능
         String userTenantId = currentMember.getTenant().getTenantId();
-        if (!"OPER_MSP".equals(userTenantId) && !request.getTenant().getTenantId().equals(userTenantId)) {
-            return ResponseEntity.status(403).header("X-Error-Message", "Access denied to attachment from other tenant").build();
+        if (!"OPER_MSP".equalsIgnoreCase(userTenantId)) {
+            boolean isStaff = currentMember.getAuthorities().stream()
+                    .anyMatch(a -> {
+                        String auth = a.getAuthority();
+                        return auth.equals("OPERATOR") || auth.equals("ROLE_OPERATOR") || 
+                               auth.equals("ADMIN") || auth.equals("ROLE_ADMIN");
+                    });
+
+            if (isStaff) {
+                List<String> managedTenantIds = requestService.getManagedTenantIds(userTenantId);
+                String requestTenantId = request.getTenant().getTenantId();
+                boolean isAuthorized = managedTenantIds.stream()
+                        .anyMatch(tid -> tid.equalsIgnoreCase(requestTenantId));
+                
+                if (!isAuthorized) {
+                    return ResponseEntity.status(403).header("X-Error-Message", "Access denied: Unauthorized access attempt").build();
+                }
+            } else {
+                // 일반 사용자는 본인 테넌트만 가능
+                if (!request.getTenant().getTenantId().equalsIgnoreCase(userTenantId)) {
+                    return ResponseEntity.status(403).header("X-Error-Message", "Access denied: Request belongs to another tenant").build();
+                }
+            }
         }
 
         return ResponseEntity.ok()

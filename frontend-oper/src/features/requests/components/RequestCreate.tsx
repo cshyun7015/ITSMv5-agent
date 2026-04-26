@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { requestApi } from '../api/requestApi';
 import { ServiceRequestPriority, CodeDTO, CreateRequestDTO } from '../types';
 import { useToast } from '../../../hooks/useToast';
-import { ArrowLeft, Save, X, Paperclip, Building, List, Info, Type, FileText } from 'lucide-react';
+import { ArrowLeft, Save, Building, List, Info, Type, FileText } from 'lucide-react';
+import AttachmentPanel from './AttachmentPanel';
 import './../requests.css';
 
 interface RequestCreateProps {
@@ -58,8 +59,12 @@ const RequestCreate: React.FC<RequestCreateProps> = ({ onBack, onSuccess }) => {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      setFiles(Array.from(e.target.files));
+      setFiles(prev => [...prev, ...Array.from(e.target.files!)]);
     }
+  };
+
+  const handleRemoveFile = (index: number) => {
+    setFiles(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async () => {
@@ -199,21 +204,16 @@ const RequestCreate: React.FC<RequestCreateProps> = ({ onBack, onSuccess }) => {
 
           <section className="detail-section">
             <div className="section-header">
-              <Paperclip size={18} />
+              <FileText size={18} />
               <span className="section-title">Attachments</span>
             </div>
-            <div className="file-upload-area">
-              <input type="file" multiple onChange={handleFileChange} id="request-files" className="hidden-file-input" />
-              <label htmlFor="request-files" className="file-upload-label compact">
-                <Paperclip size={20} />
-                <span>Click to attach files</span>
-              </label>
-              <div className="selected-files">
-                {files.map((f, i) => (
-                  <div key={i} className="att-item"><span className="att-name">{f.name}</span></div>
-                ))}
-              </div>
-            </div>
+            <AttachmentPanel
+              newFiles={files}
+              mode="create"
+              onAddFiles={(added) => setFiles(prev => [...prev, ...added])}
+              onRemoveNew={handleRemoveFile}
+              inputId="create-attachment-upload"
+            />
           </section>
         </div>
       </div>

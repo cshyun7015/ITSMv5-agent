@@ -7,18 +7,20 @@ export type ServiceRequestStatus =
   | 'CLOSED' 
   | 'REJECTED';
 
-export type ServiceRequestPriority = 'EMERGENCY' | 'NORMAL' | 'LOW';
+export type ServiceRequestPriority = 'EMERGENCY' | 'CRITICAL' | 'HIGH' | 'NORMAL' | 'LOW';
 
 export interface ServiceRequest {
   requestId: number;
   requestNo: string;
   tenantId: string;
+  tenantName?: string;
   title: string;
   description: string;
   status: ServiceRequestStatus;
   priority: ServiceRequestPriority;
   requesterName: string;
   assigneeName?: string;
+  assigneeId?: number;
   resolution?: string;
   slaDeadline?: string;
   createdAt: string;
@@ -51,6 +53,9 @@ export interface UpdateRequestDTO {
   resolution?: string;
   assigneeId?: number;   // 담당자 재배정 (OPEN, IN_PROGRESS)
   requesterId?: number;  // 대리 요청자 (DRAFT only)
+  catalogId?: number;
+  customCatalogName?: string;
+  deleteAttachmentIds?: number[];
 }
 
 export interface AttachmentInfo {
@@ -60,11 +65,13 @@ export interface AttachmentInfo {
 }
 
 export interface ApprovalStep {
-  approvalId: number;
+  id: number;
+  stepName: string;
   approverName: string;
-  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'WAITING';
   stepOrder: number;
   comment?: string;
+  processedAt?: string;
   updatedAt?: string;
 }
 

@@ -15,7 +15,6 @@ import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -118,6 +117,7 @@ public class ServiceRequestService {
 
         if (!attachments.isEmpty()) {
             attachmentRepository.saveAll(attachments);
+            request.getAttachments().addAll(attachments);
         }
     }
 
@@ -281,10 +281,11 @@ public class ServiceRequestService {
         if (dto.getStatus() != null) request.setStatus(dto.getStatus());
         if (dto.getResolution() != null) request.setResolution(dto.getResolution());
 
-        // 담당자 재배정: OPEN, IN_PROGRESS 상태에서만 허용
+        // 담당자 재배정: 현재 또는 변경될 상태가 OPEN, IN_PROGRESS인 경우 허용
         if (dto.getAssigneeId() != null && isStaff) {
-            if (oldStatus == ServiceRequestStatus.OPEN || oldStatus == ServiceRequestStatus.IN_PROGRESS) {
-                Member newAssignee = memberRepository.findById(dto.getAssigneeId())
+            ServiceRequestStatus currentTargetStatus = dto.getStatus() != null ? dto.getStatus() : oldStatus;
+            if (currentTargetStatus == ServiceRequestStatus.OPEN || currentTargetStatus == ServiceRequestStatus.IN_PROGRESS) {
+                Member newAssignee = memberRepository.findById(Objects.requireNonNull(dto.getAssigneeId()))
                         .orElseThrow(() -> new IllegalArgumentException("Assignee not found: " + dto.getAssigneeId()));
                 request.setAssignee(newAssignee);
             }
@@ -293,7 +294,7 @@ public class ServiceRequestService {
         // 대리 요청자 변경: DRAFT 상태에서만 허용, 동일 고객사 소속 검증
         if (dto.getRequesterId() != null && isStaff) {
             if (oldStatus == ServiceRequestStatus.DRAFT) {
-                Member newRequester = memberRepository.findById(dto.getRequesterId())
+                Member newRequester = memberRepository.findById(Objects.requireNonNull(dto.getRequesterId()))
                         .orElseThrow(() -> new IllegalArgumentException("Requester not found: " + dto.getRequesterId()));
                 if (!newRequester.getTenant().getTenantId().equals(request.getTenant().getTenantId())) {
                     throw new SecurityException("Requester must belong to the same tenant as the request.");
@@ -308,11 +309,16 @@ public class ServiceRequestService {
                 request.setCustomCatalogName(dto.getCustomCatalogName());
                 request.setCatalog(null);
             } else if (dto.getCatalogId() != null) {
-                ServiceCatalog catalog = serviceCatalogRepository.findById(dto.getCatalogId())
+                ServiceCatalog catalog = serviceCatalogRepository.findById(Objects.requireNonNull(dto.getCatalogId()))
                         .orElseThrow(() -> new IllegalArgumentException("Catalog not found: " + dto.getCatalogId()));
                 request.setCatalog(catalog);
                 request.setCustomCatalogName(null);
             }
+        }
+
+        // 기존 첨부파일 삭제: orphanRemoval=true를 활용하기 위해 리스트에서 제거
+        if (dto.getDeleteAttachmentIds() != null && !dto.getDeleteAttachmentIds().isEmpty()) {
+            request.getAttachments().removeIf(a -> dto.getDeleteAttachmentIds().contains(a.getId()));
         }
 
         requestRepository.save(Objects.requireNonNull(request));

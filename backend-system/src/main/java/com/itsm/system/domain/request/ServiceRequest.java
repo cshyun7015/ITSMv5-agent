@@ -61,7 +61,6 @@ public class ServiceRequest extends BaseEntity {
     @Column(name = "closed_at")
     private LocalDateTime closedAt;
 
-    @Setter
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "requester_id", nullable = false)
     private Member requester;
